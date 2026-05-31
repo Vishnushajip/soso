@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "151581458337",
+    "project_id": "soso-2c8df",
+    "storage_bucket": "soso-2c8df.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:151581458337:android:0ad78709ef38971125d5e0",
+        "android_client_info": {
+          "package_name": "com.example.soso"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "151581458337-tr0g62nffhjpi10rkbt53tkitm0adcud.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQyiXnDrZXZvMSv6Jh7uovLMkHLxaviPc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "151581458337-tr0g62nffhjpi10rkbt53tkitm0adcud.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

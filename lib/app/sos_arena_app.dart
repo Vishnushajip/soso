@@ -57,6 +57,7 @@ final bootstrapProvider = Provider<void>((ref) {
         ref.read(localNotificationsServiceProvider).init(),
         ref.read(fcmServiceProvider).init(),
         ref.read(soundServiceProvider).init(),
+        ref.read(hapticServiceProvider).init(),
       ]);
     } catch (e, s) {
       appLogger.w('service init: $e\n$s');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -6,22 +7,24 @@ import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/section_card.dart';
+import '../../../providers/user_providers.dart';
 import '../../../routes/route_names.dart';
 
-class LocalGameSetupScreen extends StatefulWidget {
+class LocalGameSetupScreen extends ConsumerStatefulWidget {
   const LocalGameSetupScreen({super.key});
 
   @override
-  State<LocalGameSetupScreen> createState() => _LocalGameSetupScreenState();
+  ConsumerState<LocalGameSetupScreen> createState() => _LocalGameSetupScreenState();
 }
 
-class _LocalGameSetupScreenState extends State<LocalGameSetupScreen> {
+class _LocalGameSetupScreenState extends ConsumerState<LocalGameSetupScreen> {
   int _playerCount = 2;
   int _boardSize = Env.boardSize;
   late final List<TextEditingController> _names = List.generate(
     AppConstants.maxPlayersLocal,
     (i) => TextEditingController(text: 'Player ${i + 1}'),
   );
+  bool _prefilledFromAuth = false;
 
   @override
   void dispose() {
@@ -33,8 +36,16 @@ class _LocalGameSetupScreenState extends State<LocalGameSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_prefilledFromAuth) {
+      final user = ref.read(currentUserProvider).valueOrNull;
+      if (user != null && user.name.trim().isNotEmpty) {
+        _names[0].text = user.name;
+        _prefilledFromAuth = true;
+      }
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Local Multiplayer')),
+      appBar: AppBar(title: const Text('Pass & Play')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -44,6 +55,11 @@ class _LocalGameSetupScreenState extends State<LocalGameSetupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    'You play as Player 1 — your wins earn profile points.',
+                    style: TextStyle(color: AppColors.onSurfaceMuted, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
                   const Text('Players', style: TextStyle(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
                   Wrap(

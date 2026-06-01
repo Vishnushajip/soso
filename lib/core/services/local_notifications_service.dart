@@ -6,7 +6,8 @@ import '../utils/logger.dart';
 
 class LocalNotificationsService {
   LocalNotificationsService();
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
     if (kIsWeb) return;
@@ -17,7 +18,9 @@ class LocalNotificationsService {
       requestSoundPermission: true,
     );
     try {
-      await _plugin.initialize(const InitializationSettings(android: android, iOS: ios));
+      await _plugin.initialize(
+        const InitializationSettings(android: android, iOS: ios),
+      );
 
       const channel = AndroidNotificationChannel(
         AppConstants.fcmChannelId,
@@ -26,7 +29,9 @@ class LocalNotificationsService {
         importance: Importance.high,
       );
       await _plugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(channel);
     } catch (e) {
       appLogger.w('LocalNotifications init failed: $e');
@@ -39,7 +44,7 @@ class LocalNotificationsService {
     String? payload,
   }) async {
     if (kIsWeb) return;
-    final notif = NotificationDetails(
+    const notif = NotificationDetails(
       android: AndroidNotificationDetails(
         AppConstants.fcmChannelId,
         AppConstants.fcmChannelName,
@@ -47,7 +52,7 @@ class LocalNotificationsService {
         importance: Importance.high,
         priority: Priority.high,
       ),
-      iOS: const DarwinNotificationDetails(),
+      iOS: DarwinNotificationDetails(),
     );
     await _plugin.show(
       DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),

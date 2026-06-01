@@ -24,9 +24,24 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
   String? _error;
 
   Future<void> _search() async {
+    final query = _ctrl.text.trim();
+    if (query.isEmpty) return;
+    
     setState(() { _busy = true; _error = null; });
     try {
-      _results = await ref.read(userRepositoryProvider).searchByName(_ctrl.text);
+      final isNumeric = RegExp(r'^\d+$').hasMatch(query);
+      if (isNumeric) {
+        // Search by exact unique 8-digit numeric player ID
+        final user = await ref.read(userRepositoryProvider).getUserByUniqueId(query);
+        if (user != null) {
+          _results = [user];
+        } else {
+          _results = const [];
+        }
+      } else {
+        // Search alphabetically by user name
+        _results = await ref.read(userRepositoryProvider).searchByName(query);
+      }
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -69,8 +84,9 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
                   child: TextField(
                     controller: _ctrl,
                     onSubmitted: (_) => _search(),
+                    keyboardType: TextInputType.text,
                     decoration: const InputDecoration(
-                      hintText: 'Search by name',
+                      hintText: 'Search by name or player ID (e.g. 51234567)',
                       prefixIcon: Icon(Icons.search),
                     ),
                   ),
@@ -86,7 +102,7 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
             const SizedBox(height: 12),
             Expanded(
               child: _results.isEmpty
-                  ? const SectionCard(child: Text('No results yet — search above'))
+                  ? const SectionCard(child: Center(child: Text('No results yet — search above')))
                   : ListView.separated(
                       itemCount: _results.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -96,10 +112,47 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
                         return SectionCard(
                           child: Row(
                             children: [
-                              UserAvatar(name: u.name, photoUrl: u.photoUrl, online: u.isOnline),
+                              UserAvatar(
+                                name: u.name,
+                                photoUrl: u.photoUrl,
+                                online: u.isOnline,
+                                frameColor: u.avatarFrameColor,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Text(u.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(u.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                        if (u.customTitle != null && u.customTitle!.isNotEmpty) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.secondary.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              u.customTitle!,
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w800,
+                                                color: AppColors.secondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    if (u.uniqueId.isNotEmpty)
+                                      Text(
+                                        'ID: ${u.uniqueId}',
+                                        style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 11),
+                                      ),
+                                  ],
+                                ),
                               ),
                               if (!isMe)
                                 AppButton(

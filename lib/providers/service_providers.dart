@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/analytics_service.dart';
 import '../core/services/crashlytics_service.dart';
 import '../core/services/fcm_service.dart';
+import '../core/services/haptic_service.dart';
 import '../core/services/local_notifications_service.dart';
 import '../core/services/presence_service.dart';
 import '../core/services/sound_service.dart';
@@ -45,3 +46,7 @@ final soundServiceProvider = Provider<SoundService>((ref) {
   ref.onDispose(svc.dispose);
   return svc;
 });
+
+final hapticServiceProvider = Provider<HapticService>(
+  (ref) => HapticService(ref.watch(sharedPreferencesProvider)),
+);

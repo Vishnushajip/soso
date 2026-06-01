@@ -13,6 +13,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late bool _sound = ref.read(soundServiceProvider).enabled;
+  late bool _haptics = ref.read(hapticServiceProvider).enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +34,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                     title: const Text('Sound effects'),
                     subtitle: const Text('SOS, scoring, notifications'),
+                  ),
+                  SwitchListTile(
+                    value: _haptics,
+                    onChanged: (v) async {
+                      setState(() => _haptics = v);
+                      await ref.read(hapticServiceProvider).setEnabled(v);
+                    },
+                    title: const Text('Haptic feedback'),
+                    subtitle: const Text('Vibration on taps, scores and wins'),
                   ),
                 ],
               ),

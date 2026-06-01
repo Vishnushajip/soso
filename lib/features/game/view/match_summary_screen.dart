@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/haptic_service.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loader.dart';
@@ -13,6 +15,7 @@ import '../../../models/game_room.dart';
 import '../../../providers/auth_providers.dart';
 import '../../../providers/game_providers.dart';
 import '../../../providers/repository_providers.dart';
+import '../../../providers/service_providers.dart';
 import '../../../routes/route_names.dart';
 
 class MatchSummaryScreen extends ConsumerStatefulWidget {
@@ -24,6 +27,7 @@ class MatchSummaryScreen extends ConsumerStatefulWidget {
 
 class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen> {
   bool _statsApplied = false;
+  int? _awardedPoints;
 
   Future<void> _applyStats(GameRoom room) async {
     if (_statsApplied) return;
@@ -32,11 +36,17 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen> {
     if (me == null) return;
     final myPlayer = room.players.firstWhere((p) => p.uid == me, orElse: () => room.players.first);
     final won = room.winnerId == me;
+    final delta = myPlayer.score + (won ? AppConstants.pointsPerWin : 0);
+
+    ref.read(soundServiceProvider).play(won ? AppSound.win : AppSound.lose);
+    ref.read(hapticServiceProvider).fire(won ? HapticEvent.win : HapticEvent.lose);
+
     await ref.read(userRepositoryProvider).applyMatchResult(
           uid: me,
-          pointsDelta: myPlayer.score + (won ? AppConstants.pointsPerWin : 0),
+          pointsDelta: delta,
           won: won,
         );
+    if (mounted) setState(() => _awardedPoints = delta);
   }
 
   @override
@@ -72,6 +82,23 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen> {
                           room.winnerId == null ? 'It\'s a tie!' : '$winnerName wins',
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                         ),
+                        if (_awardedPoints != null && _awardedPoints! > 0) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryContainer,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '+$_awardedPoints profile points',
+                              style: const TextStyle(
+                                color: AppColors.onSecondaryContainer,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -80,8 +107,8 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen> {
                     child: SectionCard(
                       child: ListView.separated(
                         itemCount: ranked.length,
-                        separatorBuilder: (_, __) => const Divider(height: 16),
-                        itemBuilder: (_, i) {
+                        separatorBuilder: (context, index) => const Divider(height: 16),
+                        itemBuilder: (context, i) {
                           final p = ranked[i];
                           final isMe = p.uid == me;
                           return Row(

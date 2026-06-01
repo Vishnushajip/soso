@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/notification_providers.dart';
+import '../../../providers/user_providers.dart';
 import '../../../routes/route_names.dart';
 
 class MainShell extends ConsumerWidget {
@@ -30,12 +32,44 @@ class MainShell extends ConsumerWidget {
     final location = GoRouterState.of(context).matchedLocation;
     final selected = _indexOfLocation(location);
     final unread = ref.watch(unreadNotificationsCountProvider).valueOrNull ?? 0;
+    
+    // Live watch current user profile details
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    final points = user?.totalPoints ?? 0;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         title: Text(_tabs[selected].label == 'Play' ? 'SOS Arena' : _tabs[selected].label),
         actions: [
+          // Premium Points Star Pill Badge
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.secondary.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.stars_rounded, color: AppColors.secondary, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  '$points pts',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.secondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
           IconButton(
             tooltip: 'Notifications',
             onPressed: () => context.push(RouteNames.notifications),

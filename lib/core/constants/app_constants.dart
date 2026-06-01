@@ -33,6 +33,7 @@ class AppConstants {
   // Local storage keys.
   static const prefsLastFcmToken = 'last_fcm_token';
   static const prefsSoundEnabled = 'sound_enabled';
+  static const prefsHapticsEnabled = 'haptics_enabled';
   static const prefsNotificationsEnabled = 'notifications_enabled';
 
   // Global chat room id is fixed so all clients share it.

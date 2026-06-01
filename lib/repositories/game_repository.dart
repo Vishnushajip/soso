@@ -179,14 +179,17 @@ class GameRepository {
         }
       }
 
-      tx.update(ref, {
+      final updates = <String, dynamic>{
         'board': newBoard,
         'players': updatedPlayers.map((p) => p.toMap()).toList(),
         'currentTurn': nextTurn,
-        if (newStatus != null) 'status': newStatus,
-        if (newStatus != null) 'finishedAt': FieldValue.serverTimestamp(),
-        if (newStatus != null) 'winnerId': winnerId,
-      });
+      };
+      if (newStatus != null) {
+        updates['status'] = newStatus;
+        updates['finishedAt'] = FieldValue.serverTimestamp();
+        updates['winnerId'] = winnerId;
+      }
+      tx.update(ref, updates);
 
       tx.set(ref.collection(AppConstants.movesSubcollection).doc(), {
         'roomId': roomId,
@@ -198,5 +201,21 @@ class GameRepository {
       });
     });
     return sosGained;
+  }
+
+  Future<void> eraseCellOnline({
+    required String roomId,
+    required int position,
+  }) async {
+    final ref = _rooms.doc(roomId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final room = GameRoom.fromDoc(snap);
+      if (room.status != GameRoomStatus.active) return;
+      
+      final newBoard = [...room.board]..[position] = '';
+      tx.update(ref, {'board': newBoard});
+    });
   }
 }

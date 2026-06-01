@@ -121,13 +121,39 @@ class _LeaderboardPageState extends ConsumerState<_LeaderboardPage>
                     style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.highlight),
                   ),
                 ),
-                UserAvatar(name: e.user.name, photoUrl: e.user.photoUrl),
+                UserAvatar(
+                  name: e.user.name,
+                  photoUrl: e.user.photoUrl,
+                  frameColor: e.user.avatarFrameColor,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(e.user.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Row(
+                        children: [
+                          Text(e.user.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                          if (e.user.customTitle != null && e.user.customTitle!.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.secondary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                e.user.customTitle!,
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.secondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                       Text(
                         '${e.user.wins}W · ${e.user.losses}L · ${FormatUtils.winRatePct(e.user.wins, e.user.matchesPlayed)} WR',
                         style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 12),

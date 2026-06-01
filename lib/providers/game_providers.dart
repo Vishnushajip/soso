@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/constants/app_constants.dart';
+import '../core/services/haptic_service.dart';
 import '../core/services/sound_service.dart';
 import '../core/utils/sos_engine.dart';
 import '../models/game_room.dart';
+import 'auth_providers.dart';
 import 'repository_providers.dart';
 import 'service_providers.dart';
 
@@ -23,6 +26,8 @@ class LocalGameState {
   final bool finished;
   final int? winnerIndex;
   final List<SosLine> lastSosLines;
+  final int? awardedProfilePoints;
+  final List<int> customHighlights;
 
   const LocalGameState({
     required this.boardSize,
@@ -32,6 +37,8 @@ class LocalGameState {
     this.finished = false,
     this.winnerIndex,
     this.lastSosLines = const [],
+    this.awardedProfilePoints,
+    this.customHighlights = const [],
   });
 
   LocalGameState copyWith({
@@ -41,6 +48,8 @@ class LocalGameState {
     bool? finished,
     int? winnerIndex,
     List<SosLine>? lastSosLines,
+    int? awardedProfilePoints,
+    List<int>? customHighlights,
   }) =>
       LocalGameState(
         boardSize: boardSize,
@@ -50,6 +59,8 @@ class LocalGameState {
         finished: finished ?? this.finished,
         winnerIndex: winnerIndex ?? this.winnerIndex,
         lastSosLines: lastSosLines ?? this.lastSosLines,
+        awardedProfilePoints: awardedProfilePoints ?? this.awardedProfilePoints,
+        customHighlights: customHighlights ?? this.customHighlights,
       );
 }
 
@@ -62,11 +73,15 @@ class LocalGameConfig {
 class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig> {
   late SosEngine _engine;
   late SoundService _sound;
+  late HapticService _haptic;
+  bool _statsApplied = false;
+  final List<LocalGameState> _history = [];
 
   @override
   LocalGameState build(LocalGameConfig cfg) {
     _engine = SosEngine(cfg.boardSize);
     _sound = ref.read(soundServiceProvider);
+    _haptic = ref.read(hapticServiceProvider);
     return LocalGameState(
       boardSize: cfg.boardSize,
       board: _engine.emptyBoard(),
@@ -75,6 +90,8 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
   }
 
   void reset() {
+    _statsApplied = false;
+    _history.clear();
     state = LocalGameState(
       boardSize: state.boardSize,
       board: _engine.emptyBoard(),
@@ -82,9 +99,48 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
     );
   }
 
+  void undoLocal() {
+    if (_history.isNotEmpty) {
+      state = _history.removeLast();
+      if (_statsApplied && !state.finished) {
+        _statsApplied = false;
+      }
+    }
+  }
+
+  void eraseLocal({required int position}) {
+    if (state.finished) return;
+    if (state.board[position].isEmpty) return;
+    
+    _history.add(state);
+    
+    final newBoard = [...state.board]..[position] = '';
+    state = state.copyWith(
+      board: newBoard,
+      lastSosLines: const [],
+      customHighlights: const [],
+    );
+  }
+
+  void showHintsLocal() {
+    final hints = <int>[];
+    for (var i = 0; i < state.board.length; i++) {
+      if (state.board[i].isEmpty) {
+        final sLines = _engine.findSosCreated(board: state.board, pos: i, letter: SosLetter.s);
+        final oLines = _engine.findSosCreated(board: state.board, pos: i, letter: SosLetter.o);
+        if (sLines.isNotEmpty || oLines.isNotEmpty) {
+          hints.add(i);
+        }
+      }
+    }
+    state = state.copyWith(customHighlights: hints);
+  }
+
   void place({required int position, required SosLetter letter}) {
     if (state.finished) return;
     if (state.board[position].isNotEmpty) return;
+
+    _history.add(state);
 
     final lines = _engine.findSosCreated(
       board: state.board,
@@ -96,15 +152,20 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
     final players = [...state.players];
     if (scored) {
       final cur = players[state.currentTurn];
-      players[state.currentTurn] = cur.copyWith(score: cur.score + lines.length * 10);
+      players[state.currentTurn] = cur.copyWith(
+        score: cur.score + lines.length * AppConstants.pointsPerSos,
+      );
       _sound.play(AppSound.sos);
+      _haptic.fire(HapticEvent.sos);
     } else {
       _sound.play(AppSound.point);
+      _haptic.fire(HapticEvent.point);
     }
     final full = newBoard.every((c) => c.isNotEmpty);
     final nextTurn = scored ? state.currentTurn : (state.currentTurn + 1) % players.length;
     int? winner;
     bool finished = false;
+    int? awarded;
     if (full) {
       finished = true;
       var top = -1;
@@ -116,7 +177,15 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
           winner = null;
         }
       }
-      _sound.play(winner != null ? AppSound.win : AppSound.lose);
+      final youWon = winner == 0;
+      _sound.play(youWon ? AppSound.win : AppSound.lose);
+      _haptic.fire(youWon ? HapticEvent.win : HapticEvent.lose);
+
+      awarded = _profilePointsFor(
+        matchScore: players[0].score,
+        won: youWon,
+      );
+      _persistResult(youWon: youWon, pointsDelta: awarded);
     }
     state = state.copyWith(
       board: newBoard,
@@ -125,7 +194,29 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
       finished: finished,
       winnerIndex: winner,
       lastSosLines: lines,
+      awardedProfilePoints: awarded,
+      customHighlights: const [], // clear hints on placement
     );
+  }
+
+  int _profilePointsFor({required int matchScore, required bool won}) {
+    return matchScore + (won ? AppConstants.pointsPerWin : 0);
+  }
+
+  Future<void> _persistResult({required bool youWon, required int pointsDelta}) async {
+    if (_statsApplied) return;
+    _statsApplied = true;
+    final uid = ref.read(currentUidProvider);
+    if (uid == null) return;
+    try {
+      await ref.read(userRepositoryProvider).applyMatchResult(
+            uid: uid,
+            pointsDelta: pointsDelta,
+            won: youWon,
+          );
+    } catch (_) {
+      // Never block UI on stats write.
+    }
   }
 }
 

@@ -43,14 +43,33 @@ dependencies:
   uuid: ^4.5.1
   collection: ^1.18.0
   logger: ^2.4.0
+  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true
   assets:
     - .env
     - assets/sounds/
+    - assets/images/
+    - assets/icons/
+    - assets/videos/
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  remove_alpha_ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 23
+  adaptive_icon_background: "#FEF7FF"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+  web:
+    generate: true
+    image_path: "assets/images/app_icon.png"
+    background_color: "#FEF7FF"
+    theme_color: "#6A38D4"

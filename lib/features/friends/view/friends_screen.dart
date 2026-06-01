@@ -88,14 +88,37 @@ class FriendsScreen extends ConsumerWidget {
                             photoUrl: other?.photoUrl,
                             name: other?.name,
                             online: other?.isOnline ?? false,
+                            frameColor: other?.avatarFrameColor,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(other?.name ?? 'Player',
-                                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                                Row(
+                                  children: [
+                                    Text(other?.name ?? 'Player',
+                                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                                    if (other?.customTitle != null && other!.customTitle!.isNotEmpty) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.secondary.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          other.customTitle!,
+                                          style: const TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w900,
+                                            color: AppColors.secondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                                 Text(
                                   (other?.isOnline ?? false)
                                       ? 'Online'

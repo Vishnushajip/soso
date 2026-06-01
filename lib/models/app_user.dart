@@ -4,6 +4,9 @@ class AppUser {
   final String uid;
   final String name;
   final String email;
+  final String uniqueId;
+  final String? customTitle;
+  final String? avatarFrameColor;
   final String? photoUrl;
   final String? fcmToken;
   final String? platform;
@@ -20,11 +23,15 @@ class AppUser {
   final int matchesPlayed;
   final double winRate;
   final int friendsCount;
+  final Map<String, int> inventory;
 
   const AppUser({
     required this.uid,
     required this.name,
     required this.email,
+    this.uniqueId = '',
+    this.customTitle,
+    this.avatarFrameColor,
     this.photoUrl,
     this.fcmToken,
     this.platform,
@@ -41,6 +48,7 @@ class AppUser {
     this.matchesPlayed = 0,
     this.winRate = 0,
     this.friendsCount = 0,
+    this.inventory = const {},
   });
 
   factory AppUser.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -49,6 +57,9 @@ class AppUser {
       uid: doc.id,
       name: (d['name'] as String?) ?? '',
       email: (d['email'] as String?) ?? '',
+      uniqueId: (d['uniqueId'] as String?) ?? '',
+      customTitle: d['customTitle'] as String?,
+      avatarFrameColor: d['avatarFrameColor'] as String?,
       photoUrl: d['photoUrl'] as String?,
       fcmToken: d['fcmToken'] as String?,
       platform: d['platform'] as String?,
@@ -65,6 +76,11 @@ class AppUser {
       matchesPlayed: (d['matchesPlayed'] as num?)?.toInt() ?? 0,
       winRate: (d['winRate'] as num?)?.toDouble() ?? 0,
       friendsCount: (d['friendsCount'] as num?)?.toInt() ?? 0,
+      inventory: Map<String, int>.from(
+        (d['inventory'] as Map<dynamic, dynamic>?)?.map(
+          (k, v) => MapEntry(k.toString(), (v as num).toInt()),
+        ) ?? const {},
+      ),
     );
   }
 
@@ -72,6 +88,9 @@ class AppUser {
         'uid': uid,
         'name': name,
         'email': email,
+        'uniqueId': uniqueId,
+        'customTitle': customTitle,
+        'avatarFrameColor': avatarFrameColor,
         'photoUrl': photoUrl,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -85,5 +104,6 @@ class AppUser {
         'matchesPlayed': 0,
         'winRate': 0,
         'friendsCount': 0,
+        'inventory': {},
       };
 }

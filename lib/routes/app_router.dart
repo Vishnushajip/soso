@@ -25,6 +25,7 @@ import '../features/profile/view/about_screen.dart';
 import '../features/profile/view/contact_support_screen.dart';
 import '../features/profile/view/privacy_screen.dart';
 import '../features/profile/view/profile_screen.dart';
+import '../features/profile/view/shop_screen.dart';
 import '../features/profile/view/terms_screen.dart';
 import '../features/settings/view/settings_screen.dart';
 import '../providers/auth_providers.dart';
@@ -73,55 +74,56 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return loc == RouteNames.signIn ? null : RouteNames.signIn;
     },
     routes: [
-      GoRoute(path: RouteNames.splash, builder: (_, __) => const SplashScreen()),
-      GoRoute(path: RouteNames.signIn, builder: (_, __) => const SignInScreen()),
+      GoRoute(path: RouteNames.splash, builder: (context, state) => const SplashScreen()),
+      GoRoute(path: RouteNames.signIn, builder: (context, state) => const SignInScreen()),
 
       // Shell with bottom navigation.
       ShellRoute(
-        builder: (_, __, child) => MainShell(child: child),
+        builder: (context, state, child) => MainShell(child: child),
         routes: [
-          GoRoute(path: RouteNames.home, builder: (_, __) => const GameModeSelectScreen()),
-          GoRoute(path: RouteNames.friends, builder: (_, __) => const FriendsScreen()),
-          GoRoute(path: RouteNames.chatList, builder: (_, __) => const ChatListScreen()),
-          GoRoute(path: RouteNames.leaderboard, builder: (_, __) => const LeaderboardScreen()),
-          GoRoute(path: RouteNames.profile, builder: (_, __) => const ProfileScreen()),
+          GoRoute(path: RouteNames.home, builder: (context, state) => const GameModeSelectScreen()),
+          GoRoute(path: RouteNames.friends, builder: (context, state) => const FriendsScreen()),
+          GoRoute(path: RouteNames.chatList, builder: (context, state) => const ChatListScreen()),
+          GoRoute(path: RouteNames.leaderboard, builder: (context, state) => const LeaderboardScreen()),
+          GoRoute(path: RouteNames.profile, builder: (context, state) => const ProfileScreen()),
         ],
       ),
 
       // Game flow.
-      GoRoute(path: RouteNames.gameModes, builder: (_, __) => const GameModeSelectScreen()),
-      GoRoute(path: RouteNames.localSetup, builder: (_, __) => const LocalGameSetupScreen()),
-      GoRoute(path: RouteNames.localBoard, builder: (_, state) {
+      GoRoute(path: RouteNames.gameModes, builder: (context, state) => const GameModeSelectScreen()),
+      GoRoute(path: RouteNames.localSetup, builder: (context, state) => const LocalGameSetupScreen()),
+      GoRoute(path: RouteNames.localBoard, builder: (context, state) {
         final size = int.tryParse(state.uri.queryParameters['size'] ?? '') ?? 8;
         final names = (state.uri.queryParameters['names'] ?? '').split(',');
         return LocalGameBoardScreen(boardSize: size, playerNames: names);
       }),
-      GoRoute(path: RouteNames.onlineLobby, builder: (_, __) => const OnlineLobbyScreen()),
-      GoRoute(path: RouteNames.gameBoard, builder: (_, state) {
+      GoRoute(path: RouteNames.onlineLobby, builder: (context, state) => const OnlineLobbyScreen()),
+      GoRoute(path: RouteNames.gameBoard, builder: (context, state) {
         final roomId = state.uri.queryParameters['roomId'] ?? '';
         return GameBoardScreen(roomId: roomId);
       }),
-      GoRoute(path: RouteNames.matchSummary, builder: (_, state) {
+      GoRoute(path: RouteNames.matchSummary, builder: (context, state) {
         final roomId = state.uri.queryParameters['roomId'] ?? '';
         return MatchSummaryScreen(roomId: roomId);
       }),
 
       // Friends / chat detail screens.
-      GoRoute(path: RouteNames.friendRequests, builder: (_, __) => const FriendRequestsScreen()),
-      GoRoute(path: RouteNames.addFriend, builder: (_, __) => const AddFriendScreen()),
-      GoRoute(path: RouteNames.chatRoom, builder: (_, state) {
+      GoRoute(path: RouteNames.friendRequests, builder: (context, state) => const FriendRequestsScreen()),
+      GoRoute(path: RouteNames.addFriend, builder: (context, state) => const AddFriendScreen()),
+      GoRoute(path: RouteNames.chatRoom, builder: (context, state) {
         final roomId = state.uri.queryParameters['roomId'] ?? '';
         return ChatScreen(roomId: roomId);
       }),
-      GoRoute(path: RouteNames.globalChat, builder: (_, __) => const GlobalChatScreen()),
+      GoRoute(path: RouteNames.globalChat, builder: (context, state) => const GlobalChatScreen()),
 
       // Static / utility.
-      GoRoute(path: RouteNames.notifications, builder: (_, __) => const NotificationsScreen()),
-      GoRoute(path: RouteNames.settings, builder: (_, __) => const SettingsScreen()),
-      GoRoute(path: RouteNames.about, builder: (_, __) => const AboutScreen()),
-      GoRoute(path: RouteNames.privacy, builder: (_, __) => const PrivacyScreen()),
-      GoRoute(path: RouteNames.terms, builder: (_, __) => const TermsScreen()),
-      GoRoute(path: RouteNames.contact, builder: (_, __) => const ContactSupportScreen()),
+      GoRoute(path: RouteNames.notifications, builder: (context, state) => const NotificationsScreen()),
+      GoRoute(path: RouteNames.settings, builder: (context, state) => const SettingsScreen()),
+      GoRoute(path: RouteNames.about, builder: (context, state) => const AboutScreen()),
+      GoRoute(path: RouteNames.privacy, builder: (context, state) => const PrivacyScreen()),
+      GoRoute(path: RouteNames.terms, builder: (context, state) => const TermsScreen()),
+      GoRoute(path: RouteNames.contact, builder: (context, state) => const ContactSupportScreen()),
+      GoRoute(path: RouteNames.shop, builder: (context, state) => const ShopScreen()),
     ],
   );
 });

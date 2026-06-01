@@ -76,6 +76,37 @@ class SosEngine {
     return lines;
   }
 
+  /// Finds all completed SOS lines currently present on the board.
+  List<SosLine> findAllSos(List<String> board) {
+    final lines = <SosLine>[];
+    for (var i = 0; i < board.length; i++) {
+      if (board[i] == 'S') {
+        final px = x(i);
+        final py = y(i);
+
+        for (var d = 0; d < _dxs.length; d++) {
+          final dx = _dxs[d];
+          final dy = _dys[d];
+
+          final bx = px + dx;
+          final by = py + dy;
+          final cx = px + 2 * dx;
+          final cy = py + 2 * dy;
+
+          if (inBounds(bx, by) && inBounds(cx, cy)) {
+            final idxB = idx(bx, by);
+            final idxC = idx(cx, cy);
+
+            if (board[idxB] == 'O' && board[idxC] == 'S') {
+              lines.add(SosLine(i, idxB, idxC));
+            }
+          }
+        }
+      }
+    }
+    return lines;
+  }
+
   bool isFull(List<String> board) => board.every((c) => c.isNotEmpty);
 
   List<String> emptyBoard() => List<String>.filled(size * size, '');

@@ -25,6 +25,7 @@ class AuthController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       final cred = await repo.signInWithGoogle();
+      if (cred == null) return;
       final user = cred.user;
       if (user != null) {
         await ref.read(userRepositoryProvider).ensureUserFromAuth(user);

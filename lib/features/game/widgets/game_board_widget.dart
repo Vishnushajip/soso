@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/sos_engine.dart';
 
-class GameBoardWidget extends StatelessWidget {
+class GameBoardWidget extends StatefulWidget {
   const GameBoardWidget({
     super.key,
     required this.size,
@@ -11,6 +11,9 @@ class GameBoardWidget extends StatelessWidget {
     required this.onTap,
     this.highlightCells = const {},
     this.disabled = false,
+    this.sosLines = const [],
+    this.lineColors = const {},
+    this.lastPlacedPosition,
   });
 
   final int size;
@@ -18,6 +21,67 @@ class GameBoardWidget extends StatelessWidget {
   final void Function(int index) onTap;
   final Set<int> highlightCells;
   final bool disabled;
+  final List<SosLine> sosLines;
+  final Map<SosLine, Color> lineColors;
+  final int? lastPlacedPosition;
+
+  @override
+  State<GameBoardWidget> createState() => _GameBoardWidgetState();
+}
+
+class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _animCtrl;
+  late Animation<double> _animProgress;
+  List<SosLine> _animatingLines = const [];
+  List<SosLine> _pastLines = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _pastLines = List<SosLine>.from(widget.sosLines);
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _animProgress = CurvedAnimation(parent: _animCtrl, curve: Curves.easeInOutCubic);
+    _animCtrl.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant GameBoardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if new SOS lines were added
+    final newLines = widget.sosLines.where((l) => !_containsLine(oldWidget.sosLines, l)).toList();
+    if (newLines.isNotEmpty) {
+      _animatingLines = newLines;
+      _pastLines = oldWidget.sosLines.where((l) => !newLines.contains(l)).toList();
+      _animCtrl.forward(from: 0.0).then((_) {
+        if (mounted) {
+          setState(() {
+            _animatingLines = const [];
+            _pastLines = List<SosLine>.from(widget.sosLines);
+          });
+        }
+      });
+    } else {
+      _pastLines = List<SosLine>.from(widget.sosLines);
+    }
+  }
+
+  bool _containsLine(List<SosLine> list, SosLine line) {
+    return list.any((l) =>
+        (l.a == line.a && l.b == line.b && l.c == line.c) ||
+        (l.a == line.c && l.b == line.b && l.c == line.a));
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,61 +94,162 @@ class GameBoardWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.divider),
         ),
-        child: GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: size,
-            crossAxisSpacing: 4,
-            mainAxisSpacing: 4,
-          ),
-          itemCount: size * size,
-          itemBuilder: (_, i) {
-            final v = board[i];
-            final isHighlighted = highlightCells.contains(i);
-            final color = v == 'S'
-                ? AppColors.sColor
-                : v == 'O'
-                    ? AppColors.oColor
-                    : AppColors.onSurface;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              decoration: BoxDecoration(
-                color: isHighlighted
-                    ? AppColors.highlight.withValues(alpha: 0.35)
-                    : AppColors.grid,
-                borderRadius: BorderRadius.circular(8),
-                border: isHighlighted
-                    ? Border.all(color: AppColors.highlight, width: 2)
-                    : null,
+        child: Stack(
+          children: [
+            GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: widget.size,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 4,
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: disabled || v.isNotEmpty ? null : () => onTap(i),
-                  child: Center(
-                    child: AnimatedScale(
-                      scale: v.isEmpty ? 0 : 1,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOutBack,
-                      child: Text(
-                        v,
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.w800,
-                          fontSize: size <= 6 ? 28 : 20,
+              itemCount: widget.size * widget.size,
+              itemBuilder: (_, i) {
+                final v = widget.board[i];
+                final isHighlighted = widget.highlightCells.contains(i);
+                final isLastPlaced = widget.lastPlacedPosition == i;
+                final color = v == 'S'
+                    ? AppColors.sColor
+                    : v == 'O'
+                        ? AppColors.oColor
+                        : AppColors.onSurface;
+                
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  decoration: BoxDecoration(
+                    color: isHighlighted
+                        ? AppColors.highlight.withValues(alpha: 0.35)
+                        : isLastPlaced
+                            ? AppColors.secondary.withValues(alpha: 0.25)
+                            : AppColors.grid,
+                    borderRadius: BorderRadius.circular(8),
+                    border: isHighlighted
+                        ? Border.all(color: AppColors.highlight, width: 2)
+                        : isLastPlaced
+                            ? Border.all(color: AppColors.secondary, width: 2)
+                            : null,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: widget.disabled ? null : () => widget.onTap(i),
+                      child: Center(
+                        child: AnimatedScale(
+                          scale: v.isEmpty ? 0 : 1,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutBack,
+                          child: Text(
+                            v,
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w800,
+                              fontSize: widget.size <= 6 ? 28 : 20,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
+                );
+              },
+            ),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: SosStrikePainter(
+                    lines: _pastLines,
+                    animatingLines: _animatingLines,
+                    animationProgress: _animProgress.value,
+                    boardSize: widget.size,
+                    lineColors: widget.lineColors,
+                  ),
                 ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
+  }
+}
+
+class SosStrikePainter extends CustomPainter {
+  final List<SosLine> lines;
+  final List<SosLine> animatingLines;
+  final double animationProgress;
+  final int boardSize;
+  final Map<SosLine, Color> lineColors;
+
+  SosStrikePainter({
+    required this.lines,
+    required this.animatingLines,
+    required this.animationProgress,
+    required this.boardSize,
+    required this.lineColors,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (lines.isEmpty && animatingLines.isEmpty) return;
+
+    final cellWidth = size.width / boardSize;
+    final cellHeight = size.height / boardSize;
+
+    Offset getCellCenter(int index) {
+      final row = index ~/ boardSize;
+      final col = index % boardSize;
+      final x = col * cellWidth + cellWidth / 2;
+      final y = row * cellHeight + cellHeight / 2;
+      return Offset(x, y);
+    }
+
+    void drawGlowingLine(Canvas canvas, Offset start, Offset end, Color color, double width, {double glowOpacity = 0.35}) {
+      // Glow background shadow
+      final glowPaint = Paint()
+        ..color = color.withValues(alpha: glowOpacity)
+        ..strokeWidth = width * 2.2
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+      canvas.drawLine(start, end, glowPaint);
+
+      // Core crisp line
+      final corePaint = Paint()
+        ..color = color
+        ..strokeWidth = width
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(start, end, corePaint);
+    }
+
+    // Draw completed static lines
+    for (final l in lines) {
+      final start = getCellCenter(l.a);
+      final end = getCellCenter(l.c);
+      final color = lineColors[l] ?? AppColors.primary.withValues(alpha: 0.8);
+      drawGlowingLine(canvas, start, end, color, 3.5, glowOpacity: 0.4);
+    }
+
+    // Draw newly animated lines
+    for (final l in animatingLines) {
+      final start = getCellCenter(l.a);
+      final end = getCellCenter(l.c);
+      final currentEnd = Offset(
+        start.dx + (end.dx - start.dx) * animationProgress,
+        start.dy + (end.dy - start.dy) * animationProgress,
+      );
+      final color = lineColors[l] ?? AppColors.secondary.withValues(alpha: 0.9);
+      drawGlowingLine(canvas, start, currentEnd, color, 4.5, glowOpacity: 0.45);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant SosStrikePainter oldDelegate) {
+    return oldDelegate.lines != lines ||
+        oldDelegate.animatingLines != animatingLines ||
+        oldDelegate.animationProgress != animationProgress ||
+        oldDelegate.boardSize != boardSize ||
+        oldDelegate.lineColors != lineColors;
   }
 }
 

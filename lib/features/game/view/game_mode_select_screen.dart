@@ -13,13 +13,12 @@ class GameModeSelectScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider).valueOrNull;
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Header(userName: user?.name),
+          const _Header(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
             child: Column(
@@ -65,6 +64,8 @@ class GameModeSelectScreen extends ConsumerWidget {
                   onFriendChallenge: () =>
                       context.push('${RouteNames.onlineLobby}?mode=friend'),
                 ),
+                const SizedBox(height: 36),
+                const _Footer(),
               ],
             ),
           ),
@@ -75,8 +76,7 @@ class GameModeSelectScreen extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.userName});
-  final String? userName;
+  const _Header();
 
   @override
   Widget build(BuildContext context) {
@@ -85,47 +85,6 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.secondary, width: 2.5),
-                ),
-                child: const CircleAvatar(
-                  backgroundColor: AppColors.surfaceContainerHigh,
-                  child: Icon(Icons.person, color: AppColors.primary, size: 22),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hi ${userName ?? 'Player'} 👋',
-                      style: GoogleFonts.outfit(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.onPrimary,
-                      ),
-                    ),
-                    Text(
-                      'Pick a mode and start a match.',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.onPrimary.withValues(alpha: 0.65),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
@@ -248,9 +207,8 @@ class _Header extends StatelessWidget {
                                   const SizedBox(width: 6),
                                   Text(
                                     'SOS ARENA PRO',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
+                                    style: GoogleFonts.luckiestGuy(
+                                      fontSize: 12,
                                       color: AppColors.secondary,
                                       letterSpacing: 1.5,
                                     ),
@@ -260,11 +218,10 @@ class _Header extends StatelessWidget {
                               const SizedBox(height: 6),
                               Text(
                                 'Compete & Win',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
+                                style: GoogleFonts.luckiestGuy(
+                                  fontSize: 20,
                                   color: Colors.white,
-                                  letterSpacing: 0.5,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -303,9 +260,8 @@ class _SectionLabel extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.outfit(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
+          style: GoogleFonts.luckiestGuy(
+            fontSize: 13,
             color: AppColors.primary,
             letterSpacing: 2,
           ),
@@ -482,10 +438,10 @@ class _AnimatedPassPlayCardState extends State<_AnimatedPassPlayCard>
                           children: [
                             Text(
                               'Pass & Play',
-                              style: GoogleFonts.outfit(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
+                              style: GoogleFonts.luckiestGuy(
+                                fontSize: 18,
                                 color: AppColors.onSurface,
+                                letterSpacing: 0.5,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -733,11 +689,10 @@ class _AnimatedGridCardState extends State<_AnimatedGridCard>
                         Text(
                           widget.title,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.luckiestGuy(
                             fontSize: 15,
-                            fontWeight: FontWeight.w800,
                             color: AppColors.onSurface,
-                            height: 1.15,
+                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -879,11 +834,7 @@ class _FloatingBannerTokenState extends State<_FloatingBannerToken>
         child: Center(
           child: Text(
             widget.letter,
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-            ),
+            style: GoogleFonts.luckiestGuy(fontSize: 18, color: Colors.white),
           ),
         ),
       ),
@@ -909,4 +860,61 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _Footer extends StatelessWidget {
+  const _Footer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 24,
+              height: 1.5,
+              color: AppColors.primary.withOpacity(0.2),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '★ UNLEASH THE GAMER WITHIN ★',
+              style: GoogleFonts.luckiestGuy(
+                fontSize: 10,
+                color: AppColors.primary.withOpacity(0.4),
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 24,
+              height: 1.5,
+              color: AppColors.primary.withOpacity(0.2),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Crafted with ❤️ by The SOSO',
+          style: GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.onSurface.withOpacity(0.6),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'SOS ARENA · v1.0.0 · © 2026 soso',
+          style: GoogleFonts.outfit(
+            fontSize: 9,
+            fontWeight: FontWeight.w500,
+            color: AppColors.onSurfaceMuted.withOpacity(0.5),
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -8,6 +8,7 @@ class Message {
   final String? senderPhoto;
   final String text;
   final DateTime? createdAt;
+  final String status;
 
   const Message({
     required this.id,
@@ -17,6 +18,7 @@ class Message {
     this.senderPhoto,
     required this.text,
     this.createdAt,
+    this.status = 'sent',
   });
 
   factory Message.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -29,6 +31,7 @@ class Message {
       senderPhoto: d['senderPhoto'] as String?,
       text: (d['text'] as String?) ?? '',
       createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
+      status: (d['status'] as String?) ?? 'sent',
     );
   }
 }

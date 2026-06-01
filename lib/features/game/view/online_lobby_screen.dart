@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_loader.dart';
-import '../../../core/widgets/section_card.dart';
 import '../../../models/game_room.dart';
 import '../../../providers/repository_providers.dart';
 import '../../../providers/user_providers.dart';
@@ -31,8 +30,23 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
     );
   }
 
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _startMatch(GameRoomType mode) async {
-    setState(() { _busy = true; _error = null; });
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     final user = ref.read(currentUserProvider).valueOrNull;
     final repo = ref.read(gameRepositoryProvider);
     try {
@@ -52,6 +66,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
       if (!mounted) return;
       context.push('${RouteNames.gameBoard}?roomId=${room.id}');
     } catch (e) {
+      HapticFeedback.vibrate();
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -60,17 +75,27 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
 
   Future<void> _joinByCode() async {
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.isEmpty) return;
-    setState(() { _busy = true; _error = null; });
+    if (code.isEmpty) {
+      HapticFeedback.lightImpact();
+      return;
+    }
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       final user = ref.read(currentUserProvider).valueOrNull;
       if (user == null) throw StateError('Not signed in');
       final room = await ref.read(gameRepositoryProvider).findByCode(code);
       if (room == null) throw StateError('No waiting room with that code');
-      await ref.read(gameRepositoryProvider).joinRoom(roomId: room.id, user: user);
+      await ref
+          .read(gameRepositoryProvider)
+          .joinRoom(roomId: room.id, user: user);
       if (!mounted) return;
       context.push('${RouteNames.gameBoard}?roomId=${room.id}');
     } catch (e) {
+      HapticFeedback.vibrate();
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -82,70 +107,568 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
     final mode = _modeFromQuery();
 
     return Scaffold(
-      appBar: AppBar(title: Text('Online · ${mode.name}')),
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        backgroundColor: AppColors.bg,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.of(context).pop();
+          },
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.18),
+                width: 1.5,
+              ),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+        title: Column(
+          children: [
+            Text(
+              'Online Arena',
+              style: GoogleFonts.luckiestGuy(
+                fontSize: 20,
+                color: AppColors.primary,
+                letterSpacing: 1.5,
+              ),
+            ),
+            Text(
+              _modeLabel(mode),
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.onSurfaceMuted,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: true,
+      ),
       body: _busy
-          ? const AppLoader(label: 'Finding a match…')
-          : Padding(
-              padding: const EdgeInsets.all(20),
+          ? _BusyOverlay(mode: mode)
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          mode == GameRoomType.private || mode == GameRoomType.friend
-                              ? 'Create a room and share the code'
-                              : 'Tap to enter the matchmaking queue',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 12),
-                        AppButton(
-                          expanded: true,
-                          icon: Icons.play_circle_fill,
-                          label: mode == GameRoomType.quick
-                              ? 'Start Quick Match'
-                              : mode == GameRoomType.ranked
-                                  ? 'Start Ranked Match'
-                                  : mode == GameRoomType.private
-                                      ? 'Create Private Room'
-                                      : 'Create Room & Invite Friend',
-                          onPressed: () => _startMatch(mode),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _ModeHeroBanner(mode: mode),
                   const SizedBox(height: 16),
-                  SectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Join with a code', style: TextStyle(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _codeCtrl,
-                          textCapitalization: TextCapitalization.characters,
-                          decoration: const InputDecoration(hintText: 'ABCDEF'),
-                        ),
-                        const SizedBox(height: 12),
-                        AppButton(
-                          expanded: true,
-                          variant: AppButtonVariant.secondary,
-                          icon: Icons.login,
-                          label: 'Join room',
-                          onPressed: _joinByCode,
-                        ),
-                      ],
-                    ),
+                  _StartCard(
+                    mode: mode,
+                    onStart: () => _startMatch(mode),
                   ),
+                  const SizedBox(height: 14),
+                  _JoinCodeCard(controller: _codeCtrl, onJoin: _joinByCode),
                   if (_error != null) ...[
-                    const SizedBox(height: 16),
-                    Text(_error!, style: const TextStyle(color: AppColors.danger)),
+                    const SizedBox(height: 14),
+                    _ErrorBanner(message: _error!),
                   ],
                 ],
               ),
             ),
+    );
+  }
+
+  String _modeLabel(GameRoomType mode) {
+    return switch (mode) {
+      GameRoomType.quick => 'QUICK MATCH',
+      GameRoomType.ranked => 'RANKED MATCH',
+      GameRoomType.private => 'PRIVATE ROOM',
+      _ => 'FRIEND MATCH',
+    };
+  }
+}
+
+class _BusyOverlay extends StatelessWidget {
+  const _BusyOverlay({required this.mode});
+  final GameRoomType mode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.2),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.15),
+                  blurRadius: 24,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                strokeWidth: 3.5,
+                valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                backgroundColor: AppColors.primary.withOpacity(0.12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            mode == GameRoomType.quick || mode == GameRoomType.ranked
+                ? 'Finding a Match…'
+                : 'Creating Room…',
+            style: GoogleFonts.luckiestGuy(
+              fontSize: 20,
+              color: AppColors.onSurface,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Searching the arena for opponents',
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              color: AppColors.onSurfaceMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeHeroBanner extends StatelessWidget {
+  const _ModeHeroBanner({required this.mode});
+  final GameRoomType mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = _modeData(mode);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [data.color.withOpacity(0.15), data.color.withOpacity(0.06)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: data.color.withOpacity(0.28), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: data.color.withOpacity(0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: data.color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: data.color.withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            child: Text(data.emoji, style: const TextStyle(fontSize: 28)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.title,
+                  style: GoogleFonts.luckiestGuy(
+                    fontSize: 18,
+                    color: data.color,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  data.subtitle,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: AppColors.onSurfaceMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _ModeInfo _modeData(GameRoomType mode) {
+    return switch (mode) {
+      GameRoomType.quick => const _ModeInfo(
+        '⚡',
+        'Quick Match',
+        'Jump straight into a casual game',
+        AppColors.highlight,
+      ),
+      GameRoomType.ranked => const _ModeInfo(
+        '🏆',
+        'Ranked Match',
+        'Compete for points on the leaderboard',
+        AppColors.secondary,
+      ),
+      GameRoomType.private => const _ModeInfo(
+        '🔒',
+        'Private Room',
+        'Create a room and share the code',
+        AppColors.sColor,
+      ),
+      _ => const _ModeInfo(
+        '👥',
+        'Friend Match',
+        'Invite a friend to your room',
+        AppColors.oColor,
+      ),
+    };
+  }
+}
+
+class _ModeInfo {
+  const _ModeInfo(this.emoji, this.title, this.subtitle, this.color);
+  final String emoji;
+  final String title;
+  final String subtitle;
+  final Color color;
+}
+
+class _StartCard extends StatelessWidget {
+  const _StartCard({
+    required this.mode,
+    required this.onStart,
+  });
+  final GameRoomType mode;
+  final VoidCallback onStart;
+
+  String _label(GameRoomType mode) => switch (mode) {
+    GameRoomType.quick => 'Start Quick Match',
+    GameRoomType.ranked => 'Start Ranked Match',
+    GameRoomType.private => 'Create Private Room',
+    _ => 'Create Room & Invite',
+  };
+
+  String _sublabel(GameRoomType mode) => switch (mode) {
+    GameRoomType.quick || GameRoomType.ranked => 'You\'ll be matched instantly',
+    _ => 'Share the code with your friend',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return _GameCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _CardLabel(label: 'Quick Action', icon: Icons.bolt_rounded),
+          const SizedBox(height: 14),
+          Text(
+            _sublabel(mode),
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              color: AppColors.onSurfaceMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: onStart,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.sColor],
+                ),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.5),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: AppColors.sColor.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _label(mode),
+                    style: GoogleFonts.luckiestGuy(
+                      fontSize: 18,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _JoinCodeCard extends StatelessWidget {
+  const _JoinCodeCard({required this.controller, required this.onJoin});
+  final TextEditingController controller;
+  final VoidCallback onJoin;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GameCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _CardLabel(
+            label: 'Join with Code',
+            icon: Icons.vpn_key_rounded,
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: controller,
+            textCapitalization: TextCapitalization.characters,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.luckiestGuy(
+              fontSize: 22,
+              color: AppColors.primary,
+              letterSpacing: 8,
+            ),
+            onChanged: (_) => HapticFeedback.selectionClick(),
+            decoration: InputDecoration(
+              hintText: 'ABCDEF',
+              hintStyle: GoogleFonts.luckiestGuy(
+                fontSize: 22,
+                color: AppColors.onSurfaceMuted.withOpacity(0.3),
+                letterSpacing: 8,
+              ),
+              filled: true,
+              fillColor: AppColors.primary.withOpacity(0.05),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: AppColors.primary.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: onJoin,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.secondary.withOpacity(0.4),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondary.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.login_rounded,
+                    color: AppColors.secondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Join Room',
+                    style: GoogleFonts.luckiestGuy(
+                      fontSize: 17,
+                      color: AppColors.secondary,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.danger.withOpacity(0.35),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.danger.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.warning_rounded,
+              color: AppColors.danger,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.outfit(
+                color: AppColors.danger,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GameCard extends StatelessWidget {
+  const _GameCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.14),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _CardLabel extends StatelessWidget {
+  const _CardLabel({required this.label, required this.icon});
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 16),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: GoogleFonts.luckiestGuy(
+            fontSize: 13,
+            color: AppColors.primary,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            height: 1.5,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.3),
+                  Colors.transparent,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

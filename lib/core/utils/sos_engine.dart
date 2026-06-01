@@ -13,6 +13,21 @@ class SosLine {
   const SosLine(this.a, this.b, this.c);
 
   List<int> get cells => [a, b, c];
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SosLine &&
+        ((other.a == a && other.b == b && other.c == c) ||
+         (other.a == c && other.b == b && other.c == a));
+  }
+
+  @override
+  int get hashCode {
+    final low = a < c ? a : c;
+    final high = a < c ? c : a;
+    return Object.hash(low, b, high);
+  }
 }
 
 class SosEngine {

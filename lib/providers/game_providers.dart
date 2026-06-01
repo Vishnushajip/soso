@@ -26,6 +26,7 @@ class LocalGameState {
   final bool finished;
   final int? winnerIndex;
   final List<SosLine> lastSosLines;
+  final Map<SosLine, int> completedSosLines;
   final int? awardedProfilePoints;
   final List<int> customHighlights;
 
@@ -37,6 +38,7 @@ class LocalGameState {
     this.finished = false,
     this.winnerIndex,
     this.lastSosLines = const [],
+    this.completedSosLines = const {},
     this.awardedProfilePoints,
     this.customHighlights = const [],
   });
@@ -48,6 +50,7 @@ class LocalGameState {
     bool? finished,
     int? winnerIndex,
     List<SosLine>? lastSosLines,
+    Map<SosLine, int>? completedSosLines,
     int? awardedProfilePoints,
     List<int>? customHighlights,
   }) =>
@@ -59,6 +62,7 @@ class LocalGameState {
         finished: finished ?? this.finished,
         winnerIndex: winnerIndex ?? this.winnerIndex,
         lastSosLines: lastSosLines ?? this.lastSosLines,
+        completedSosLines: completedSosLines ?? this.completedSosLines,
         awardedProfilePoints: awardedProfilePoints ?? this.awardedProfilePoints,
         customHighlights: customHighlights ?? this.customHighlights,
       );
@@ -115,9 +119,13 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
     _history.add(state);
     
     final newBoard = [...state.board]..[position] = '';
+    final newCompletedSos = Map<SosLine, int>.from(state.completedSosLines)
+      ..removeWhere((line, _) => line.cells.contains(position));
+
     state = state.copyWith(
       board: newBoard,
       lastSosLines: const [],
+      completedSosLines: newCompletedSos,
       customHighlights: const [],
     );
   }
@@ -150,11 +158,16 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
     final scored = lines.isNotEmpty;
     final newBoard = [...state.board]..[position] = letter == SosLetter.s ? 'S' : 'O';
     final players = [...state.players];
+    final newCompletedSos = Map<SosLine, int>.from(state.completedSosLines);
+
     if (scored) {
       final cur = players[state.currentTurn];
       players[state.currentTurn] = cur.copyWith(
         score: cur.score + lines.length * AppConstants.pointsPerSos,
       );
+      for (final line in lines) {
+        newCompletedSos[line] = state.currentTurn;
+      }
       _sound.play(AppSound.sos);
       _haptic.fire(HapticEvent.sos);
     } else {
@@ -194,6 +207,7 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
       finished: finished,
       winnerIndex: winner,
       lastSosLines: lines,
+      completedSosLines: newCompletedSos,
       awardedProfilePoints: awarded,
       customHighlights: const [], // clear hints on placement
     );

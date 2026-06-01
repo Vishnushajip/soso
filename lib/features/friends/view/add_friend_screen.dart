@@ -54,7 +54,12 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
     if (me == null) return;
     try {
       await ref.read(friendRepositoryProvider).sendRequest(
-            fromUid: me.uid, fromName: me.name, fromPhoto: me.photoUrl, toUid: other.uid,
+            fromUid: me.uid,
+            fromName: me.name,
+            fromPhoto: me.photoUrl,
+            toUid: other.uid,
+            toName: other.name,
+            toPhoto: other.photoUrl,
           );
       ref.read(soundServiceProvider).play(AppSound.friendSent);
       if (mounted) {

@@ -12,7 +12,8 @@ enum AppSound {
   friendSent('friend_sent.mp3'),
   friendAccept('friend_accept.mp3'),
   notify('notify.mp3'),
-  rankUp('rank_up.mp3');
+  rankUp('rank_up.mp3'),
+  versus('versus.mp3');
 
   final String fileName;
   const AppSound(this.fileName);

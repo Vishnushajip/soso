@@ -55,6 +55,9 @@ class GameRoom {
   final DateTime? startedAt;
   final DateTime? finishedAt;
   final String? winnerId;
+  final int? lastPlacedPosition;
+  final String? lastPlacedLetter;
+  final String? lastPlacedPlayerId;
 
   const GameRoom({
     required this.id,
@@ -72,6 +75,9 @@ class GameRoom {
     this.startedAt,
     this.finishedAt,
     this.winnerId,
+    this.lastPlacedPosition,
+    this.lastPlacedLetter,
+    this.lastPlacedPlayerId,
   });
 
   factory GameRoom.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -100,6 +106,9 @@ class GameRoom {
       startedAt: (d['startedAt'] as Timestamp?)?.toDate(),
       finishedAt: (d['finishedAt'] as Timestamp?)?.toDate(),
       winnerId: d['winnerId'] as String?,
+      lastPlacedPosition: (d['lastPlacedPosition'] as num?)?.toInt(),
+      lastPlacedLetter: d['lastPlacedLetter'] as String?,
+      lastPlacedPlayerId: d['lastPlacedPlayerId'] as String?,
     );
   }
 }

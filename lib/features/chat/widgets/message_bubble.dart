@@ -33,13 +33,45 @@ class MessageBubble extends StatelessWidget {
               Text(message.senderName, style: const TextStyle(color: AppColors.sColor, fontSize: 12, fontWeight: FontWeight.w600)),
             Text(message.text, style: const TextStyle(color: AppColors.onSurface)),
             const SizedBox(height: 2),
-            Text(
-              FormatUtils.relativeTime(message.createdAt),
-              style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  FormatUtils.relativeTime(message.createdAt),
+                  style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 10),
+                ),
+                if (mine) ...[
+                  const SizedBox(width: 4),
+                  _buildStatusTick(),
+                ],
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildStatusTick() {
+    final status = message.status;
+    if (status == 'read') {
+      return const Icon(
+        Icons.done_all,
+        size: 14,
+        color: AppColors.accent,
+      );
+    } else if (status == 'delivered') {
+      return const Icon(
+        Icons.done_all,
+        size: 14,
+        color: AppColors.onSurfaceMuted,
+      );
+    } else {
+      return const Icon(
+        Icons.done,
+        size: 14,
+        color: AppColors.onSurfaceMuted,
+      );
+    }
   }
 }

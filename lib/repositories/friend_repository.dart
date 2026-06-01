@@ -48,6 +48,8 @@ class FriendRepository {
     required String fromName,
     String? fromPhoto,
     required String toUid,
+    String? toName,
+    String? toPhoto,
   }) async {
     if (fromUid == toUid) {
       throw ArgumentError("Can't friend yourself");
@@ -70,6 +72,8 @@ class FriendRepository {
       'toUid': toUid,
       'fromName': fromName,
       'fromPhoto': fromPhoto,
+      'toName': toName,
+      'toPhoto': toPhoto,
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
     });

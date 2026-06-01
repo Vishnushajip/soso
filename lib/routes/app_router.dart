@@ -56,28 +56,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final auth = ref.read(authStateProvider);
       final loc = state.matchedLocation;
 
-      // Stream hasn't emitted yet — stay on splash so we don't flicker sign-in.
       if (auth.isLoading) {
         return loc == RouteNames.splash ? null : RouteNames.splash;
+      }
+
+      if (loc == RouteNames.splash) {
+        return null;
       }
 
       final loggedIn = auth.valueOrNull != null;
 
       if (loggedIn) {
-        if (loc == RouteNames.splash || loc == RouteNames.signIn) {
+        if (loc == RouteNames.signIn) {
           return RouteNames.home;
         }
         return null;
       }
 
-      // Signed out — anywhere except the sign-in screen redirects to sign-in.
       return loc == RouteNames.signIn ? null : RouteNames.signIn;
     },
     routes: [
       GoRoute(path: RouteNames.splash, builder: (context, state) => const SplashScreen()),
       GoRoute(path: RouteNames.signIn, builder: (context, state) => const SignInScreen()),
 
-      // Shell with bottom navigation.
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
@@ -89,7 +90,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // Game flow.
       GoRoute(path: RouteNames.gameModes, builder: (context, state) => const GameModeSelectScreen()),
       GoRoute(path: RouteNames.localSetup, builder: (context, state) => const LocalGameSetupScreen()),
       GoRoute(path: RouteNames.localBoard, builder: (context, state) {
@@ -107,7 +107,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return MatchSummaryScreen(roomId: roomId);
       }),
 
-      // Friends / chat detail screens.
       GoRoute(path: RouteNames.friendRequests, builder: (context, state) => const FriendRequestsScreen()),
       GoRoute(path: RouteNames.addFriend, builder: (context, state) => const AddFriendScreen()),
       GoRoute(path: RouteNames.chatRoom, builder: (context, state) {
@@ -116,7 +115,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }),
       GoRoute(path: RouteNames.globalChat, builder: (context, state) => const GlobalChatScreen()),
 
-      // Static / utility.
       GoRoute(path: RouteNames.notifications, builder: (context, state) => const NotificationsScreen()),
       GoRoute(path: RouteNames.settings, builder: (context, state) => const SettingsScreen()),
       GoRoute(path: RouteNames.about, builder: (context, state) => const AboutScreen()),
@@ -124,6 +122,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: RouteNames.terms, builder: (context, state) => const TermsScreen()),
       GoRoute(path: RouteNames.contact, builder: (context, state) => const ContactSupportScreen()),
       GoRoute(path: RouteNames.shop, builder: (context, state) => const ShopScreen()),
+      GoRoute(path: RouteNames.profileDetail, builder: (context, state) {
+        final uid = state.uri.queryParameters['uid'];
+        return ProfileScreen(uid: uid);
+      }),
     ],
   );
 });

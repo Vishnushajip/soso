@@ -1,149 +1,99 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
-
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_loader.dart';
 import '../../../providers/auth_providers.dart';
 import '../../../routes/route_names.dart';
 
-class SplashScreen extends ConsumerStatefulWidget {
+final _videoControllerProvider =
+    FutureProvider.autoDispose<VideoPlayerController>((ref) async {
+      final controller = VideoPlayerController.asset(
+        'assets/videos/intro.mp4',
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
+      await controller.initialize();
+      await controller.setVolume(1.0);
+      await controller.setLooping(false);
+      unawaited(controller.play());
+      ref.onDispose(controller.dispose);
+      return controller;
+    });
+
+class SplashScreen extends ConsumerWidget {
   const SplashScreen({super.key});
 
-  @override
-  ConsumerState<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends ConsumerState<SplashScreen> {
-  VideoPlayerController? _controller;
-  bool _initialized = false;
-  bool _navigationTriggered = false;
-  bool _videoCompleted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initVideo();
-  }
-
-  Future<void> _initVideo() async {
-    try {
-      _controller = VideoPlayerController.asset('assets/videos/intro.mp4');
-      await _controller!.initialize();
-      if (!mounted) return;
-      
-      setState(() => _initialized = true);
-      _controller!.play();
-      _controller!.addListener(_checkVideoEnd);
-    } catch (_) {
-      _fallbackNavigation();
-    }
-  }
-
-  void _fallbackNavigation() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _checkAndNavigate();
-      }
-    });
-  }
-
-  void _checkVideoEnd() {
-    if (!mounted || _controller == null) return;
-    final pos = _controller!.value.position;
-    final dur = _controller!.value.duration;
-    if (dur > Duration.zero && pos >= dur) {
-      _videoCompleted = true;
-      _checkAndNavigate();
-    }
-  }
-
-  void _checkAndNavigate() {
-    if (_navigationTriggered) return;
-    final isReady = _videoCompleted || !_initialized;
-    if (!isReady) return;
-
+  void _navigateToNextScreen(WidgetRef ref, BuildContext context) {
     final auth = ref.read(authStateProvider);
     if (auth.isLoading) return;
-    
-    _navigationTriggered = true;
-    final target = auth.valueOrNull != null ? RouteNames.home : RouteNames.signIn;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.go(target);
-      }
+    final loggedIn = auth.valueOrNull != null;
+    context.go(loggedIn ? RouteNames.home : RouteNames.signIn);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final videoAsync = ref.watch(_videoControllerProvider);
+
+    ref.listen<AsyncValue<VideoPlayerController>>(_videoControllerProvider, (
+      _,
+      next,
+    ) {
+      next.whenData((controller) {
+        controller.addListener(() {
+          if (controller.value.position >= controller.value.duration &&
+              controller.value.duration > Duration.zero) {
+            _navigateToNextScreen(ref, context);
+          }
+        });
+      });
     });
-  }
 
-  @override
-  void dispose() {
-    _controller?.removeListener(_checkVideoEnd);
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen<AsyncValue<Object?>>(
-      authStateProvider,
-      (_, next) {
-        if (!next.isLoading) {
-          _checkAndNavigate();
-        }
-      },
-    );
-
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'SOS',
-                  style: GoogleFonts.outfit(
-                    fontSize: 64,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.sColor,
-                    letterSpacing: 6,
-                  ),
-                ),
-                Text(
-                  'ARENA',
-                  style: GoogleFonts.outfit(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w300,
-                    color: AppColors.onSurfaceMuted,
-                    letterSpacing: 12,
-                  ),
-                ),
-                const SizedBox(height: 36),
-                const AppLoader(label: 'Warming up the board…'),
-              ],
-            ),
-          ),
-
-          if (_controller != null && _initialized)
-            AnimatedOpacity(
-              opacity: _initialized ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 600),
-              child: SizedBox.expand(
+    return GestureDetector(
+      onTap: () => _navigateToNextScreen(ref, context),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            videoAsync.when(
+              data: (controller) => SizedBox.expand(
                 child: FittedBox(
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                   child: SizedBox(
-                    width: _controller!.value.size.width,
-                    height: _controller!.value.size.height,
-                    child: VideoPlayer(_controller!),
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller),
+                  ),
+                ),
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
+            Positioned(
+              bottom: 48,
+              left: 0,
+              right: 0,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 1000),
+                curve: Curves.easeInOut,
+                builder: (_, value, child) =>
+                    Opacity(opacity: value, child: child),
+                child: Text(
+                  'Tap to continue',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white38,
+                    letterSpacing: 2.0,
                   ),
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

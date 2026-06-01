@@ -183,6 +183,9 @@ class GameRepository {
         'board': newBoard,
         'players': updatedPlayers.map((p) => p.toMap()).toList(),
         'currentTurn': nextTurn,
+        'lastPlacedPosition': position,
+        'lastPlacedLetter': letter,
+        'lastPlacedPlayerId': playerId,
       };
       if (newStatus != null) {
         updates['status'] = newStatus;
@@ -215,7 +218,12 @@ class GameRepository {
       if (room.status != GameRoomStatus.active) return;
       
       final newBoard = [...room.board]..[position] = '';
-      tx.update(ref, {'board': newBoard});
+      tx.update(ref, {
+        'board': newBoard,
+        'lastPlacedPosition': null,
+        'lastPlacedLetter': null,
+        'lastPlacedPlayerId': null,
+      });
     });
   }
 }

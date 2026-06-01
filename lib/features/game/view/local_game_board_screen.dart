@@ -1,105 +1,192 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/sos_engine.dart';
-import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../providers/game_providers.dart';
 import '../../../providers/repository_providers.dart';
 import '../../../providers/user_providers.dart';
 import '../widgets/game_board_widget.dart';
 import '../widgets/player_score_card.dart';
+import '../widgets/vs_animation_overlay.dart';
 
 class LocalGameBoardScreen extends ConsumerStatefulWidget {
-  const LocalGameBoardScreen({super.key, required this.boardSize, required this.playerNames});
+  const LocalGameBoardScreen({
+    super.key,
+    required this.boardSize,
+    required this.playerNames,
+  });
+
   final int boardSize;
   final List<String> playerNames;
 
   @override
-  ConsumerState<LocalGameBoardScreen> createState() => _LocalGameBoardScreenState();
+  ConsumerState<LocalGameBoardScreen> createState() =>
+      _LocalGameBoardScreenState();
 }
 
-class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen> {
+class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
+    with SingleTickerProviderStateMixin {
   SosLetter _letter = SosLetter.s;
   bool _eraserMode = false;
+  bool _showVsAnimation = true;
+  bool _didTriggerWin = false;
+
   late final LocalGameConfig _config = LocalGameConfig(
     boardSize: widget.boardSize,
     playerNames: widget.playerNames,
   );
 
+  late final AnimationController _winCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
+  late final Animation<double> _winScale = CurvedAnimation(
+    parent: _winCtrl,
+    curve: Curves.elasticOut,
+  );
+
+  @override
+  void dispose() {
+    _winCtrl.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(localGameProvider(_config));
     final notifier = ref.read(localGameProvider(_config).notifier);
-    final currentColor = AppColors.playerPalette[state.currentTurn % AppColors.playerPalette.length];
+    final currentColor = AppColors
+        .playerPalette[state.currentTurn % AppColors.playerPalette.length];
     final user = ref.watch(currentUserProvider).valueOrNull;
 
-    return Scaffold(
+    final lineColors = state.completedSosLines.map(
+      (line, playerIdx) => MapEntry(
+        line,
+        AppColors.playerPalette[playerIdx % AppColors.playerPalette.length],
+      ),
+    );
+
+    if (state.finished && !_didTriggerWin) {
+      _didTriggerWin = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        HapticFeedback.heavyImpact();
+        _winCtrl.forward(from: 0);
+      });
+    }
+
+    final Widget mainContent = Scaffold(
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        title: const Text('Local Match'),
+        backgroundColor: AppColors.bg,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            context.pop();
+          },
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.18),
+                width: 1.5,
+              ),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+        title: Text(
+          'Local Match',
+          style: GoogleFonts.luckiestGuy(
+            fontSize: 20,
+            color: AppColors.primary,
+            letterSpacing: 1.5,
+          ),
+        ),
+        centerTitle: true,
         actions: [
-          IconButton(
-            tooltip: 'Restart',
-            onPressed: () {
-              setState(() => _eraserMode = false);
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              setState(() {
+                _eraserMode = false;
+                _didTriggerWin = false;
+              });
+              _winCtrl.reset();
               notifier.reset();
             },
-            icon: const Icon(Icons.refresh),
+            child: Container(
+              margin: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.18),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.refresh_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
+            ),
           ),
         ],
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
           child: Column(
             children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (var i = 0; i < state.players.length; i++) ...[
-                      PlayerScoreCard(
-                        name: state.players[i].name,
-                        score: state.players[i].score,
-                        color: AppColors.playerPalette[i % AppColors.playerPalette.length],
-                        isCurrentTurn: i == state.currentTurn && !state.finished,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+              _ScoreRow(state: state),
+              const SizedBox(height: 12),
               Expanded(
                 child: Center(
                   child: GameBoardWidget(
                     size: state.boardSize,
                     board: state.board,
-                    highlightCells: {
-                      ...sosLineCells(state.lastSosLines),
-                      ...state.customHighlights,
-                    },
+                    highlightCells: state.customHighlights.toSet(),
                     disabled: state.finished,
+                    sosLines: SosEngine(
+                      state.boardSize,
+                    ).findAllSos(state.board),
+                    lineColors: lineColors,
                     onTap: (i) async {
                       if (_eraserMode) {
-                        if (state.board[i].isNotEmpty && user != null) {
-                          final messenger = ScaffoldMessenger.of(context);
+                        if (state.board[i].isEmpty) return;
+                        if (user != null) {
                           try {
-                            await ref.read(userRepositoryProvider).consumeTool(
+                            HapticFeedback.mediumImpact();
+                            await ref
+                                .read(userRepositoryProvider)
+                                .consumeTool(
                                   uid: user.uid,
                                   itemId: 'erase_cell',
                                 );
                             notifier.eraseLocal(position: i);
                             setState(() => _eraserMode = false);
                           } catch (e) {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text('$e'), backgroundColor: AppColors.danger),
-                            );
+                            HapticFeedback.vibrate();
+                            AppSnackBar.showError(context, e.toString());
                           }
                         }
                       } else {
+                        if (state.board[i].isNotEmpty) return;
+                        HapticFeedback.selectionClick();
                         notifier.place(position: i, letter: _letter);
                       }
                     },
@@ -107,219 +194,317 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              
-              // Dynamic Spells Toolbelt Row
               if (!state.finished && user != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerHigh.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        _eraserMode ? 'SELECT OCCUPIED CELL TO ERASE' : 'CAST MAGIC SPELLS',
-                        style: GoogleFonts.outfit(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: _eraserMode ? AppColors.danger : AppColors.primary,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _SpellButton(
-                            label: 'Rewind',
-                            icon: Icons.undo,
-                            cost: 50,
+                _SpellBar(
+                  eraserMode: _eraserMode,
+                  undoCount: user.inventory['undo_move'] ?? 0,
+                  eraseCount: user.inventory['erase_cell'] ?? 0,
+                  hintCount: user.inventory['hint_vision'] ?? 0,
+                  totalPoints: user.totalPoints,
+                  onEraserToggle: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _eraserMode = !_eraserMode);
+                  },
+                  onUndo: () async {
+                    try {
+                      HapticFeedback.mediumImpact();
+                      await ref
+                          .read(userRepositoryProvider)
+                          .consumeTool(uid: user.uid, itemId: 'undo_move');
+                      notifier.undoLocal();
+                    } catch (e) {
+                      HapticFeedback.vibrate();
+                      AppSnackBar.showError(context, e.toString());
+                    }
+                  },
+                  onHint: () async {
+                    try {
+                      HapticFeedback.mediumImpact();
+                      await ref
+                          .read(userRepositoryProvider)
+                          .consumeTool(uid: user.uid, itemId: 'hint_vision');
+                      notifier.showHintsLocal();
+                    } catch (e) {
+                      HapticFeedback.vibrate();
+                      AppSnackBar.showError(context, e.toString());
+                    }
+                  },
+                  onBuyUndo: () async {
+                    try {
+                      await ref
+                          .read(userRepositoryProvider)
+                          .purchaseTool(
+                            uid: user.uid,
                             itemId: 'undo_move',
-                            count: user.inventory['undo_move'] ?? 0,
-                            active: !_eraserMode,
-                            onCast: () async {
-                              final messenger = ScaffoldMessenger.of(context);
-                              try {
-                                await ref.read(userRepositoryProvider).consumeTool(
-                                      uid: user.uid,
-                                      itemId: 'undo_move',
-                                    );
-                                notifier.undoLocal();
-                              } catch (e) {
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text('$e'), backgroundColor: AppColors.danger),
-                                );
-                              }
-                            },
-                            onBuy: () async {
-                              final messenger = ScaffoldMessenger.of(context);
-                              try {
-                                await ref.read(userRepositoryProvider).purchaseTool(
-                                      uid: user.uid,
-                                      itemId: 'undo_move',
-                                      cost: 50,
-                                    );
-                              } catch (e) {
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text('$e'), backgroundColor: AppColors.danger),
-                                );
-                              }
-                            },
-                            currentPoints: user.totalPoints,
-                          ),
-                          _SpellButton(
-                            label: 'Erase',
-                            icon: Icons.delete_sweep,
-                            cost: 100,
+                            cost: 50,
+                          );
+                    } catch (e) {
+                      HapticFeedback.vibrate();
+                      AppSnackBar.showError(context, e.toString());
+                    }
+                  },
+                  onBuyErase: () async {
+                    try {
+                      await ref
+                          .read(userRepositoryProvider)
+                          .purchaseTool(
+                            uid: user.uid,
                             itemId: 'erase_cell',
-                            count: user.inventory['erase_cell'] ?? 0,
-                            active: true,
-                            isSelected: _eraserMode,
-                            onCast: () {
-                              setState(() => _eraserMode = !_eraserMode);
-                            },
-                            onBuy: () async {
-                              final messenger = ScaffoldMessenger.of(context);
-                              try {
-                                await ref.read(userRepositoryProvider).purchaseTool(
-                                      uid: user.uid,
-                                      itemId: 'erase_cell',
-                                      cost: 100,
-                                    );
-                              } catch (e) {
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text('$e'), backgroundColor: AppColors.danger),
-                                );
-                              }
-                            },
-                            currentPoints: user.totalPoints,
-                          ),
-                          _SpellButton(
-                            label: 'Hint Vision',
-                            icon: Icons.lightbulb,
-                            cost: 30,
+                            cost: 100,
+                          );
+                    } catch (e) {
+                      HapticFeedback.vibrate();
+                      AppSnackBar.showError(context, e.toString());
+                    }
+                  },
+                  onBuyHint: () async {
+                    try {
+                      await ref
+                          .read(userRepositoryProvider)
+                          .purchaseTool(
+                            uid: user.uid,
                             itemId: 'hint_vision',
-                            count: user.inventory['hint_vision'] ?? 0,
-                            active: !_eraserMode,
-                            onCast: () async {
-                              final messenger = ScaffoldMessenger.of(context);
-                              try {
-                                await ref.read(userRepositoryProvider).consumeTool(
-                                      uid: user.uid,
-                                      itemId: 'hint_vision',
-                                    );
-                                notifier.showHintsLocal();
-                              } catch (e) {
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text('$e'), backgroundColor: AppColors.danger),
-                                );
-                              }
-                            },
-                            onBuy: () async {
-                              final messenger = ScaffoldMessenger.of(context);
-                              try {
-                                await ref.read(userRepositoryProvider).purchaseTool(
-                                      uid: user.uid,
-                                      itemId: 'hint_vision',
-                                      cost: 30,
-                                    );
-                              } catch (e) {
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text('$e'), backgroundColor: AppColors.danger),
-                                );
-                              }
-                            },
-                            currentPoints: user.totalPoints,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                            cost: 30,
+                          );
+                    } catch (e) {
+                      HapticFeedback.vibrate();
+                      AppSnackBar.showError(context, e.toString());
+                    }
+                  },
                 ),
                 const SizedBox(height: 12),
               ],
-
               if (state.finished)
-                Column(
-                  children: [
-                    Text(
-                      state.winnerIndex == null
-                          ? 'It\'s a tie!'
-                          : '${state.players[state.winnerIndex!].name} wins!',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                    ),
-                    if (state.awardedProfilePoints != null && state.awardedProfilePoints! > 0) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondaryContainer,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          '+${state.awardedProfilePoints} profile points',
-                          style: const TextStyle(
-                            color: AppColors.onSecondaryContainer,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppButton(
-                            variant: AppButtonVariant.secondary,
-                            label: 'Exit',
-                            onPressed: () => context.pop(),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppButton(
-                            label: 'Play again',
-                            onPressed: () {
-                              setState(() => _eraserMode = false);
-                              notifier.reset();
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                _WinnerPanel(
+                  state: state,
+                  winScale: _winScale,
+                  onExit: () {
+                    HapticFeedback.lightImpact();
+                    context.pop();
+                  },
+                  onPlayAgain: () {
+                    HapticFeedback.heavyImpact();
+                    setState(() {
+                      _eraserMode = false;
+                      _didTriggerWin = false;
+                    });
+                    _winCtrl.reset();
+                    notifier.reset();
+                  },
                 )
               else
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('S', style: TextStyle(fontWeight: FontWeight.w800)),
-                      selected: _letter == SosLetter.s,
-                      selectedColor: AppColors.sColor.withValues(alpha: 0.3),
-                      onSelected: (_) => setState(() => _letter = SosLetter.s),
-                    ),
-                    const SizedBox(width: 12),
-                    ChoiceChip(
-                      label: const Text('O', style: TextStyle(fontWeight: FontWeight.w800)),
-                      selected: _letter == SosLetter.o,
-                      selectedColor: AppColors.oColor.withValues(alpha: 0.3),
-                      onSelected: (_) => setState(() => _letter = SosLetter.o),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      '${state.players[state.currentTurn].name}\'s turn',
-                      style: TextStyle(color: currentColor, fontWeight: FontWeight.w600),
-                    ),
-                  ],
+                _LetterPicker(
+                  letter: _letter,
+                  playerName: state.players[state.currentTurn].name,
+                  currentColor: currentColor,
+                  onChanged: (l) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _letter = l);
+                  },
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+
+    if (_showVsAnimation && widget.playerNames.length >= 2) {
+      return Stack(
+        children: [
+          mainContent,
+          Positioned.fill(
+            child: VsAnimationOverlay(
+              p1Name: '',
+              p2Name: '',
+              playerNames: widget.playerNames,
+              playerColors: List.generate(
+                widget.playerNames.length,
+                (i) =>
+                    AppColors.playerPalette[i % AppColors.playerPalette.length],
+              ),
+              title: 'LOCAL MATCH STARTING',
+              onComplete: () {
+                if (mounted) setState(() => _showVsAnimation = false);
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
+    return mainContent;
+  }
+}
+
+class _ScoreRow extends StatelessWidget {
+  const _ScoreRow({required this.state});
+  final dynamic state;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var i = 0; i < state.players.length; i++) ...[
+            PlayerScoreCard(
+              name: state.players[i].name,
+              score: state.players[i].score,
+              color:
+                  AppColors.playerPalette[i % AppColors.playerPalette.length],
+              isCurrentTurn: i == state.currentTurn && !state.finished,
+            ),
+            if (i < state.players.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LetterPicker extends StatelessWidget {
+  const _LetterPicker({
+    required this.letter,
+    required this.playerName,
+    required this.currentColor,
+    required this.onChanged,
+  });
+
+  final SosLetter letter;
+  final String playerName;
+  final Color currentColor;
+  final void Function(SosLetter) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: currentColor.withOpacity(0.30), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: currentColor.withOpacity(0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _LetterBtn(
+            letter: 'S',
+            selected: letter == SosLetter.s,
+            color: AppColors.sColor,
+            onTap: () => onChanged(SosLetter.s),
+          ),
+          const SizedBox(width: 10),
+          _LetterBtn(
+            letter: 'O',
+            selected: letter == SosLetter.o,
+            color: AppColors.oColor,
+            onTap: () => onChanged(SosLetter.o),
+          ),
+          const SizedBox(width: 14),
+          Container(
+            width: 1.5,
+            height: 32,
+            color: AppColors.onSurfaceMuted.withOpacity(0.2),
+          ),
+          const SizedBox(width: 14),
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: currentColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: currentColor.withOpacity(0.5),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    '$playerName\'s turn',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.luckiestGuy(
+                      fontSize: 13,
+                      color: currentColor,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LetterBtn extends StatelessWidget {
+  const _LetterBtn({
+    required this.letter,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+  final String letter;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutBack,
+        width: 48,
+        height: 40,
+        decoration: BoxDecoration(
+          gradient: selected
+              ? LinearGradient(colors: [color, color.withOpacity(0.75)])
+              : null,
+          color: selected ? null : color.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(
+            color: selected
+                ? Colors.white.withOpacity(0.3)
+                : color.withOpacity(0.35),
+            width: 2,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.45),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            letter,
+            style: GoogleFonts.luckiestGuy(
+              fontSize: 20,
+              color: selected ? Colors.white : color,
+              letterSpacing: 0,
+            ),
           ),
         ),
       ),
@@ -327,98 +512,422 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen> {
   }
 }
 
-class _SpellButton extends StatelessWidget {
-  const _SpellButton({
-    required this.label,
-    required this.icon,
-    required this.cost,
-    required this.itemId,
-    required this.count,
-    required this.active,
-    this.isSelected = false,
-    required this.onCast,
-    required this.onBuy,
-    required this.currentPoints,
+class _SpellBar extends StatelessWidget {
+  const _SpellBar({
+    required this.eraserMode,
+    required this.undoCount,
+    required this.eraseCount,
+    required this.hintCount,
+    required this.totalPoints,
+    required this.onEraserToggle,
+    required this.onUndo,
+    required this.onHint,
+    required this.onBuyUndo,
+    required this.onBuyErase,
+    required this.onBuyHint,
   });
 
+  final bool eraserMode;
+  final int undoCount;
+  final int eraseCount;
+  final int hintCount;
+  final int totalPoints;
+  final VoidCallback onEraserToggle;
+  final VoidCallback onUndo;
+  final VoidCallback onHint;
+  final VoidCallback onBuyUndo;
+  final VoidCallback onBuyErase;
+  final VoidCallback onBuyHint;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: eraserMode
+              ? AppColors.danger.withOpacity(0.45)
+              : AppColors.primary.withOpacity(0.15),
+          width: eraserMode ? 2 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: eraserMode
+                ? AppColors.danger.withOpacity(0.12)
+                : AppColors.primary.withOpacity(0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (eraserMode)
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: AppColors.danger,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.danger.withOpacity(0.5),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                ),
+              if (eraserMode) const SizedBox(width: 6),
+              Text(
+                eraserMode ? 'Tap occupied cell to erase' : '🔮 Magic Spells',
+                style: GoogleFonts.luckiestGuy(
+                  fontSize: 12,
+                  color: eraserMode ? AppColors.danger : AppColors.primary,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _SpellChip(
+                emoji: '⏪',
+                label: 'Rewind',
+                count: undoCount,
+                cost: 50,
+                color: AppColors.primary,
+                active: !eraserMode,
+                isSelected: false,
+                totalPoints: totalPoints,
+                onCast: onUndo,
+                onBuy: onBuyUndo,
+              ),
+              _SpellChip(
+                emoji: '🧹',
+                label: 'Erase',
+                count: eraseCount,
+                cost: 100,
+                color: AppColors.danger,
+                active: true,
+                isSelected: eraserMode,
+                totalPoints: totalPoints,
+                onCast: onEraserToggle,
+                onBuy: onBuyErase,
+              ),
+              _SpellChip(
+                emoji: '💡',
+                label: 'Hint',
+                count: hintCount,
+                cost: 30,
+                color: AppColors.highlight,
+                active: !eraserMode,
+                isSelected: false,
+                totalPoints: totalPoints,
+                onCast: onHint,
+                onBuy: onBuyHint,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpellChip extends StatelessWidget {
+  const _SpellChip({
+    required this.emoji,
+    required this.label,
+    required this.count,
+    required this.cost,
+    required this.color,
+    required this.active,
+    required this.isSelected,
+    required this.totalPoints,
+    required this.onCast,
+    required this.onBuy,
+  });
+
+  final String emoji;
   final String label;
-  final IconData icon;
-  final int cost;
-  final String itemId;
   final int count;
+  final int cost;
+  final Color color;
   final bool active;
   final bool isSelected;
+  final int totalPoints;
   final VoidCallback onCast;
   final VoidCallback onBuy;
-  final int currentPoints;
 
   @override
   Widget build(BuildContext context) {
     final hasSpell = count > 0;
+    final canBuy = totalPoints >= cost;
+    final effectiveColor = isSelected ? AppColors.danger : color;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        InkWell(
-          onTap: !active
-              ? null
-              : (hasSpell
-                  ? onCast
-                  : (currentPoints >= cost ? onBuy : null)),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    return GestureDetector(
+      onTap: !active
+          ? null
+          : hasSpell
+          ? onCast
+          : canBuy
+          ? onBuy
+          : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutBack,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.danger.withValues(alpha: 0.15)
-                  : (hasSpell
-                      ? AppColors.primary.withValues(alpha: 0.1)
-                      : Colors.transparent),
-              borderRadius: BorderRadius.circular(20),
+              gradient: (hasSpell || isSelected) && active
+                  ? LinearGradient(
+                      colors: [
+                        effectiveColor,
+                        effectiveColor.withOpacity(0.75),
+                      ],
+                    )
+                  : null,
+              color: (hasSpell || isSelected) && active
+                  ? null
+                  : effectiveColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected
-                    ? AppColors.danger
-                    : (hasSpell
-                        ? AppColors.primary
-                        : AppColors.onSurfaceMuted.withValues(alpha: 0.3)),
-                width: 1.2,
+                color: active
+                    ? effectiveColor.withOpacity(
+                        isSelected || hasSpell ? 0.4 : 0.3,
+                      )
+                    : AppColors.onSurfaceMuted.withOpacity(0.15),
+                width: isSelected ? 2 : 1.5,
               ),
+              boxShadow: (hasSpell || isSelected) && active
+                  ? [
+                      BoxShadow(
+                        color: effectiveColor.withOpacity(0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: 13,
-                  color: isSelected
-                      ? AppColors.danger
-                      : (hasSpell ? AppColors.primary : AppColors.onSurfaceMuted),
-                ),
-                const SizedBox(width: 4),
                 Text(
-                  hasSpell ? '$count' : 'Buy ($cost)',
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    color: isSelected
-                        ? AppColors.danger
-                        : (hasSpell ? AppColors.primary : AppColors.onSurfaceMuted),
+                  emoji,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: active ? null : AppColors.onSurfaceMuted,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  hasSpell
+                      ? '×$count'
+                      : canBuy && active
+                      ? '${cost}pt'
+                      : '—',
+                  style: GoogleFonts.luckiestGuy(
+                    fontSize: 12,
+                    color: (hasSpell || isSelected) && active
+                        ? Colors.white
+                        : active
+                        ? effectiveColor
+                        : AppColors.onSurfaceMuted,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.outfit(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: AppColors.onSurfaceMuted,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: active
+                  ? AppColors.onSurfaceMuted
+                  : AppColors.onSurfaceMuted.withOpacity(0.4),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WinnerPanel extends StatelessWidget {
+  const _WinnerPanel({
+    required this.state,
+    required this.winScale,
+    required this.onExit,
+    required this.onPlayAgain,
+  });
+
+  final dynamic state;
+  final Animation<double> winScale;
+  final VoidCallback onExit;
+  final VoidCallback onPlayAgain;
+
+  @override
+  Widget build(BuildContext context) {
+    final isTie = state.winnerIndex == null;
+    final winnerName = isTie ? null : state.players[state.winnerIndex!].name;
+    final winnerColor = isTie
+        ? AppColors.highlight
+        : AppColors.playerPalette[state.winnerIndex! %
+              AppColors.playerPalette.length];
+
+    return ScaleTransition(
+      scale: winScale,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: winnerColor.withOpacity(0.40), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: winnerColor.withOpacity(0.20),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-      ],
+        child: Column(
+          children: [
+            Text(isTie ? '🤝' : '🏆', style: const TextStyle(fontSize: 32)),
+            const SizedBox(height: 6),
+            Text(
+              isTie ? "It's a Tie!" : '$winnerName Wins!',
+              style: GoogleFonts.luckiestGuy(
+                fontSize: 22,
+                color: winnerColor,
+                letterSpacing: 1,
+              ),
+            ),
+            if (state.awardedProfilePoints != null &&
+                state.awardedProfilePoints! > 0) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.secondary, AppColors.highlight],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.stars_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      '+${state.awardedProfilePoints} profile points',
+                      style: GoogleFonts.luckiestGuy(
+                        fontSize: 13,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: onExit,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.onSurfaceMuted.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.onSurfaceMuted.withOpacity(0.25),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Exit',
+                          style: GoogleFonts.luckiestGuy(
+                            fontSize: 15,
+                            color: AppColors.onSurfaceMuted,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: onPlayAgain,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primary, AppColors.sColor],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.45),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Play Again!',
+                          style: GoogleFonts.luckiestGuy(
+                            fontSize: 15,
+                            color: Colors.white,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

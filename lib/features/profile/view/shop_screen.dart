@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
-import '../../../core/widgets/section_card.dart';
 import '../../../providers/repository_providers.dart';
 import '../../../providers/user_providers.dart';
 
@@ -16,45 +16,35 @@ class ShopScreen extends ConsumerWidget {
     required BuildContext context,
     required WidgetRef ref,
     required String uid,
-    required String type, // 'title' or 'border'
+    required String type,
     required String value,
     required int cost,
     required int currentPoints,
   }) async {
     if (currentPoints < cost) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Not enough points! You need $cost pts (you have $currentPoints).'),
-          backgroundColor: AppColors.danger,
-        ),
+      HapticFeedback.vibrate();
+      _showSnack(
+        context,
+        'Need $cost pts — you have $currentPoints!',
+        AppColors.danger,
       );
       return;
     }
-
     try {
-      await ref.read(userRepositoryProvider).purchaseCustomization(
+      await ref
+          .read(userRepositoryProvider)
+          .purchaseCustomization(
             uid: uid,
             type: type,
             value: value,
             cost: cost,
           );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Successfully unlocked "$value"!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
+      HapticFeedback.heavyImpact();
+      if (context.mounted)
+        _showSnack(context, 'Unlocked "$value"! ✨', AppColors.success);
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
+      HapticFeedback.vibrate();
+      if (context.mounted) _showSnack(context, '$e', AppColors.danger);
     }
   }
 
@@ -68,66 +58,46 @@ class ShopScreen extends ConsumerWidget {
     required int currentPoints,
   }) async {
     if (currentPoints < cost) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Not enough points! You need $cost pts (you have $currentPoints).'),
-          backgroundColor: AppColors.danger,
-        ),
+      HapticFeedback.vibrate();
+      _showSnack(
+        context,
+        'Need $cost pts — you have $currentPoints!',
+        AppColors.danger,
       );
       return;
     }
-
     try {
-      await ref.read(userRepositoryProvider).purchaseTool(
-            uid: uid,
-            itemId: itemId,
-            cost: cost,
-          );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Successfully purchased 1 $label!'),
-            backgroundColor: AppColors.success,
-          ),
+      await ref
+          .read(userRepositoryProvider)
+          .purchaseTool(uid: uid, itemId: itemId, cost: cost);
+      HapticFeedback.heavyImpact();
+      if (context.mounted)
+        _showSnack(
+          context,
+          '1 $label added to inventory! 🎉',
+          AppColors.success,
         );
-      }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
+      HapticFeedback.vibrate();
+      if (context.mounted) _showSnack(context, '$e', AppColors.danger);
     }
   }
 
-  Future<void> _claimGift({
-    required BuildContext context,
-    required WidgetRef ref,
-    required String uid,
-  }) async {
-    try {
-      await ref.read(userRepositoryProvider).claimFreePoints(uid, 500);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Claimed +500 test points! Enjoy shopping! 🎉'),
-            backgroundColor: AppColors.success,
+  void _showSnack(BuildContext context, String msg, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          msg,
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
-    }
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
   }
 
   @override
@@ -135,355 +105,89 @@ class ShopScreen extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
+        backgroundColor: AppColors.bg,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.of(context).pop();
+          },
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.18),
+                width: 1.5,
+              ),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
         title: Text(
           'SOS Shop',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w800),
+          style: GoogleFonts.luckiestGuy(
+            fontSize: 22,
+            color: AppColors.primary,
+            letterSpacing: 2,
+          ),
         ),
+        centerTitle: true,
       ),
       body: userAsync.when(
         loading: () => const AppLoader(),
         error: (e, _) => ErrorView(message: '$e'),
         data: (u) {
           if (u == null) return const ErrorView(message: 'Profile not found');
-
           return DefaultTabController(
             length: 2,
             child: Column(
               children: [
-                // Premium points display banner
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF5E2CA8),
-                          Color(0xFF321A68),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF5E2CA8).withValues(alpha: 0.35),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.stars,
-                          color: Color(0xFFFD9D06),
-                          size: 40,
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${u.totalPoints} PTS',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              Text(
-                                'Available points balance',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () => _claimGift(context: context, ref: ref, uid: u.uid),
-                          borderRadius: BorderRadius.circular(30),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFD9D06).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: const Color(0xFFFD9D06),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.card_giftcard,
-                                  color: Color(0xFFFD9D06),
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '+500 PTS',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFFFD9D06),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: _PointsBanner(points: u.totalPoints),
                 ),
-
-                // Glassmorphic navigation tabs
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerHigh.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TabBar(
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    indicator: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: AppColors.onSurfaceMuted,
-                    labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13),
-                    tabs: const [
-                      Tab(text: 'Customizations'),
-                      Tab(text: 'Magic Spells'),
-                    ],
-                  ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _CartoonTabBar(),
                 ),
-                const SizedBox(height: 16),
-
-                // Shop items tabs
+                const SizedBox(height: 14),
                 Expanded(
                   child: TabBarView(
                     children: [
-                      // CUSTOMIZATIONS TAB
-                      ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          SectionCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Exclusive Titles',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                _ShopItemRow(
-                                  title: 'Title: "SOS Legend"',
-                                  desc: 'Display an exclusive gold legend badge',
-                                  icon: Icons.verified_user,
-                                  cost: 150,
-                                  color: AppColors.secondary,
-                                  active: u.customTitle == 'SOS Legend',
-                                  onTap: () => _buyCustomization(
-                                    context: context,
-                                    ref: ref,
-                                    uid: u.uid,
-                                    type: 'title',
-                                    value: 'SOS Legend',
-                                    cost: 150,
-                                    currentPoints: u.totalPoints,
-                                  ),
-                                ),
-                                const Divider(height: 24),
-                                _ShopItemRow(
-                                  title: 'Title: "Tactician"',
-                                  desc: 'Display a tactical expert badge',
-                                  icon: Icons.military_tech,
-                                  cost: 100,
-                                  color: AppColors.primaryContainer,
-                                  active: u.customTitle == 'Tactician',
-                                  onTap: () => _buyCustomization(
-                                    context: context,
-                                    ref: ref,
-                                    uid: u.uid,
-                                    type: 'title',
-                                    value: 'Tactician',
-                                    cost: 100,
-                                    currentPoints: u.totalPoints,
-                                  ),
-                                ),
-                              ],
+                      _CustomizationsTab(
+                        u: u,
+                        onBuyCustomization: (type, value, cost) =>
+                            _buyCustomization(
+                              context: context,
+                              ref: ref,
+                              uid: u.uid,
+                              type: type,
+                              value: value,
+                              cost: cost,
+                              currentPoints: u.totalPoints,
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          SectionCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Glowing Borders',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                _ShopItemRow(
-                                  title: 'Frame: Champion Gold',
-                                  desc: 'Gold glowing ring around all your avatars',
-                                  icon: Icons.workspace_premium,
-                                  cost: 300,
-                                  color: const Color(0xFFFD9D06),
-                                  active: u.avatarFrameColor == 'gold',
-                                  onTap: () => _buyCustomization(
-                                    context: context,
-                                    ref: ref,
-                                    uid: u.uid,
-                                    type: 'border',
-                                    value: 'gold',
-                                    cost: 300,
-                                    currentPoints: u.totalPoints,
-                                  ),
-                                ),
-                                const Divider(height: 24),
-                                _ShopItemRow(
-                                  title: 'Frame: Neon Blue',
-                                  desc: 'Glow electric blue ring around your avatars',
-                                  icon: Icons.blur_circular,
-                                  cost: 150,
-                                  color: const Color(0xFF3B82F6),
-                                  active: u.avatarFrameColor == 'neon_blue',
-                                  onTap: () => _buyCustomization(
-                                    context: context,
-                                    ref: ref,
-                                    uid: u.uid,
-                                    type: 'border',
-                                    value: 'neon_blue',
-                                    cost: 150,
-                                    currentPoints: u.totalPoints,
-                                  ),
-                                ),
-                                const Divider(height: 24),
-                                _ShopItemRow(
-                                  title: 'Frame: Emerald',
-                                  desc: 'Vibrant forest green avatar boundary ring',
-                                  icon: Icons.stars,
-                                  cost: 100,
-                                  color: const Color(0xFF10B981),
-                                  active: u.avatarFrameColor == 'vibrant_green',
-                                  onTap: () => _buyCustomization(
-                                    context: context,
-                                    ref: ref,
-                                    uid: u.uid,
-                                    type: 'border',
-                                    value: 'vibrant_green',
-                                    cost: 100,
-                                    currentPoints: u.totalPoints,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                        ],
                       ),
-
-                      // MAGIC SPELLS TAB
-                      ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          SectionCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'In-Game Spells',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Purchase powerful magical assistance to use during matches!',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 11,
-                                    color: AppColors.onSurfaceMuted,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                _ShopSpellRow(
-                                  title: 'Time Rewind (Undo)',
-                                  desc: 'Undo your last move in Local Match',
-                                  icon: Icons.undo,
-                                  cost: 50,
-                                  color: const Color(0xFF8B5CF6),
-                                  quantity: u.inventory['undo_move'] ?? 0,
-                                  onTap: () => _buySpell(
-                                    context: context,
-                                    ref: ref,
-                                    uid: u.uid,
-                                    itemId: 'undo_move',
-                                    label: 'Undo Spell',
-                                    cost: 50,
-                                    currentPoints: u.totalPoints,
-                                  ),
-                                ),
-                                const Divider(height: 24),
-                                _ShopSpellRow(
-                                  title: 'Cell Eraser (Erase)',
-                                  desc: 'Erase any cell on the board during your turn',
-                                  icon: Icons.delete_sweep,
-                                  cost: 100,
-                                  color: const Color(0xFFEF4444),
-                                  quantity: u.inventory['erase_cell'] ?? 0,
-                                  onTap: () => _buySpell(
-                                    context: context,
-                                    ref: ref,
-                                    uid: u.uid,
-                                    itemId: 'erase_cell',
-                                    label: 'Erase Spell',
-                                    cost: 100,
-                                    currentPoints: u.totalPoints,
-                                  ),
-                                ),
-                                const Divider(height: 24),
-                                _ShopSpellRow(
-                                  title: 'Hint Vision (Hint)',
-                                  desc: 'Glow empty slots that form an immediate SOS',
-                                  icon: Icons.lightbulb,
-                                  cost: 30,
-                                  color: const Color(0xFFEAB308),
-                                  quantity: u.inventory['hint_vision'] ?? 0,
-                                  onTap: () => _buySpell(
-                                    context: context,
-                                    ref: ref,
-                                    uid: u.uid,
-                                    itemId: 'hint_vision',
-                                    label: 'Hint Vision Spell',
-                                    cost: 30,
-                                    currentPoints: u.totalPoints,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                        ],
+                      _SpellsTab(
+                        u: u,
+                        onBuySpell: (itemId, label, cost) => _buySpell(
+                          context: context,
+                          ref: ref,
+                          uid: u.uid,
+                          itemId: itemId,
+                          label: label,
+                          cost: cost,
+                          currentPoints: u.totalPoints,
+                        ),
                       ),
                     ],
                   ),
@@ -497,8 +201,366 @@ class ShopScreen extends ConsumerWidget {
   }
 }
 
-class _ShopItemRow extends StatelessWidget {
-  const _ShopItemRow({
+class _PointsBanner extends StatelessWidget {
+  const _PointsBanner({required this.points});
+  final int points;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.sColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.45),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.stars_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$points PTS',
+                  style: GoogleFonts.luckiestGuy(
+                    fontSize: 26,
+                    color: Colors.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+                Text(
+                  'Your point balance',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.8),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '🏆 Earn more',
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CartoonTabBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1.5,
+        ),
+      ),
+      child: TabBar(
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.primary, AppColors.sColor],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        dividerColor: Colors.transparent,
+        labelColor: Colors.white,
+        unselectedLabelColor: AppColors.onSurfaceMuted,
+        labelStyle: GoogleFonts.luckiestGuy(fontSize: 13, letterSpacing: 0.8),
+        unselectedLabelStyle: GoogleFonts.outfit(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        onTap: (_) => HapticFeedback.selectionClick(),
+        tabs: const [
+          Tab(text: '✨ Customize'),
+          Tab(text: '🔮 Spells'),
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomizationsTab extends StatelessWidget {
+  const _CustomizationsTab({required this.u, required this.onBuyCustomization});
+  final dynamic u;
+  final void Function(String type, String value, int cost) onBuyCustomization;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      children: [
+        _ShopSectionCard(
+          label: 'Exclusive Titles',
+          icon: Icons.military_tech_rounded,
+          iconColor: AppColors.secondary,
+          children: [
+            _CustomizationCard(
+              title: 'SOS Legend',
+              desc: 'Display an exclusive gold legend badge',
+              icon: Icons.verified_user_rounded,
+              cost: 50000,
+              color: AppColors.secondary,
+              active: u.customTitle == 'SOS Legend',
+              onTap: () => onBuyCustomization('title', 'SOS Legend', 50000),
+            ),
+            const SizedBox(height: 10),
+            _CustomizationCard(
+              title: 'Tactician',
+              desc: 'Display a tactical expert badge',
+              icon: Icons.military_tech_rounded,
+              cost: 100,
+              color: AppColors.primary,
+              active: u.customTitle == 'Tactician',
+              onTap: () => onBuyCustomization('title', 'Tactician', 100),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        _ShopSectionCard(
+          label: 'Glowing Frames',
+          icon: Icons.workspace_premium_rounded,
+          iconColor: AppColors.highlight,
+          children: [
+            _CustomizationCard(
+              title: 'Champion Gold',
+              desc: 'Gold glowing ring on all your avatars',
+              icon: Icons.workspace_premium_rounded,
+              cost: 300,
+              color: AppColors.highlight,
+              active: u.avatarFrameColor == 'gold',
+              onTap: () => onBuyCustomization('border', 'gold', 300),
+            ),
+            const SizedBox(height: 10),
+            _CustomizationCard(
+              title: 'Neon Blue',
+              desc: 'Electric blue ring around your avatars',
+              icon: Icons.blur_circular_rounded,
+              cost: 150,
+              color: AppColors.oColor,
+              active: u.avatarFrameColor == 'neon_blue',
+              onTap: () => onBuyCustomization('border', 'neon_blue', 150),
+            ),
+            const SizedBox(height: 10),
+            _CustomizationCard(
+              title: 'Emerald Green',
+              desc: 'Vibrant forest green avatar boundary ring',
+              icon: Icons.stars_rounded,
+              cost: 100,
+              color: AppColors.success,
+              active: u.avatarFrameColor == 'vibrant_green',
+              onTap: () => onBuyCustomization('border', 'vibrant_green', 100),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SpellsTab extends StatelessWidget {
+  const _SpellsTab({required this.u, required this.onBuySpell});
+  final dynamic u;
+  final void Function(String itemId, String label, int cost) onBuySpell;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.18),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.info_rounded,
+                color: AppColors.primary,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Use spells during matches for a tactical edge!',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _ShopSectionCard(
+          label: 'Magic Spells',
+          icon: Icons.auto_fix_high_rounded,
+          iconColor: AppColors.sColor,
+          children: [
+            _SpellCard(
+              title: 'Time Rewind',
+              desc: 'Undo your last move in Local Match',
+              emoji: '⏪',
+              cost: 50,
+              color: AppColors.primary,
+              quantity: u.inventory['undo_move'] ?? 0,
+              onTap: () => onBuySpell('undo_move', 'Undo Spell', 50),
+            ),
+            const SizedBox(height: 10),
+            _SpellCard(
+              title: 'Cell Eraser',
+              desc: 'Erase any cell on the board during your turn',
+              emoji: '🧹',
+              cost: 100,
+              color: AppColors.danger,
+              quantity: u.inventory['erase_cell'] ?? 0,
+              onTap: () => onBuySpell('erase_cell', 'Erase Spell', 100),
+            ),
+            const SizedBox(height: 10),
+            _SpellCard(
+              title: 'Hint Vision',
+              desc: 'Glow empty slots that form an immediate SOS',
+              emoji: '💡',
+              cost: 30,
+              color: AppColors.highlight,
+              quantity: u.inventory['hint_vision'] ?? 0,
+              onTap: () => onBuySpell('hint_vision', 'Hint Vision Spell', 30),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ShopSectionCard extends StatelessWidget {
+  const _ShopSectionCard({
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+    required this.children,
+  });
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.12),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: iconColor, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.luckiestGuy(
+                  fontSize: 14,
+                  color: iconColor,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  height: 1.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [iconColor.withOpacity(0.3), Colors.transparent],
+                    ),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomizationCard extends StatelessWidget {
+  const _CustomizationCard({
     required this.title,
     required this.desc,
     required this.icon,
@@ -507,7 +569,6 @@ class _ShopItemRow extends StatelessWidget {
     required this.active,
     required this.onTap,
   });
-
   final String title;
   final String desc;
   final IconData icon;
@@ -518,81 +579,155 @@ class _ShopItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: active ? color.withOpacity(0.08) : AppColors.bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: active
+              ? color.withOpacity(0.45)
+              : AppColors.primary.withOpacity(0.10),
+          width: active ? 2 : 1.5,
         ),
-        child: Icon(icon, color: color, size: 22),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: color.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-      subtitle: Text(desc, style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 11)),
-      trailing: InkWell(
-        onTap: active ? null : onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: active
-                ? AppColors.success.withValues(alpha: 0.15)
-                : AppColors.secondary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: active ? AppColors.success : AppColors.secondary,
-              width: 1,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: color.withOpacity(0.28), width: 1.5),
             ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (active) ...[
-                const Icon(Icons.check, color: AppColors.success, size: 12),
-                const SizedBox(width: 4),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  'Equipped',
-                  style: GoogleFonts.outfit(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.success,
+                  title,
+                  style: GoogleFonts.luckiestGuy(
+                    fontSize: 14,
+                    color: AppColors.onSurface,
+                    letterSpacing: 0.4,
                   ),
                 ),
-              ] else ...[
-                const Icon(Icons.stars, color: AppColors.secondary, size: 12),
-                const SizedBox(width: 4),
+                const SizedBox(height: 2),
                 Text(
-                  '$cost',
+                  desc,
                   style: GoogleFonts.outfit(
                     fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.secondary,
+                    color: AppColors.onSurfaceMuted,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: active
+                ? null
+                : () {
+                    HapticFeedback.mediumImpact();
+                    onTap();
+                  },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: active
+                    ? null
+                    : LinearGradient(colors: [color, color.withOpacity(0.75)]),
+                color: active ? AppColors.success.withOpacity(0.12) : null,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: active
+                      ? AppColors.success.withOpacity(0.4)
+                      : color.withOpacity(0.3),
+                  width: 1.5,
+                ),
+                boxShadow: active
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: color.withOpacity(0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+              ),
+              child: active
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.success,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Owned',
+                          style: GoogleFonts.luckiestGuy(
+                            fontSize: 11,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.stars_rounded,
+                          color: Colors.white,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$cost',
+                          style: GoogleFonts.luckiestGuy(
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ShopSpellRow extends StatelessWidget {
-  const _ShopSpellRow({
+class _SpellCard extends StatelessWidget {
+  const _SpellCard({
     required this.title,
     required this.desc,
-    required this.icon,
+    required this.emoji,
     required this.cost,
     required this.color,
     required this.quantity,
     required this.onTap,
   });
-
   final String title;
   final String desc;
-  final IconData icon;
+  final String emoji;
   final int cost;
   final Color color;
   final int quantity;
@@ -600,71 +735,133 @@ class _ShopSpellRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.10),
+          width: 1.5,
         ),
-        child: Icon(icon, color: color, size: 22),
       ),
-      title: Row(
+      child: Row(
         children: [
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: color.withOpacity(0.28), width: 1.5),
+            ),
+            child: Center(
+              child: Text(emoji, style: const TextStyle(fontSize: 22)),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(8),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.luckiestGuy(
+                        fontSize: 13,
+                        color: AppColors.onSurface,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: quantity > 0
+                            ? AppColors.success.withOpacity(0.12)
+                            : AppColors.onSurfaceMuted.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: quantity > 0
+                              ? AppColors.success.withOpacity(0.3)
+                              : AppColors.onSurfaceMuted.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        'x$quantity',
+                        style: GoogleFonts.luckiestGuy(
+                          fontSize: 10,
+                          color: quantity > 0
+                              ? AppColors.success
+                              : AppColors.onSurfaceMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    color: AppColors.onSurfaceMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            child: Text(
-              'Owned: $quantity',
-              style: GoogleFonts.outfit(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              onTap();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color, color.withOpacity(0.75)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.stars_rounded,
+                    color: Colors.white,
+                    size: 13,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$cost',
+                    style: GoogleFonts.luckiestGuy(
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ],
-      ),
-      subtitle: Text(desc, style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 11)),
-      trailing: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.secondary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.secondary,
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.stars, color: AppColors.secondary, size: 12),
-              const SizedBox(width: 4),
-              Text(
-                'Buy ($cost)',
-                style: GoogleFonts.outfit(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

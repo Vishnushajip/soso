@@ -88,6 +88,27 @@ class ChatRepository {
     String? senderPhoto,
     required String text,
   }) async {
+    String status = 'sent';
+    bool otherOnline = false;
+    String? otherUid;
+
+    if (room.type == ChatRoomType.direct) {
+      for (final p in room.participants) {
+        if (p != senderId) {
+          otherUid = p;
+          break;
+        }
+      }
+      if (otherUid != null) {
+        // Fetch recipient's online status
+        final userDoc = await _firestore.collection(AppConstants.usersCollection).doc(otherUid).get();
+        otherOnline = userDoc.data()?['isOnline'] as bool? ?? false;
+        if (otherOnline) {
+          status = 'delivered';
+        }
+      }
+    }
+
     final ref = _msgs(room.id).doc();
     final batch = _firestore.batch();
     batch.set(ref, {
@@ -97,6 +118,7 @@ class ChatRepository {
       'senderPhoto': senderPhoto,
       'text': text,
       'createdAt': FieldValue.serverTimestamp(),
+      'status': status,
     });
     final unreadUpdate = <String, dynamic>{};
     for (final p in room.participants) {
@@ -109,11 +131,11 @@ class ChatRepository {
       ...unreadUpdate,
     });
 
-    if (room.type == ChatRoomType.direct) {
-      for (final p in room.participants) {
-        if (p == senderId) continue;
+    if (room.type == ChatRoomType.direct && otherUid != null) {
+      // Only send notification if the user is NOT online!
+      if (!otherOnline) {
         batch.set(_notifs.doc(), {
-          'toUid': p,
+          'toUid': otherUid,
           'type': 'message',
           'title': senderName,
           'body': text.length > 80 ? '${text.substring(0, 80)}…' : text,
@@ -124,6 +146,25 @@ class ChatRepository {
       }
     }
     await batch.commit();
+  }
+
+  Future<void> markMessagesAsRead({required String roomId, required String myUid}) async {
+    final querySnap = await _msgs(roomId)
+        .where('senderId', isNotEqualTo: myUid)
+        .get();
+
+    final batch = _firestore.batch();
+    bool hasUpdates = false;
+    for (final doc in querySnap.docs) {
+      final status = doc.data()['status'] as String?;
+      if (status != 'read') {
+        batch.update(doc.reference, {'status': 'read'});
+        hasUpdates = true;
+      }
+    }
+    if (hasUpdates) {
+      await batch.commit();
+    }
   }
 
   Future<void> markRead({required String roomId, required String uid}) =>

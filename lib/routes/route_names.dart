@@ -24,4 +24,5 @@ class RouteNames {
   static const terms = '/terms';
   static const contact = '/contact';
   static const shop = '/shop';
+  static const profileDetail = '/profile/detail';
 }

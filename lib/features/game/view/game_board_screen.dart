@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/sos_engine.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loader.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../models/game_room.dart';
@@ -19,6 +20,7 @@ import '../../../providers/service_providers.dart';
 import '../../../routes/route_names.dart';
 import '../widgets/game_board_widget.dart';
 import '../widgets/player_score_card.dart';
+import '../widgets/vs_animation_overlay.dart';
 
 class GameBoardScreen extends ConsumerStatefulWidget {
   const GameBoardScreen({super.key, required this.roomId});
@@ -30,10 +32,12 @@ class GameBoardScreen extends ConsumerStatefulWidget {
 
 class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
   SosLetter _letter = SosLetter.s;
-  String? _error;
   bool _summaryShown = false;
   bool _eraserMode = false;
   Set<int> _customHighlights = const {};
+  bool _showVsAnimation = false;
+  bool _vsAnimationDone = false;
+  final Map<SosLine, Color> _completedSosColors = {};
 
   Future<void> _place(GameRoom room, int pos) async {
     final me = ref.read(currentUidProvider);
@@ -46,7 +50,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       final sound = ref.read(soundServiceProvider);
       sound.play(sos > 0 ? AppSound.sos : AppSound.point);
     } catch (e) {
-      setState(() => _error = e.toString());
+      AppSnackBar.showError(context, e.toString());
     }
   }
 
@@ -79,6 +83,25 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
         data: (room) {
           if (room == null) return const ErrorView(message: 'Room not found');
 
+          // Dynamic client-side tracking of completed SOS line colors in online match
+          final allSosLines = SosEngine(room.boardSize).findAllSos(room.board);
+          _completedSosColors.removeWhere((line, _) => !allSosLines.contains(line));
+          final newLines = allSosLines.where((line) => !_completedSosColors.containsKey(line)).toList();
+          if (newLines.isNotEmpty) {
+            final lastPlayerId = room.lastPlacedPlayerId;
+            int playerIndex = room.currentTurn;
+            if (lastPlayerId != null) {
+              final idx = room.players.indexWhere((p) => p.uid == lastPlayerId);
+              if (idx != -1) {
+                playerIndex = idx;
+              }
+            }
+            final playerColor = AppColors.playerPalette[playerIndex % AppColors.playerPalette.length];
+            for (final line in newLines) {
+              _completedSosColors[line] = playerColor;
+            }
+          }
+
           if (room.status == GameRoomStatus.finished && !_summaryShown) {
             _summaryShown = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,9 +115,22 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
             return _Waiting(room: room);
           }
 
+          if (room.status == GameRoomStatus.active &&
+              room.type == GameRoomType.friend &&
+              !_vsAnimationDone &&
+              !_showVsAnimation) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _showVsAnimation = true;
+                });
+              }
+            });
+          }
+
           final myTurn = me != null && room.players[room.currentTurn].uid == me;
 
-          return SafeArea(
+          final Widget content = SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -124,9 +160,13 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                         board: room.board,
                         highlightCells: _customHighlights,
                         disabled: !myTurn,
+                        lastPlacedPosition: room.lastPlacedPosition,
+                        sosLines: allSosLines,
+                        lineColors: _completedSosColors,
                         onTap: (i) async {
                           if (_eraserMode) {
-                            if (room.board[i].isNotEmpty && me != null) {
+                            if (room.board[i].isEmpty) return;
+                            if (me != null) {
                               try {
                                 await ref.read(userRepositoryProvider).consumeTool(
                                       uid: me,
@@ -141,10 +181,11 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                                   _customHighlights = const {};
                                 });
                               } catch (e) {
-                                setState(() => _error = e.toString());
+                                AppSnackBar.showError(context, e.toString());
                               }
                             }
                           } else {
+                            if (room.board[i].isNotEmpty) return;
                             _place(room, i);
                             setState(() => _customHighlights = const {});
                           }
@@ -201,7 +242,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                                           cost: 100,
                                         );
                                   } catch (e) {
-                                    setState(() => _error = e.toString());
+                                    AppSnackBar.showError(context, e.toString());
                                   }
                                 },
                                 currentPoints: user.totalPoints,
@@ -221,7 +262,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                                         );
                                     _showOnlineHints(room);
                                   } catch (e) {
-                                    setState(() => _error = e.toString());
+                                    AppSnackBar.showError(context, e.toString());
                                   }
                                 },
                                 onBuy: () async {
@@ -232,7 +273,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                                           cost: 30,
                                         );
                                   } catch (e) {
-                                    setState(() => _error = e.toString());
+                                    AppSnackBar.showError(context, e.toString());
                                   }
                                 },
                                 currentPoints: user.totalPoints,
@@ -263,19 +304,43 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                       ),
                     ],
                   ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(_error!, style: const TextStyle(color: AppColors.danger)),
-                  ],
                 ],
               ),
             ),
           );
+
+          if (_showVsAnimation && room.players.length >= 2) {
+            return Stack(
+              children: [
+                content,
+                Positioned.fill(
+                  child: VsAnimationOverlay(
+                    p1Name: room.players[0].name,
+                    p1Photo: room.players[0].photoUrl,
+                    p2Name: room.players[1].name,
+                    p2Photo: room.players[1].photoUrl,
+                    title: 'MATCH STARTING',
+                    onComplete: () {
+                      if (mounted) {
+                        setState(() {
+                          _showVsAnimation = false;
+                          _vsAnimationDone = true;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return content;
         },
       ),
     );
   }
 }
+
 
 class _SpellButton extends StatelessWidget {
   const _SpellButton({

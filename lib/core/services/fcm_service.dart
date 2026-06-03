@@ -6,6 +6,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/chat_providers.dart';
 import '../constants/app_constants.dart';
 import '../utils/logger.dart';
 import 'local_notifications_service.dart';
@@ -16,15 +18,18 @@ class FcmService {
     required FirebaseFirestore firestore,
     required SharedPreferences prefs,
     required LocalNotificationsService localNotifications,
+    required Ref ref,
   })  : _messaging = messaging,
         _firestore = firestore,
         _prefs = prefs,
-        _localNotifications = localNotifications;
+        _localNotifications = localNotifications,
+        _ref = ref;
 
   final FirebaseMessaging _messaging;
   final FirebaseFirestore _firestore;
   final SharedPreferences _prefs;
   final LocalNotificationsService _localNotifications;
+  final Ref _ref;
 
   final _foreground = StreamController<RemoteMessage>.broadcast();
   Stream<RemoteMessage> get onForegroundMessage => _foreground.stream;
@@ -46,12 +51,24 @@ class FcmService {
 
       _fgSub = FirebaseMessaging.onMessage.listen((msg) {
         _foreground.add(msg);
+        
         final n = msg.notification;
-        if (n != null) {
+        final data = msg.data;
+        
+        final title = n?.title ?? data['title'];
+        final body = n?.body ?? data['body'];
+        final roomId = data['roomId'] as String?;
+
+        if (title != null && body != null) {
+          final activeChatRoomId = _ref.read(activeChatRoomIdProvider);
+          if (activeChatRoomId != null && roomId == activeChatRoomId) {
+            return;
+          }
+          
           _localNotifications.show(
-            title: n.title ?? AppConstants.fcmChannelName,
-            body: n.body ?? '',
-            payload: msg.data.toString(),
+            title: title,
+            body: body,
+            payload: roomId ?? '',
           );
         }
       });

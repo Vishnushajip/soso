@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -8,6 +9,9 @@ class LocalNotificationsService {
   LocalNotificationsService();
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+
+  final StreamController<String?> _clicks = StreamController<String?>.broadcast();
+  Stream<String?> get onClickResponse => _clicks.stream;
 
   Future<void> init() async {
     if (kIsWeb) return;
@@ -20,13 +24,18 @@ class LocalNotificationsService {
     try {
       await _plugin.initialize(
         const InitializationSettings(android: android, iOS: ios),
+        onDidReceiveNotificationResponse: (details) {
+          _clicks.add(details.payload);
+        },
       );
 
       const channel = AndroidNotificationChannel(
         AppConstants.fcmChannelId,
         AppConstants.fcmChannelName,
         description: AppConstants.fcmChannelDescription,
-        importance: Importance.high,
+        importance: Importance.max,
+        sound: RawResourceAndroidNotificationSound('notify'),
+        playSound: true,
       );
       await _plugin
           .resolvePlatformSpecificImplementation<
@@ -49,10 +58,15 @@ class LocalNotificationsService {
         AppConstants.fcmChannelId,
         AppConstants.fcmChannelName,
         channelDescription: AppConstants.fcmChannelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
+        importance: Importance.max,
+        priority: Priority.max,
+        sound: RawResourceAndroidNotificationSound('notify'),
+        playSound: true,
       ),
-      iOS: DarwinNotificationDetails(),
+      iOS: DarwinNotificationDetails(
+        presentSound: true,
+        sound: 'notify.mp3',
+      ),
     );
     await _plugin.show(
       DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),

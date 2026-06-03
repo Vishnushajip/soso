@@ -29,7 +29,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadRoom());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(activeChatRoomIdProvider.notifier).state = widget.roomId;
+      _loadRoom();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    ref.read(activeChatRoomIdProvider.notifier).state = null;
+    super.dispose();
   }
 
   Future<void> _loadRoom() async {

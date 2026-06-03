@@ -44,6 +44,7 @@ dependencies:
   collection: ^1.18.0
   logger: ^2.4.0
   video_player: ^2.11.1
+  googleapis_auth: ^1.4.1
 
 dev_dependencies:
   flutter_test:

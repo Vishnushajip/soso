@@ -14,6 +14,7 @@ class GameBoardWidget extends StatefulWidget {
     this.sosLines = const [],
     this.lineColors = const {},
     this.lastPlacedPosition,
+    this.arena = false,
   });
 
   final int size;
@@ -24,6 +25,10 @@ class GameBoardWidget extends StatefulWidget {
   final List<SosLine> sosLines;
   final Map<SosLine, Color> lineColors;
   final int? lastPlacedPosition;
+
+  /// When true the board renders the dark "battle arena" skin (glossy 3D gem
+  /// tiles on stone). Defaults to false so the classic light board is untouched.
+  final bool arena;
 
   @override
   State<GameBoardWidget> createState() => _GameBoardWidgetState();
@@ -90,9 +95,26 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.board,
+          color: widget.arena ? AppColors.arenaStone : AppColors.board,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(
+            color: widget.arena ? AppColors.arenaStoneEdge : AppColors.divider,
+            width: widget.arena ? 2 : 1,
+          ),
+          boxShadow: widget.arena
+              ? [
+                  BoxShadow(
+                    color: AppColors.arenaGlow.withValues(alpha: 0.18),
+                    blurRadius: 24,
+                    spreadRadius: 1,
+                  ),
+                  const BoxShadow(
+                    color: Colors.black54,
+                    blurRadius: 16,
+                    offset: Offset(0, 8),
+                  ),
+                ]
+              : null,
         ),
         child: Stack(
           children: [
@@ -108,6 +130,23 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
                 final v = widget.board[i];
                 final isHighlighted = widget.highlightCells.contains(i);
                 final isLastPlaced = widget.lastPlacedPosition == i;
+                
+                final linesWithCell = widget.sosLines.where((line) => line.cells.contains(i));
+                final isCellInSos = linesWithCell.isNotEmpty;
+                final cellSosColor = isCellInSos ? widget.lineColors[linesWithCell.last] : null;
+
+                if (widget.arena) {
+                  return _ArenaCell(
+                    value: v,
+                    size: widget.size,
+                    isHighlighted: isHighlighted,
+                    isLastPlaced: isLastPlaced,
+                    isInSos: isCellInSos,
+                    sosColor: cellSosColor,
+                    onTap: widget.disabled ? null : () => widget.onTap(i),
+                  );
+                }
+
                 final color = v == 'S'
                     ? AppColors.sColor
                     : v == 'O'
@@ -122,13 +161,26 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
                         ? AppColors.highlight.withValues(alpha: 0.35)
                         : isLastPlaced
                             ? AppColors.secondary.withValues(alpha: 0.25)
-                            : AppColors.grid,
+                            : isCellInSos
+                                ? (cellSosColor ?? AppColors.primary).withValues(alpha: 0.16)
+                                : AppColors.grid,
                     borderRadius: BorderRadius.circular(8),
                     border: isHighlighted
                         ? Border.all(color: AppColors.highlight, width: 2)
                         : isLastPlaced
                             ? Border.all(color: AppColors.secondary, width: 2)
-                            : null,
+                            : isCellInSos
+                                ? Border.all(color: (cellSosColor ?? AppColors.primary).withValues(alpha: 0.5), width: 1.5)
+                                : null,
+                    boxShadow: isCellInSos
+                        ? [
+                            BoxShadow(
+                              color: (cellSosColor ?? AppColors.primary).withValues(alpha: 0.15),
+                              blurRadius: 6,
+                              spreadRadius: 0.5,
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Material(
                     color: Colors.transparent,
@@ -256,3 +308,140 @@ class SosStrikePainter extends CustomPainter {
 /// Convert a list of SOS lines into the flat set of cell indices it lights up.
 Set<int> sosLineCells(Iterable<SosLine> lines) =>
     {for (final l in lines) ...l.cells};
+
+/// A single glossy 3D "gem" socket used by the dark battle-arena board skin.
+class _ArenaCell extends StatelessWidget {
+  const _ArenaCell({
+    required this.value,
+    required this.size,
+    required this.isHighlighted,
+    required this.isLastPlaced,
+    required this.isInSos,
+    required this.sosColor,
+    required this.onTap,
+  });
+
+  final String value;
+  final int size;
+  final bool isHighlighted;
+  final bool isLastPlaced;
+  final bool isInSos;
+  final Color? sosColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = value.isNotEmpty;
+    final base = value == 'S'
+        ? AppColors.sColor
+        : value == 'O'
+            ? AppColors.oColor
+            : AppColors.arenaCell;
+
+    // Empty socket vs. raised gem.
+    final Color light = Color.lerp(base, Colors.white, 0.42)!;
+    final Color dark = Color.lerp(base, Colors.black, 0.40)!;
+
+    // Outline + glow priority: hint > last placed > SOS member > neutral.
+    final Color edge = isHighlighted
+        ? AppColors.arenaGold
+        : isLastPlaced
+            ? Colors.white
+            : isInSos
+                ? (sosColor ?? AppColors.arenaGold)
+                : (filled
+                    ? Colors.white.withValues(alpha: 0.22)
+                    : Colors.white.withValues(alpha: 0.05));
+    final bool glows = isHighlighted || isLastPlaced || isInSos;
+    final Color glowColor = isHighlighted
+        ? AppColors.arenaGold
+        : isLastPlaced
+            ? Colors.white
+            : (sosColor ?? base);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        gradient: filled
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [light, base, dark],
+                stops: const [0.0, 0.5, 1.0],
+              )
+            : null,
+        color: filled ? null : AppColors.arenaCell,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: edge,
+          width: (isHighlighted || isLastPlaced) ? 2.2 : 1.4,
+        ),
+        boxShadow: [
+          if (filled)
+            const BoxShadow(
+              color: Colors.black45,
+              blurRadius: 4,
+              offset: Offset(0, 3),
+            ),
+          if (glows)
+            BoxShadow(
+              color: glowColor.withValues(alpha: 0.55),
+              blurRadius: 10,
+              spreadRadius: 0.5,
+            ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Stack(
+            children: [
+              // Glossy top highlight on filled gems.
+              if (filled)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.center,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.28),
+                          Colors.white.withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              Center(
+                child: AnimatedScale(
+                  scale: filled ? 1 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutBack,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: size <= 6 ? 28 : 20,
+                      shadows: const [
+                        Shadow(
+                          color: Colors.black54,
+                          blurRadius: 3,
+                          offset: Offset(0, 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -68,6 +68,21 @@ class AppColors {
   static const errorContainer = Color(0xFFFFDAD6);
   static const onErrorContainer = Color(0xFF93000A);
 
+  // ---- Arena (battle-board theme for the online match screen) ----------------
+  // Dark "stone + lava" world used only on the game board. Pulled from here so
+  // screen code never hardcodes a Color (per spec).
+  static const arenaBgTop = Color(0xFF1A1230);     // upper night sky
+  static const arenaBgBottom = Color(0xFF070410);  // deep pit
+  static const arenaGlow = Color(0xFFFF6A00);       // lava glow
+  static const arenaStone = Color(0xFF231B3D);      // board / panel stone
+  static const arenaStoneEdge = Color(0xFF3A2F5C);  // raised stone border
+  static const arenaCell = Color(0xFF150F28);       // empty grid socket
+  static const arenaGold = Color(0xFFFFC857);       // banners / titles
+  static const arenaBlue = Color(0xFF2EA8FF);       // player 1 banner
+  static const arenaPink = Color(0xFFFF3D9A);       // player 2 banner
+  static const onArena = Color(0xFFF1ECFF);         // primary text on arena
+  static const onArenaMuted = Color(0xFF9C92C7);    // secondary text on arena
+
   // ---- Player accents (visually distinct, 2–4 player local games) -----------
   static const player1 = accent;     // Electric Blue
   static const player2 = secondary;  // Energetic Orange

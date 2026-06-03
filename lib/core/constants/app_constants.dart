@@ -14,7 +14,7 @@ class AppConstants {
   static const analyticsCollection = 'analytics';
 
   // FCM
-  static const fcmChannelId = 'sos_arena_default';
+  static const fcmChannelId = 'sos_arena_alerts_v5';
   static const fcmChannelName = 'SOS Arena';
   static const fcmChannelDescription = 'Match, friend, and notification updates';
 

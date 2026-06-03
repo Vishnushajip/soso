@@ -10,8 +10,9 @@ import '../../../core/widgets/app_snack_bar.dart';
 import '../../../providers/game_providers.dart';
 import '../../../providers/repository_providers.dart';
 import '../../../providers/user_providers.dart';
+import '../widgets/arena_widgets.dart';
+import '../widgets/confetti_shower.dart';
 import '../widgets/game_board_widget.dart';
-import '../widgets/player_score_card.dart';
 import '../widgets/vs_animation_overlay.dart';
 
 class LocalGameBoardScreen extends ConsumerStatefulWidget {
@@ -79,239 +80,270 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
       });
     }
 
-    final Widget mainContent = Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            context.pop();
-          },
-          child: Container(
-            margin: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primary.withOpacity(0.18),
-                width: 1.5,
-              ),
-            ),
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 16,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-        title: Text(
-          'Local Match',
-          style: GoogleFonts.luckiestGuy(
-            fontSize: 20,
-            color: AppColors.primary,
-            letterSpacing: 1.5,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              setState(() {
-                _eraserMode = false;
-                _didTriggerWin = false;
-              });
-              _winCtrl.reset();
-              notifier.reset();
+    final Widget mainContent = PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _showExitConfirmationDialog(context);
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.arenaBgBottom,
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: GestureDetector(
+            onTap: () async {
+              HapticFeedback.lightImpact();
+              final shouldPop = await _showExitConfirmationDialog(context);
+              if (shouldPop && context.mounted) {
+                context.pop();
+              }
             },
             child: Container(
               margin: const EdgeInsets.all(10),
-              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: AppColors.arenaStone,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.18),
+                  color: AppColors.arenaGold.withValues(alpha: 0.35),
                   width: 1.5,
                 ),
               ),
               child: const Icon(
-                Icons.refresh_rounded,
-                size: 18,
-                color: AppColors.primary,
+                Icons.arrow_back_ios_new_rounded,
+                size: 16,
+                color: AppColors.arenaGold,
               ),
             ),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
-          child: Column(
-            children: [
-              _ScoreRow(state: state),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Center(
-                  child: GameBoardWidget(
-                    size: state.boardSize,
-                    board: state.board,
-                    highlightCells: state.customHighlights.toSet(),
-                    disabled: state.finished,
-                    sosLines: SosEngine(
-                      state.boardSize,
-                    ).findAllSos(state.board),
-                    lineColors: lineColors,
-                    onTap: (i) async {
-                      if (_eraserMode) {
-                        if (state.board[i].isEmpty) return;
-                        if (user != null) {
-                          try {
-                            HapticFeedback.mediumImpact();
-                            await ref
-                                .read(userRepositoryProvider)
-                                .consumeTool(
-                                  uid: user.uid,
-                                  itemId: 'erase_cell',
-                                );
-                            notifier.eraseLocal(position: i);
-                            setState(() => _eraserMode = false);
-                          } catch (e) {
-                            HapticFeedback.vibrate();
-                            AppSnackBar.showError(context, e.toString());
+          title: Text(
+            'Local Match',
+            style: GoogleFonts.luckiestGuy(
+              fontSize: 20,
+              color: AppColors.arenaGold,
+              letterSpacing: 1.5,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                setState(() {
+                  _eraserMode = false;
+                  _didTriggerWin = false;
+                });
+                _winCtrl.reset();
+                notifier.reset();
+              },
+              child: Container(
+                margin: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.arenaStone,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.arenaGold.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: AppColors.arenaGold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            const Positioned.fill(child: ArenaBackground()),
+            SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+            child: Column(
+              children: [
+                _ScoreRow(state: state),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Center(
+                    child: GameBoardWidget(
+                      arena: true,
+                      size: state.boardSize,
+                      board: state.board,
+                      highlightCells: state.customHighlights.toSet(),
+                      disabled: state.finished,
+                      sosLines: SosEngine(
+                        state.boardSize,
+                      ).findAllSos(state.board),
+                      lineColors: lineColors,
+                      onTap: (i) async {
+                        if (_eraserMode) {
+                          if (state.board[i].isEmpty) return;
+                          if (user != null) {
+                            try {
+                              HapticFeedback.mediumImpact();
+                              await ref
+                                  .read(userRepositoryProvider)
+                                  .consumeTool(
+                                    uid: user.uid,
+                                    itemId: 'erase_cell',
+                                  );
+                              notifier.eraseLocal(position: i);
+                              setState(() => _eraserMode = false);
+                            } catch (e) {
+                              HapticFeedback.vibrate();
+                              AppSnackBar.showError(context, e.toString());
+                            }
                           }
+                        } else {
+                          if (state.board[i].isNotEmpty) return;
+                          HapticFeedback.selectionClick();
+                          notifier.place(position: i, letter: _letter);
                         }
-                      } else {
-                        if (state.board[i].isNotEmpty) return;
-                        HapticFeedback.selectionClick();
-                        notifier.place(position: i, letter: _letter);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (!state.finished && user != null) ...[
+                  _SpellBar(
+                    eraserMode: _eraserMode,
+                    undoCount: user.inventory['undo_move'] ?? 0,
+                    eraseCount: user.inventory['erase_cell'] ?? 0,
+                    hintCount: user.inventory['hint_vision'] ?? 0,
+                    totalPoints: user.totalPoints,
+                    onEraserToggle: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _eraserMode = !_eraserMode);
+                    },
+                    onUndo: () async {
+                      try {
+                        HapticFeedback.mediumImpact();
+                        await ref
+                            .read(userRepositoryProvider)
+                            .consumeTool(uid: user.uid, itemId: 'undo_move');
+                        notifier.undoLocal();
+                      } catch (e) {
+                        HapticFeedback.vibrate();
+                        AppSnackBar.showError(context, e.toString());
+                      }
+                    },
+                    onHint: () async {
+                      try {
+                        HapticFeedback.mediumImpact();
+                        await ref
+                            .read(userRepositoryProvider)
+                            .consumeTool(uid: user.uid, itemId: 'hint_vision');
+                        notifier.showHintsLocal();
+                      } catch (e) {
+                        HapticFeedback.vibrate();
+                        AppSnackBar.showError(context, e.toString());
+                      }
+                    },
+                    onBuyUndo: () async {
+                      try {
+                        await ref
+                            .read(userRepositoryProvider)
+                            .purchaseTool(
+                              uid: user.uid,
+                              itemId: 'undo_move',
+                              cost: 50,
+                            );
+                      } catch (e) {
+                        HapticFeedback.vibrate();
+                        AppSnackBar.showError(context, e.toString());
+                      }
+                    },
+                    onBuyErase: () async {
+                      try {
+                        await ref
+                            .read(userRepositoryProvider)
+                            .purchaseTool(
+                              uid: user.uid,
+                              itemId: 'erase_cell',
+                              cost: 100,
+                            );
+                      } catch (e) {
+                        HapticFeedback.vibrate();
+                        AppSnackBar.showError(context, e.toString());
+                      }
+                    },
+                    onBuyHint: () async {
+                      try {
+                        await ref
+                            .read(userRepositoryProvider)
+                            .purchaseTool(
+                              uid: user.uid,
+                              itemId: 'hint_vision',
+                              cost: 30,
+                            );
+                      } catch (e) {
+                        HapticFeedback.vibrate();
+                        AppSnackBar.showError(context, e.toString());
                       }
                     },
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (!state.finished && user != null) ...[
-                _SpellBar(
-                  eraserMode: _eraserMode,
-                  undoCount: user.inventory['undo_move'] ?? 0,
-                  eraseCount: user.inventory['erase_cell'] ?? 0,
-                  hintCount: user.inventory['hint_vision'] ?? 0,
-                  totalPoints: user.totalPoints,
-                  onEraserToggle: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _eraserMode = !_eraserMode);
-                  },
-                  onUndo: () async {
-                    try {
-                      HapticFeedback.mediumImpact();
-                      await ref
-                          .read(userRepositoryProvider)
-                          .consumeTool(uid: user.uid, itemId: 'undo_move');
-                      notifier.undoLocal();
-                    } catch (e) {
-                      HapticFeedback.vibrate();
-                      AppSnackBar.showError(context, e.toString());
-                    }
-                  },
-                  onHint: () async {
-                    try {
-                      HapticFeedback.mediumImpact();
-                      await ref
-                          .read(userRepositoryProvider)
-                          .consumeTool(uid: user.uid, itemId: 'hint_vision');
-                      notifier.showHintsLocal();
-                    } catch (e) {
-                      HapticFeedback.vibrate();
-                      AppSnackBar.showError(context, e.toString());
-                    }
-                  },
-                  onBuyUndo: () async {
-                    try {
-                      await ref
-                          .read(userRepositoryProvider)
-                          .purchaseTool(
-                            uid: user.uid,
-                            itemId: 'undo_move',
-                            cost: 50,
-                          );
-                    } catch (e) {
-                      HapticFeedback.vibrate();
-                      AppSnackBar.showError(context, e.toString());
-                    }
-                  },
-                  onBuyErase: () async {
-                    try {
-                      await ref
-                          .read(userRepositoryProvider)
-                          .purchaseTool(
-                            uid: user.uid,
-                            itemId: 'erase_cell',
-                            cost: 100,
-                          );
-                    } catch (e) {
-                      HapticFeedback.vibrate();
-                      AppSnackBar.showError(context, e.toString());
-                    }
-                  },
-                  onBuyHint: () async {
-                    try {
-                      await ref
-                          .read(userRepositoryProvider)
-                          .purchaseTool(
-                            uid: user.uid,
-                            itemId: 'hint_vision',
-                            cost: 30,
-                          );
-                    } catch (e) {
-                      HapticFeedback.vibrate();
-                      AppSnackBar.showError(context, e.toString());
-                    }
-                  },
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                ],
+                if (state.finished)
+                  _WinnerPanel(
+                    state: state,
+                    winScale: _winScale,
+                    onExit: () {
+                      HapticFeedback.lightImpact();
+                      context.pop();
+                    },
+                    onPlayAgain: () {
+                      HapticFeedback.heavyImpact();
+                      setState(() {
+                        _eraserMode = false;
+                        _didTriggerWin = false;
+                      });
+                      _winCtrl.reset();
+                      notifier.reset();
+                    },
+                  )
+                else
+                  _LetterPicker(
+                    letter: _letter,
+                    playerName: state.players[state.currentTurn].name,
+                    currentColor: currentColor,
+                    onChanged: (l) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _letter = l);
+                    },
+                  ),
               ],
-              if (state.finished)
-                _WinnerPanel(
-                  state: state,
-                  winScale: _winScale,
-                  onExit: () {
-                    HapticFeedback.lightImpact();
-                    context.pop();
-                  },
-                  onPlayAgain: () {
-                    HapticFeedback.heavyImpact();
-                    setState(() {
-                      _eraserMode = false;
-                      _didTriggerWin = false;
-                    });
-                    _winCtrl.reset();
-                    notifier.reset();
-                  },
-                )
-              else
-                _LetterPicker(
-                  letter: _letter,
-                  playerName: state.players[state.currentTurn].name,
-                  currentColor: currentColor,
-                  onChanged: (l) {
-                    HapticFeedback.selectionClick();
-                    setState(() => _letter = l);
-                  },
-                ),
-            ],
+            ),
           ),
+            ),
+          ],
         ),
       ),
     );
 
+    Widget screen = mainContent;
+
+    if (state.finished) {
+      screen = Stack(
+        children: [
+          mainContent,
+          const Positioned.fill(child: ConfettiShower()),
+        ],
+      );
+    }
+
     if (_showVsAnimation && widget.playerNames.length >= 2) {
       return Stack(
         children: [
-          mainContent,
+          screen,
           Positioned.fill(
             child: VsAnimationOverlay(
               p1Name: '',
@@ -332,7 +364,117 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
       );
     }
 
-    return mainContent;
+    return screen;
+  }
+
+  Future<bool> _showExitConfirmationDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppColors.danger.withOpacity(0.25),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.danger.withOpacity(0.08),
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.danger,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'LEAVE MATCH?',
+                style: GoogleFonts.luckiestGuy(
+                  fontSize: 20,
+                  color: AppColors.danger,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'If you leave now, the match will be forfeited and your progress will be lost.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurfaceMuted,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppColors.outline),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(
+                        'Continue Playing',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text(
+                        'Exit Match',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    return result ?? false;
   }
 }
 
@@ -342,22 +484,15 @@ class _ScoreRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (var i = 0; i < state.players.length; i++) ...[
-            PlayerScoreCard(
-              name: state.players[i].name,
-              score: state.players[i].score,
-              color:
-                  AppColors.playerPalette[i % AppColors.playerPalette.length],
-              isCurrentTurn: i == state.currentTurn && !state.finished,
-            ),
-            if (i < state.players.length - 1) const SizedBox(width: 8),
-          ],
-        ],
-      ),
+    return BattleHeader(
+      players: [
+        for (var i = 0; i < state.players.length; i++)
+          BattlePlayer(
+            name: state.players[i].name,
+            score: state.players[i].score,
+          ),
+      ],
+      activeIndex: state.finished ? -1 : state.currentTurn,
     );
   }
 }
@@ -380,12 +515,12 @@ class _LetterPicker extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.arenaStone,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: currentColor.withOpacity(0.30), width: 2),
+        border: Border.all(color: currentColor.withValues(alpha: 0.5), width: 2),
         boxShadow: [
           BoxShadow(
-            color: currentColor.withOpacity(0.12),
+            color: currentColor.withValues(alpha: 0.25),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -411,7 +546,7 @@ class _LetterPicker extends StatelessWidget {
           Container(
             width: 1.5,
             height: 32,
-            color: AppColors.onSurfaceMuted.withOpacity(0.2),
+            color: AppColors.onArenaMuted.withValues(alpha: 0.3),
           ),
           const SizedBox(width: 14),
           Flexible(
@@ -472,30 +607,25 @@ class _LetterBtn extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutBack,
+        curve: Curves.easeOut,
         width: 48,
         height: 40,
         decoration: BoxDecoration(
-          gradient: selected
-              ? LinearGradient(colors: [color, color.withOpacity(0.75)])
-              : null,
-          color: selected ? null : color.withOpacity(0.10),
+          color: selected ? color : color.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(13),
           border: Border.all(
             color: selected
-                ? Colors.white.withOpacity(0.3)
-                : color.withOpacity(0.35),
+                ? Colors.white.withValues(alpha: 0.3)
+                : color.withValues(alpha: 0.35),
             width: 2,
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.45),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
+          boxShadow: [
+            BoxShadow(
+              color: selected ? color.withValues(alpha: 0.45) : Colors.transparent,
+              blurRadius: selected ? 12.0 : 0.0,
+              offset: selected ? const Offset(0, 3) : Offset.zero,
+            ),
+          ],
         ),
         child: Center(
           child: Text(
@@ -545,19 +675,19 @@ class _SpellBar extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.arenaStone,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: eraserMode
-              ? AppColors.danger.withOpacity(0.45)
-              : AppColors.primary.withOpacity(0.15),
+              ? AppColors.danger.withValues(alpha: 0.6)
+              : AppColors.arenaGold.withValues(alpha: 0.35),
           width: eraserMode ? 2 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: eraserMode
-                ? AppColors.danger.withOpacity(0.12)
-                : AppColors.primary.withOpacity(0.06),
+                ? AppColors.danger.withValues(alpha: 0.2)
+                : AppColors.arenaGold.withValues(alpha: 0.2),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -588,7 +718,7 @@ class _SpellBar extends StatelessWidget {
                 eraserMode ? 'Tap occupied cell to erase' : '🔮 Magic Spells',
                 style: GoogleFonts.luckiestGuy(
                   fontSize: 12,
-                  color: eraserMode ? AppColors.danger : AppColors.primary,
+                  color: eraserMode ? AppColors.danger : AppColors.arenaGold,
                   letterSpacing: 1,
                 ),
               ),
@@ -706,7 +836,7 @@ class _SpellChip extends StatelessWidget {
                     ? effectiveColor.withOpacity(
                         isSelected || hasSpell ? 0.4 : 0.3,
                       )
-                    : AppColors.onSurfaceMuted.withOpacity(0.15),
+                    : AppColors.onArenaMuted.withValues(alpha: 0.3),
                 width: isSelected ? 2 : 1.5,
               ),
               boxShadow: (hasSpell || isSelected) && active
@@ -726,7 +856,7 @@ class _SpellChip extends StatelessWidget {
                   emoji,
                   style: TextStyle(
                     fontSize: 14,
-                    color: active ? null : AppColors.onSurfaceMuted,
+                    color: active ? null : AppColors.onArenaMuted,
                   ),
                 ),
                 const SizedBox(width: 5),
@@ -742,7 +872,7 @@ class _SpellChip extends StatelessWidget {
                         ? Colors.white
                         : active
                         ? effectiveColor
-                        : AppColors.onSurfaceMuted,
+                        : AppColors.onArenaMuted,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -756,8 +886,8 @@ class _SpellChip extends StatelessWidget {
               fontSize: 9,
               fontWeight: FontWeight.w700,
               color: active
-                  ? AppColors.onSurfaceMuted
-                  : AppColors.onSurfaceMuted.withOpacity(0.4),
+                  ? AppColors.onArenaMuted
+                  : AppColors.onArenaMuted.withValues(alpha: 0.4),
             ),
           ),
         ],
@@ -793,7 +923,7 @@ class _WinnerPanel extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.arenaStone,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: winnerColor.withOpacity(0.40), width: 2),
           boxShadow: [
@@ -867,10 +997,10 @@ class _WinnerPanel extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: AppColors.onSurfaceMuted.withOpacity(0.10),
+                        color: AppColors.onArenaMuted.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.onSurfaceMuted.withOpacity(0.25),
+                          color: AppColors.onArenaMuted.withValues(alpha: 0.4),
                           width: 1.5,
                         ),
                       ),
@@ -879,7 +1009,7 @@ class _WinnerPanel extends StatelessWidget {
                           'Exit',
                           style: GoogleFonts.luckiestGuy(
                             fontSize: 15,
-                            color: AppColors.onSurfaceMuted,
+                            color: AppColors.onArena,
                             letterSpacing: 0.8,
                           ),
                         ),

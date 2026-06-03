@@ -6,19 +6,44 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soso/core/services/local_notifications_service.dart';
+import 'package:soso/core/services/sound_service.dart';
+import 'package:soso/routes/route_names.dart';
 
 import '../core/constants/env.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/logger.dart';
 import '../firebase_options.dart';
+import '../models/notification_model.dart';
 import '../providers/auth_providers.dart';
+import '../providers/chat_providers.dart';
+import '../providers/notification_providers.dart';
 import '../providers/service_providers.dart';
 import '../routes/app_router.dart';
 
 @pragma('vm:entry-point')
-Future<void> firebaseBackgroundMessageHandler(RemoteMessage _) async {
+Future<void> firebaseBackgroundMessageHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  final n = message.notification;
+  final data = message.data;
+  
+  final title = n?.title ?? data['title'];
+  final body = n?.body ?? data['body'];
+  final roomId = data['roomId'] as String?;
+  
+  if (title != null && body != null) {
+    final localNotif = LocalNotificationsService();
+    await localNotif.init();
+    await localNotif.show(
+      title: title,
+      body: body,
+      payload: roomId ?? '',
+    );
+  }
 }
+
+final Set<String> _shownNotifIds = {};
 
 class AppBootstrap {
   AppBootstrap._();
@@ -48,8 +73,7 @@ class AppBootstrap {
   }
 }
 
-/// Watched once by [SosArenaApp]; kicks off service init + auth-driven
-/// presence / FCM / analytics in a single place.
+
 final bootstrapProvider = Provider<void>((ref) {
   Future.microtask(() async {
     try {
@@ -59,10 +83,55 @@ final bootstrapProvider = Provider<void>((ref) {
         ref.read(soundServiceProvider).init(),
         ref.read(hapticServiceProvider).init(),
       ]);
+
+      ref.read(localNotificationsServiceProvider).onClickResponse.listen((payload) {
+        if (payload != null && payload.isNotEmpty) {
+          final router = ref.read(appRouterProvider);
+          if (payload.startsWith('match_')) {
+            router.push('${RouteNames.gameBoard}?roomId=$payload');
+          } else {
+            router.push('${RouteNames.chatRoom}?roomId=$payload');
+          }
+        }
+      });
     } catch (e, s) {
       appLogger.w('service init: $e\n$s');
     }
   });
+
+  ref.listen<AsyncValue<List<AppNotification>>>(
+    notificationsProvider,
+    (prev, next) {
+      final list = next.valueOrNull;
+      if (list == null) return;
+
+      final localNotif = ref.read(localNotificationsServiceProvider);
+      final activeChatRoomId = ref.read(activeChatRoomIdProvider);
+
+      for (final n in list) {
+        if (n.read == false && !_shownNotifIds.contains(n.id)) {
+          _shownNotifIds.add(n.id);
+
+          if (n.createdAt != null &&
+              DateTime.now().difference(n.createdAt!).inMinutes > 5) {
+            continue;
+          }
+
+          final roomId = n.data['roomId'] as String?;
+          if (activeChatRoomId != null && roomId == activeChatRoomId) {
+            continue;
+          }
+
+          localNotif.show(
+            title: n.title,
+            body: n.body,
+            payload: roomId ?? '',
+          );
+          ref.read(soundServiceProvider).play(AppSound.notify);
+        }
+      }
+    },
+  );
 
   ref.listen<AsyncValue<fb_auth.User?>>(
     authStateProvider,

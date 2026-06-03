@@ -32,6 +32,7 @@ final fcmServiceProvider = Provider<FcmService>((ref) {
     firestore: ref.watch(firestoreProvider),
     prefs: ref.watch(sharedPreferencesProvider),
     localNotifications: ref.watch(localNotificationsServiceProvider),
+    ref: ref,
   );
   ref.onDispose(svc.dispose);
   return svc;

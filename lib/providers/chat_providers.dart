@@ -14,3 +14,5 @@ final myChatRoomsProvider = StreamProvider<List<ChatRoom>>((ref) {
 final roomMessagesProvider = StreamProvider.family<List<Message>, String>(
   (ref, roomId) => ref.watch(chatRepositoryProvider).watchMessages(roomId),
 );
+
+final activeChatRoomIdProvider = StateProvider<String?>((ref) => null);

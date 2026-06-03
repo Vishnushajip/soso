@@ -27,7 +27,6 @@ import '../../../providers/repository_providers.dart';
 import '../../../providers/user_providers.dart';
 import '../../../providers/service_providers.dart';
 import '../../../routes/route_names.dart';
-import '../widgets/arena_widgets.dart';
 import '../widgets/game_board_widget.dart';
 import '../widgets/vs_animation_overlay.dart';
 import '../widgets/confetti_shower.dart';
@@ -50,7 +49,6 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
   bool _vsAnimationDone = false;
   final Map<SosLine, Color> _completedSosColors = {};
 
-  // Real-Time Messaging & Reactions
   bool _matchRoomEnsured = false;
   ChatRoom? _matchChatRoom;
   String? _lastProcessedMsgId;
@@ -59,7 +57,6 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
   Message? _lastIncomingMessage;
   final List<String> _activeFloatingReactions = [];
 
-  // Match Event Log
   final List<String> _eventLogs = [];
   bool _showLogs = false;
   GameRoom? _prevRoom;
@@ -114,7 +111,6 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       return;
     }
 
-    // 1. Detect new players
     if (current.players.length > _prevRoom!.players.length) {
       final joined = current.players.where(
         (p) => !_prevRoom!.players.any((old) => old.uid == p.uid),
@@ -124,7 +120,6 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       }
     }
 
-    // 2. Detect letters placed
     if (current.lastPlacedPosition != _prevRoom!.lastPlacedPosition &&
         current.lastPlacedPosition != null) {
       final placerId = current.lastPlacedPlayerId;
@@ -137,7 +132,6 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       _eventLogs.add('[Turn] ${player.name} placed \'$letter\' at cell $cell');
     }
 
-    // 3. Detect score increase
     for (var i = 0; i < current.players.length; i++) {
       final oldPlayer = _prevRoom!.players.firstWhere(
         (p) => p.uid == current.players[i].uid,
@@ -147,16 +141,16 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
         final diff = current.players[i].score - oldPlayer.score;
         final sosCount = diff ~/ 10;
         _eventLogs.add(
-          'ðŸ”¥ [SOS] ${current.players[i].name} created $sosCount SOS! (+$diff pts)',
+          '🔥 [SOS] ${current.players[i].name} created $sosCount SOS! (+$diff pts)',
         );
       }
     }
 
     if (current.status != _prevRoom!.status) {
       if (current.status == GameRoomStatus.abandoned) {
-        _eventLogs.add('ðŸš¨ [Exit] Match abandoned by opponent');
+        _eventLogs.add('🚨 [Exit] Match abandoned by opponent');
       } else if (current.status == GameRoomStatus.finished) {
-        _eventLogs.add('ðŸ† [End] Match finished!');
+        _eventLogs.add('🏆 [End] Match finished!');
       }
     }
   }
@@ -441,7 +435,6 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
     final me = ref.watch(currentUidProvider);
     final user = ref.watch(currentUserProvider).valueOrNull;
 
-    // Reactive Listener for Chat & floating reactions
     ref.listen<AsyncValue<List<Message>>>(
       roomMessagesProvider('match_${widget.roomId}'),
       (prev, next) {
@@ -453,13 +446,9 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
 
             final meUid = ref.read(currentUidProvider);
             final text = lastMsg.text;
-
-            // Trigger floating reactions if it's one of the reactions
-            if (['ðŸ‘', 'ðŸ˜‚', 'ðŸ”¥', 'ðŸ˜®', 'â¤ï¸'].contains(text)) {
+            if (['👍', '😂', '🔥', '😮', '❤️'].contains(text)) {
               _triggerFloatingReaction(text);
             }
-
-            // Trigger floating incoming messages banner
             if (lastMsg.senderId != meUid) {
               if (!_chatSheetOpen && mounted) {
                 setState(() {
@@ -547,9 +536,9 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
         ),
         body: Stack(
           children: [
-            const Positioned.fill(child: ArenaBackground()),
+            const Positioned.fill(child: _ArenaBackground()),
             asyncRoom.when(
-              loading: () => const AppLoader(label: 'Loading roomâ€¦'),
+              loading: () => const AppLoader(label: 'Loading room…'),
               error: (e, _) => ErrorView(message: '$e'),
               data: (room) {
                 if (room == null)
@@ -636,17 +625,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                     padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
                     child: Column(
                       children: [
-                        BattleHeader(
-                          players: [
-                            for (final p in room.players)
-                              BattlePlayer(
-                                name: p.name,
-                                score: p.score,
-                                photoUrl: p.photoUrl,
-                              ),
-                          ],
-                          activeIndex: room.currentTurn,
-                        ),
+                        _BattleHeader(room: room),
                         const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1481,7 +1460,7 @@ class _InGameChatWidgetState extends ConsumerState<_InGameChatWidget> {
                   if (messages.isEmpty) {
                     return Center(
                       child: Text(
-                        'Say hello to your opponent! ðŸ‘‹',
+                        'Say hello to your opponent! 👋',
                         style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -1540,7 +1519,7 @@ class _InGameChatWidgetState extends ConsumerState<_InGameChatWidget> {
               color: AppColors.surface,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: ['ðŸ‘', 'ðŸ˜‚', 'ðŸ”¥', 'ðŸ˜®', 'â¤ï¸'].map((emoji) {
+                children: ['👍', '😂', '🔥', '😮', '❤️'].map((emoji) {
                   return GestureDetector(
                     onTap: () {
                       HapticFeedback.lightImpact();
@@ -1659,7 +1638,7 @@ class _InGameMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasSpell = ['ðŸ‘', 'ðŸ˜‚', 'ðŸ”¥', 'ðŸ˜®', 'â¤ï¸'].contains(message.text);
+    final hasSpell = ['👍', '😂', '🔥', '😮', '❤️'].contains(message.text);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -1836,7 +1815,7 @@ class _Waiting extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Waiting for opponentâ€¦',
+                'Waiting for opponent…',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
               ),
               const SizedBox(height: 8),
@@ -1928,6 +1907,293 @@ class _LetterBtn extends StatelessWidget {
               letterSpacing: 0,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ArenaBackground extends StatelessWidget {
+  const _ArenaBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.arenaBgTop, AppColors.arenaBgBottom],
+        ),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, 0.3),
+            radius: 1.1,
+            colors: [Color(0x33FF6A00), Color(0x00FF6A00)],
+            stops: [0.0, 0.72],
+          ),
+        ),
+        child: SizedBox.expand(),
+      ),
+    );
+  }
+}
+
+class _BattleHeader extends StatelessWidget {
+  const _BattleHeader({required this.room});
+  final GameRoom room;
+
+  @override
+  Widget build(BuildContext context) {
+    final players = room.players;
+    int maxScore = 1;
+    for (final p in players) {
+      if (p.score > maxScore) maxScore = p.score;
+    }
+
+    Color colorFor(int i) =>
+        AppColors.playerPalette[i % AppColors.playerPalette.length];
+
+    if (players.length == 2) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: _PlayerBattleCard(
+              name: players[0].name,
+              photoUrl: players[0].photoUrl,
+              score: players[0].score,
+              color: colorFor(0),
+              isCurrentTurn: room.currentTurn == 0,
+              fill: players[0].score / maxScore,
+              mirrored: false,
+            ),
+          ),
+          const _VsBadge(),
+          Expanded(
+            child: _PlayerBattleCard(
+              name: players[1].name,
+              photoUrl: players[1].photoUrl,
+              score: players[1].score,
+              color: colorFor(1),
+              isCurrentTurn: room.currentTurn == 1,
+              fill: players[1].score / maxScore,
+              mirrored: true,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var i = 0; i < players.length; i++) ...[
+            SizedBox(
+              width: 180,
+              child: _PlayerBattleCard(
+                name: players[i].name,
+                photoUrl: players[i].photoUrl,
+                score: players[i].score,
+                color: colorFor(i),
+                isCurrentTurn: room.currentTurn == i,
+                fill: players[i].score / maxScore,
+                mirrored: false,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PlayerBattleCard extends StatelessWidget {
+  const _PlayerBattleCard({
+    required this.name,
+    required this.photoUrl,
+    required this.score,
+    required this.color,
+    required this.isCurrentTurn,
+    required this.fill,
+    required this.mirrored,
+  });
+
+  final String name;
+  final String? photoUrl;
+  final int score;
+  final Color color;
+  final bool isCurrentTurn;
+  final double fill;
+  final bool mirrored;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.85),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8),
+        ],
+      ),
+      child: UserAvatar(name: name, photoUrl: photoUrl, size: 32),
+    );
+
+    final info = Column(
+      crossAxisAlignment: mirrored
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: mirrored
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.emoji_events,
+              size: 13,
+              color: AppColors.arenaGold,
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: mirrored ? TextAlign.right : TextAlign.left,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            height: 8,
+            color: Colors.black.withValues(alpha: 0.35),
+            child: Align(
+              alignment: mirrored
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: fill.clamp(0.04, 1.0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color.lerp(color, Colors.white, 0.4)!, color],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: Text(
+            '$score pts',
+            key: ValueKey(score),
+            style: TextStyle(
+              color: AppColors.onArena.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final children = <Widget>[
+      avatar,
+      const SizedBox(width: 10),
+      Expanded(child: info),
+    ];
+
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 220),
+      opacity: isCurrentTurn ? 1.0 : 0.6,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: mirrored ? Alignment.centerRight : Alignment.centerLeft,
+            end: mirrored ? Alignment.centerLeft : Alignment.centerRight,
+            colors: [
+              color.withValues(alpha: 0.55),
+              color.withValues(alpha: 0.12),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isCurrentTurn ? color : color.withValues(alpha: 0.3),
+            width: isCurrentTurn ? 2.2 : 1,
+          ),
+          boxShadow: isCurrentTurn
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.45),
+                    blurRadius: 14,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(children: mirrored ? children.reversed.toList() : children),
+      ),
+    );
+  }
+}
+
+class _VsBadge extends StatelessWidget {
+  const _VsBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.arenaGold, AppColors.arenaGlow],
+        ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.6),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.arenaGlow.withValues(alpha: 0.5),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Text(
+        'VS',
+        style: GoogleFonts.luckiestGuy(
+          fontSize: 14,
+          color: Colors.white,
+          letterSpacing: 0.5,
         ),
       ),
     );

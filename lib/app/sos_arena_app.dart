@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soso/core/services/local_notifications_service.dart';
@@ -58,8 +60,20 @@ class AppBootstrap {
   static Future<SharedPreferences> initialize() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    await Env.load();
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    if (!kIsWeb && Platform.isAndroid) {
+      try {
+        await FlutterDisplayMode.setHighRefreshRate();
+      } catch (e) {
+        // Ignore on devices where display mode is not supported
+      }
+    }
+
+    // Run heavy initialization tasks concurrently to reduce app startup time
+    final futures = await Future.wait([
+      Env.load(),
+      Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+      SharedPreferences.getInstance(),
+    ]);
 
     if (Env.enableCrashlytics && !kIsWeb) {
       FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -76,7 +90,7 @@ class AppBootstrap {
 
     FirebaseMessaging.onBackgroundMessage(firebaseBackgroundMessageHandler);
 
-    return SharedPreferences.getInstance();
+    return futures[2] as SharedPreferences;
   }
 }
 

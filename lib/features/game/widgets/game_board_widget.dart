@@ -228,6 +228,13 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
 }
 
 class SosStrikePainter extends CustomPainter {
+  static final Paint _glowPaint = Paint()
+    ..strokeCap = StrokeCap.round
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+    
+  static final Paint _corePaint = Paint()
+    ..strokeCap = StrokeCap.round;
+
   final List<SosLine> lines;
   final List<SosLine> animatingLines;
   final double animationProgress;
@@ -257,21 +264,17 @@ class SosStrikePainter extends CustomPainter {
       return Offset(x, y);
     }
 
+    // Cached paint objects to avoid allocating in tight animation loops
     void drawGlowingLine(Canvas canvas, Offset start, Offset end, Color color, double width, {double glowOpacity = 0.35}) {
-      // Glow background shadow
-      final glowPaint = Paint()
+      _glowPaint
         ..color = color.withValues(alpha: glowOpacity)
-        ..strokeWidth = width * 2.2
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
-      canvas.drawLine(start, end, glowPaint);
+        ..strokeWidth = width * 2.2;
+      canvas.drawLine(start, end, _glowPaint);
 
-      // Core crisp line
-      final corePaint = Paint()
+      _corePaint
         ..color = color
-        ..strokeWidth = width
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(start, end, corePaint);
+        ..strokeWidth = width;
+      canvas.drawLine(start, end, _corePaint);
     }
 
     // Draw completed static lines

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,9 +16,17 @@ final _videoControllerProvider =
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
       await controller.initialize();
-      await controller.setVolume(1.0);
+      // Browsers block autoplay for videos with sound. We must mute it on Web.
+      await controller.setVolume(kIsWeb ? 0.0 : 1.0);
       await controller.setLooping(false);
-      unawaited(controller.play());
+      
+      try {
+        await controller.play();
+      } catch (e) {
+        // Autoplay might still be rejected by strict browser settings
+        debugPrint('Autoplay failed: $e');
+      }
+
       ref.onDispose(controller.dispose);
       return controller;
     });

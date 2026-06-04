@@ -10,6 +10,7 @@ class GamePlayer {
   final String? photoUrl;
   final int score;
   final bool ready;
+  final bool isBot;
 
   const GamePlayer({
     required this.uid,
@@ -17,6 +18,7 @@ class GamePlayer {
     this.photoUrl,
     this.score = 0,
     this.ready = false,
+    this.isBot = false,
   });
 
   factory GamePlayer.fromMap(Map<String, dynamic> d) => GamePlayer(
@@ -25,6 +27,7 @@ class GamePlayer {
         photoUrl: d['photoUrl'] as String?,
         score: (d['score'] as num?)?.toInt() ?? 0,
         ready: (d['ready'] as bool?) ?? false,
+        isBot: (d['isBot'] as bool?) ?? false,
       );
 
   Map<String, dynamic> toMap() => {
@@ -33,10 +36,17 @@ class GamePlayer {
         'photoUrl': photoUrl,
         'score': score,
         'ready': ready,
+        'isBot': isBot,
       };
 
-  GamePlayer copyWith({int? score, bool? ready}) =>
-      GamePlayer(uid: uid, name: name, photoUrl: photoUrl, score: score ?? this.score, ready: ready ?? this.ready);
+  GamePlayer copyWith({int? score, bool? ready}) => GamePlayer(
+        uid: uid,
+        name: name,
+        photoUrl: photoUrl,
+        score: score ?? this.score,
+        ready: ready ?? this.ready,
+        isBot: isBot,
+      );
 }
 
 class GameRoom {

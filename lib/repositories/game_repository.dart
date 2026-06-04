@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/constants/app_constants.dart';
 import '../core/constants/env.dart';
+import '../core/utils/bot_names.dart';
 import '../core/utils/id_utils.dart';
 import '../core/utils/sos_engine.dart';
 import '../models/app_user.dart';
@@ -30,9 +33,11 @@ class GameRepository {
     return snap.docs.isEmpty ? null : GameRoom.fromDoc(snap.docs.first);
   }
 
-  Future<GameRoom?> findQuickMatch() async {
+  Future<GameRoom?> findQuickMatch({
+    GameRoomType type = GameRoomType.quick,
+  }) async {
     final snap = await _rooms
-        .where('type', isEqualTo: 'quick')
+        .where('type', isEqualTo: type.name)
         .where('status', isEqualTo: 'waiting')
         .orderBy('createdAt')
         .limit(5)
@@ -122,6 +127,39 @@ class GameRepository {
 
   Future<void> startNow(String roomId) =>
       _rooms.doc(roomId).update({'status': 'active', 'startedAt': FieldValue.serverTimestamp()});
+
+  /// Fills any empty seats in a still-waiting room with realistic-looking AI
+  /// players and starts the match. Used as a matchmaking fallback so a player
+  /// never gets stuck waiting for a human opponent. No-op if the room already
+  /// started or filled (e.g. a real player joined first).
+  Future<void> addBotAndStart(String roomId) async {
+    await _firestore.runTransaction((tx) async {
+      final ref = _rooms.doc(roomId);
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final room = GameRoom.fromDoc(snap);
+      if (room.status != GameRoomStatus.waiting) return;
+      if (room.players.length >= room.maxPlayers) return;
+
+      final rng = Random();
+      final players = [...room.players];
+      while (players.length < room.maxPlayers) {
+        String name;
+        do {
+          name = BotNames.randomName(rng);
+        } while (players.any((p) => p.name == name));
+        players.add(
+          GamePlayer(uid: BotNames.generateBotUid(rng), name: name, isBot: true),
+        );
+      }
+
+      tx.update(ref, {
+        'players': players.map((p) => p.toMap()).toList(),
+        'status': 'active',
+        'startedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
 
   Future<void> abandon(String roomId) =>
       _rooms.doc(roomId).update({'status': 'abandoned', 'finishedAt': FieldValue.serverTimestamp()});

@@ -21,6 +21,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   bool _busy = false;
   String? _error;
   bool _magicEnabled = true;
+  int _maxPlayers = 2;
   final _codeCtrl = TextEditingController();
 
   GameRoomType _modeFromQuery() {
@@ -54,7 +55,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
       if (user == null) throw StateError('Not signed in');
       GameRoom? room;
       if (mode == GameRoomType.quick || mode == GameRoomType.ranked) {
-        final found = await repo.findQuickMatch();
+        final found = await repo.findQuickMatch(type: mode);
         if (found != null) {
           await repo.joinRoom(roomId: found.id, user: user);
           room = found;
@@ -65,6 +66,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
         room = await repo.createRoom(
           host: user,
           type: mode,
+          maxPlayers: _maxPlayers,
           magicEnabled: _magicEnabled,
         );
       }
@@ -177,6 +179,14 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
                   ),
                   if (mode == GameRoomType.private ||
                       mode == GameRoomType.friend) ...[
+                    const SizedBox(height: 14),
+                    _PlayerCountCard(
+                      value: _maxPlayers,
+                      onChanged: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _maxPlayers = v);
+                      },
+                    ),
                     const SizedBox(height: 14),
                     _MagicSpellsCard(
                       enabled: _magicEnabled,
@@ -685,6 +695,113 @@ class _CardLabel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PlayerCountCard extends StatelessWidget {
+  const _PlayerCountCard({
+    required this.value,
+    required this.onChanged,
+  });
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GameCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _CardLabel(
+            label: 'Players',
+            icon: Icons.groups_rounded,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'How many players in this room?',
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              color: AppColors.onSurfaceMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              for (final count in const [2, 3, 4]) ...[
+                Expanded(
+                  child: _PlayerCountChip(
+                    count: count,
+                    selected: value == count,
+                    onTap: () => onChanged(count),
+                  ),
+                ),
+                if (count != 4) const SizedBox(width: 10),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlayerCountChip extends StatelessWidget {
+  const _PlayerCountChip({
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primary.withOpacity(0.14)
+              : AppColors.primary.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary
+                : AppColors.primary.withOpacity(0.18),
+            width: selected ? 2 : 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.person_rounded,
+              size: 20,
+              color: selected ? AppColors.primary : AppColors.onSurfaceMuted,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$count',
+              style: GoogleFonts.luckiestGuy(
+                fontSize: 20,
+                color: selected ? AppColors.primary : AppColors.onSurface,
+              ),
+            ),
+            Text(
+              count == 2 ? 'Duel' : 'Players',
+              style: GoogleFonts.outfit(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.onSurfaceMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

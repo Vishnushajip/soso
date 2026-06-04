@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// "Vivid Play" palette — joyful, competitive, mobile-first social gaming.
-/// Royal Purple primary, Energetic Orange secondary, Vibrant Green tertiary,
-/// Electric Blue accent. Backgrounds are lavender-tinted white, never pure.
-/// Never hardcode a Color in screen code — pull from here.
 class AppColors {
   AppColors._();
 
-  // ---- Brand / action accents ------------------------------------------------
   static const primary = Color(0xFF6A38D4);
   static const onPrimary = Color(0xFFFFFFFF);
   static const primaryContainer = Color(0xFF8455EE);
@@ -26,7 +21,6 @@ class AppColors {
 
   static const accent = Color(0xFF3B82F6);
 
-  // ---- Game-piece + semantic aliases (preserved API) -------------------------
   static const bg = Color(0xFFFEF7FF);
   static const board = Color(0xFFF2EBF8);
   static const grid = Color(0xFFCBC3D7);
@@ -38,7 +32,6 @@ class AppColors {
   static const danger = Color(0xFFBA1A1A);
   static const highlight = primary;
 
-  // ---- Surface ladder --------------------------------------------------------
   static const surface = Color(0xFFFEF7FF);
   static const surfaceDim = Color(0xFFDED7E4);
   static const surfaceBright = Color(0xFFFEF7FF);
@@ -59,8 +52,6 @@ class AppColors {
   static const outline = Color(0xFF7B7486);
   static const outlineVariant = Color(0xFFCBC3D7);
   static const divider = outlineVariant;
-
-  // Deep indigo for high-contrast modal scrims (never pure black per spec).
   static const overlay = Color(0xCC2E1A47);
 
   static const error = danger;
@@ -68,9 +59,7 @@ class AppColors {
   static const errorContainer = Color(0xFFFFDAD6);
   static const onErrorContainer = Color(0xFF93000A);
 
-  // ---- Arena (battle-board theme for the online match screen) ----------------
-  // Dark "stone + lava" world used only on the game board. Pulled from here so
-  // screen code never hardcodes a Color (per spec).
+
   static const arenaBgTop = Color(0xFF1A1230);     // upper night sky
   static const arenaBgBottom = Color(0xFF070410);  // deep pit
   static const arenaGlow = Color(0xFFFF6A00);       // lava glow
@@ -83,7 +72,6 @@ class AppColors {
   static const onArena = Color(0xFFF1ECFF);         // primary text on arena
   static const onArenaMuted = Color(0xFF9C92C7);    // secondary text on arena
 
-  // ---- Player accents (visually distinct, 2–4 player local games) -----------
   static const player1 = accent;     // Electric Blue
   static const player2 = secondary;  // Energetic Orange
   static const player3 = primary;    // Royal Purple

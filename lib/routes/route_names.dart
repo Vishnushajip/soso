@@ -25,4 +25,6 @@ class RouteNames {
   static const contact = '/contact';
   static const shop = '/shop';
   static const profileDetail = '/profile/detail';
+  static const flappyGame = '/flappy-game';
+
 }

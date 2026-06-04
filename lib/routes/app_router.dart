@@ -12,6 +12,7 @@ import '../features/chat/view/global_chat_screen.dart';
 import '../features/friends/view/add_friend_screen.dart';
 import '../features/friends/view/friend_requests_screen.dart';
 import '../features/friends/view/friends_screen.dart';
+import '../features/flappy_bird/view/flappy_difficulty_screen.dart';
 import '../features/game/view/game_board_screen.dart';
 import '../features/game/view/game_mode_select_screen.dart';
 import '../features/game/view/local_game_board_screen.dart';
@@ -89,6 +90,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: RouteNames.profile, builder: (context, state) => const ProfileScreen()),
         ],
       ),
+
+      GoRoute(path: RouteNames.flappyGame, builder: (context, state) => const FlappyDifficultyScreen()),
 
       GoRoute(path: RouteNames.gameModes, builder: (context, state) => const GameModeSelectScreen()),
       GoRoute(path: RouteNames.localSetup, builder: (context, state) => const LocalGameSetupScreen()),

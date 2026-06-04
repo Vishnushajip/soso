@@ -95,7 +95,12 @@ class MainShell extends ConsumerWidget {
           const SizedBox(width: 4),
         ],
       ),
-      body: child,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 700),
+          child: child,
+        ),
+      ),
       bottomNavigationBar: _GameNavBar(
         selected: selected,
         tabs: _tabs,
@@ -390,16 +395,22 @@ class _GameNavBar extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.only(bottom: bottom, top: 6),
-        child: Row(
-          children: List.generate(tabs.length, (i) {
-            return Expanded(
-              child: _NavItem(
-                tab: tabs[i],
-                isSelected: i == selected,
-                onTap: () => onTap(i),
-              ),
-            );
-          }),
+        child: Center(
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: Row(
+              children: List.generate(tabs.length, (i) {
+                return Expanded(
+                  child: _NavItem(
+                    tab: tabs[i],
+                    isSelected: i == selected,
+                    onTap: () => onTap(i),
+                  ),
+                );
+              }),
+            ),
+          ),
         ),
       ),
     );

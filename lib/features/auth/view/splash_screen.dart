@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,14 +14,12 @@ final _videoControllerProvider =
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
       await controller.initialize();
-      // Browsers block autoplay for videos with sound. We must mute it on Web.
       await controller.setVolume(kIsWeb ? 0.0 : 1.0);
       await controller.setLooping(false);
       
       try {
         await controller.play();
       } catch (e) {
-        // Autoplay might still be rejected by strict browser settings
         debugPrint('Autoplay failed: $e');
       }
 
@@ -68,7 +64,7 @@ class SplashScreen extends ConsumerWidget {
             videoAsync.when(
               data: (controller) => SizedBox.expand(
                 child: FittedBox(
-                  fit: BoxFit.fill,
+                  fit: BoxFit.cover,
                   child: SizedBox(
                     width: controller.value.size.width,
                     height: controller.value.size.height,

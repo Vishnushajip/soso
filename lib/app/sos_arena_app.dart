@@ -26,29 +26,25 @@ import '../routes/app_router.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseBackgroundMessageHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   final n = message.notification;
   final data = message.data;
-  
+
   final title = n?.title ?? data['title'];
   final body = n?.body ?? data['body'];
   final roomId = data['roomId'] as String?;
   final type = data['type'] as String?;
-  
+
   if (title != null && body != null) {
     final localNotif = LocalNotificationsService();
     await localNotif.init();
-    
+
     String payload = roomId ?? '';
     if (type == 'challenge') {
       payload = 'challenge_$payload';
     }
-    
-    await localNotif.show(
-      title: title,
-      body: body,
-      payload: payload,
-    );
+
+    await localNotif.show(title: title, body: body, payload: payload);
   }
 }
 
@@ -76,7 +72,8 @@ class AppBootstrap {
     ]);
 
     if (Env.enableCrashlytics && !kIsWeb) {
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
       PlatformDispatcher.instance.onError = (error, stack) {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
@@ -94,7 +91,6 @@ class AppBootstrap {
   }
 }
 
-
 final bootstrapProvider = Provider<void>((ref) {
   Future.microtask(() async {
     try {
@@ -105,14 +101,18 @@ final bootstrapProvider = Provider<void>((ref) {
         ref.read(hapticServiceProvider).init(),
       ]);
 
-      ref.read(localNotificationsServiceProvider).onClickResponse.listen((payload) {
+      ref.read(localNotificationsServiceProvider).onClickResponse.listen((
+        payload,
+      ) {
         if (payload != null && payload.isNotEmpty) {
           final router = ref.read(appRouterProvider);
           if (payload.startsWith('match_')) {
             router.push('${RouteNames.gameBoard}?roomId=$payload');
           } else if (payload.startsWith('challenge_')) {
             final roomId = payload.substring('challenge_'.length);
-            router.push('${RouteNames.chatRoom}?roomId=$roomId&autoSend=I%20am%20ready%20for%20challenge');
+            router.push(
+              '${RouteNames.chatRoom}?roomId=$roomId&autoSend=I%20am%20ready%20for%20challenge',
+            );
           } else {
             router.push('${RouteNames.chatRoom}?roomId=$payload');
           }
@@ -123,65 +123,57 @@ final bootstrapProvider = Provider<void>((ref) {
     }
   });
 
-  ref.listen<AsyncValue<List<AppNotification>>>(
-    notificationsProvider,
-    (prev, next) {
-      final list = next.valueOrNull;
-      if (list == null) return;
+  ref.listen<AsyncValue<List<AppNotification>>>(notificationsProvider, (
+    prev,
+    next,
+  ) {
+    final list = next.valueOrNull;
+    if (list == null) return;
 
-      final localNotif = ref.read(localNotificationsServiceProvider);
-      final activeChatRoomId = ref.read(activeChatRoomIdProvider);
+    final localNotif = ref.read(localNotificationsServiceProvider);
+    final activeChatRoomId = ref.read(activeChatRoomIdProvider);
 
-      for (final n in list) {
-        if (n.read == false && !_shownNotifIds.contains(n.id)) {
-          _shownNotifIds.add(n.id);
+    for (final n in list) {
+      if (n.read == false && !_shownNotifIds.contains(n.id)) {
+        _shownNotifIds.add(n.id);
 
-          if (n.createdAt != null &&
-              DateTime.now().difference(n.createdAt!).inMinutes > 5) {
-            continue;
-          }
-
-          final roomId = n.data['roomId'] as String?;
-          if (activeChatRoomId != null && roomId == activeChatRoomId) {
-            continue;
-          }
-
-          localNotif.show(
-            title: n.title,
-            body: n.body,
-            payload: roomId ?? '',
-          );
-          ref.read(soundServiceProvider).play(AppSound.notify);
+        if (n.createdAt != null &&
+            DateTime.now().difference(n.createdAt!).inMinutes > 5) {
+          continue;
         }
-      }
-    },
-  );
 
-  ref.listen<AsyncValue<fb_auth.User?>>(
-    authStateProvider,
-    (_, next) async {
-      final user = next.valueOrNull;
-      final presence = ref.read(presenceServiceProvider);
-      final analytics = ref.read(analyticsServiceProvider);
-      final crashlytics = ref.read(crashlyticsServiceProvider);
+        final roomId = n.data['roomId'] as String?;
+        if (activeChatRoomId != null && roomId == activeChatRoomId) {
+          continue;
+        }
 
-      if (user == null) {
-        await presence.stop();
-        await analytics.setUser(null);
-        await crashlytics.setUser(null);
-        return;
+        localNotif.show(title: n.title, body: n.body, payload: roomId ?? '');
+        ref.read(soundServiceProvider).play(AppSound.notify);
       }
-      try {
-        await ref.read(fcmServiceProvider).syncTokenForUser(user.uid);
-        presence.start(user.uid);
-        await analytics.setUser(user.uid);
-        await crashlytics.setUser(user.uid);
-      } catch (e, s) {
-        appLogger.w('post-auth wire-up: $e\n$s');
-      }
-    },
-    fireImmediately: true,
-  );
+    }
+  });
+
+  ref.listen<AsyncValue<fb_auth.User?>>(authStateProvider, (_, next) async {
+    final user = next.valueOrNull;
+    final presence = ref.read(presenceServiceProvider);
+    final analytics = ref.read(analyticsServiceProvider);
+    final crashlytics = ref.read(crashlyticsServiceProvider);
+
+    if (user == null) {
+      await presence.stop();
+      await analytics.setUser(null);
+      await crashlytics.setUser(null);
+      return;
+    }
+    try {
+      await ref.read(fcmServiceProvider).syncTokenForUser(user.uid);
+      presence.start(user.uid);
+      await analytics.setUser(user.uid);
+      await crashlytics.setUser(user.uid);
+    } catch (e, s) {
+      appLogger.w('post-auth wire-up: $e\n$s');
+    }
+  }, fireImmediately: true);
 });
 
 class SosArenaApp extends ConsumerWidget {

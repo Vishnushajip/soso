@@ -33,31 +33,46 @@ class SignInScreen extends ConsumerWidget {
         children: [
           const _BackgroundDecor(),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-              child: Column(
-                children: [
-                  const Spacer(flex: 2),
-                  const _LogoSection(),
-                  const Spacer(flex: 3),
-                  const _BoardPreview(),
-                  const Spacer(flex: 2),
-                  _SignInButton(
-                    busy: busy,
-                    onTap: () => notifier.signInWithGoogle(),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'By continuing you agree to our Terms & Privacy Policy.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.outfit(
-                      color: AppColors.onSurfaceMuted.withOpacity(0.7),
-                      fontSize: 11,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 450),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(height: 24),
+                              const _LogoSection(),
+                              const SizedBox(height: 48),
+                              const _BoardPreview(),
+                              const SizedBox(height: 48),
+                              _SignInButton(
+                                busy: busy,
+                                onTap: () => notifier.signInWithGoogle(),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'By continuing you agree to our Terms & Privacy Policy.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.outfit(
+                                  color: AppColors.onSurfaceMuted.withOpacity(0.7),
+                                  fontSize: 11,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                ),
               ),
             ),
           ),

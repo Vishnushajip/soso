@@ -211,6 +211,7 @@ class ChatRepository {
     required String text,
     required String roomId,
     required String senderId,
+    String type = 'message',
   }) async {
     appLogger.d(
       'Sending direct V1 FCM push:\n'
@@ -281,7 +282,7 @@ class ChatRepository {
           'data': {
             'roomId': roomId,
             'senderId': senderId,
-            'type': 'message',
+            'type': type,
             'click_action': 'FLUTTER_NOTIFICATION_CLICK',
           },
         },
@@ -329,4 +330,41 @@ class ChatRepository {
 
   Future<void> markRead({required String roomId, required String uid}) =>
       _rooms.doc(roomId).set({'unreadCount.$uid': 0}, SetOptions(merge: true));
+
+  Future<void> sendChallenge({
+    required String me,
+    required String myName,
+    required String otherUid,
+  }) async {
+    final room = await openDirectChat(me: me, other: otherUid);
+    const text = 'has challenged you to a match! ⚔️';
+
+    // Save an in-app notification
+    await _notifs.doc().set({
+      'toUid': otherUid,
+      'type': 'challenge',
+      'title': myName,
+      'body': text,
+      'data': {'roomId': room.id, 'senderId': me},
+      'read': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // Send push notification
+    final userDoc = await _firestore
+        .collection(AppConstants.usersCollection)
+        .doc(otherUid)
+        .get();
+    final recipientFcmToken = userDoc.data()?['fcmToken'] as String?;
+    if (recipientFcmToken != null && recipientFcmToken.isNotEmpty) {
+      await _sendFcmPush(
+        recipientFcmToken: recipientFcmToken,
+        senderName: myName,
+        text: text,
+        roomId: room.id,
+        senderId: me,
+        type: 'challenge',
+      );
+    }
+  }
 }

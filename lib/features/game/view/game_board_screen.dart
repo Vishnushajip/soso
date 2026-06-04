@@ -749,7 +749,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        if (user != null) ...[
+                        if (user != null && room.magicEnabled) ...[
                           IgnorePointer(
                             ignoring: !myTurn,
                             child: AnimatedOpacity(

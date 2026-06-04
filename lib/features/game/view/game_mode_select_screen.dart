@@ -105,7 +105,6 @@ class _Header extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Glowing decorative neon background lights
                   Positioned(
                     left: -40,
                     top: -40,
@@ -138,14 +137,10 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // Decorative grid line vectors
                   Opacity(
                     opacity: 0.08,
                     child: CustomPaint(painter: _GridPainter()),
                   ),
-
-                  // Floating 3D game pieces (drawn beautifully in code)
                   const Positioned(
                     left: 32,
                     top: 36,
@@ -174,7 +169,6 @@ class _Header extends StatelessWidget {
                     ),
                   ),
 
-                  // Premium glassmorphic tag badge in the center
                   Center(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),

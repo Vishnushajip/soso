@@ -20,6 +20,7 @@ class OnlineLobbyScreen extends ConsumerStatefulWidget {
 class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   bool _busy = false;
   String? _error;
+  bool _magicEnabled = true;
   final _codeCtrl = TextEditingController();
 
   GameRoomType _modeFromQuery() {
@@ -61,7 +62,11 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
           room = await repo.createRoom(host: user, type: mode);
         }
       } else {
-        room = await repo.createRoom(host: user, type: mode);
+        room = await repo.createRoom(
+          host: user,
+          type: mode,
+          magicEnabled: _magicEnabled,
+        );
       }
       if (!mounted) return;
       context.push('${RouteNames.gameBoard}?roomId=${room.id}');
@@ -170,6 +175,17 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
                     mode: mode,
                     onStart: () => _startMatch(mode),
                   ),
+                  if (mode == GameRoomType.private ||
+                      mode == GameRoomType.friend) ...[
+                    const SizedBox(height: 14),
+                    _MagicSpellsCard(
+                      enabled: _magicEnabled,
+                      onChanged: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _magicEnabled = v);
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   _JoinCodeCard(controller: _codeCtrl, onJoin: _joinByCode),
                   if (_error != null) ...[
@@ -669,6 +685,77 @@ class _CardLabel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MagicSpellsCard extends StatelessWidget {
+  const _MagicSpellsCard({
+    required this.enabled,
+    required this.onChanged,
+  });
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GameCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _CardLabel(
+            label: 'Match Settings',
+            icon: Icons.settings_rounded,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Allow Magic Spells',
+                      style: GoogleFonts.luckiestGuy(
+                        fontSize: 14,
+                        color: AppColors.onSurface,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Enable undo, erase, and hints during gameplay',
+                      style: GoogleFonts.outfit(
+                        color: AppColors.onSurfaceMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: enabled,
+                activeTrackColor: AppColors.primary,
+                onChanged: onChanged,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

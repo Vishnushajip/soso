@@ -45,6 +45,7 @@ class GameRepository {
     required GameRoomType type,
     int maxPlayers = 2,
     int? boardSize,
+    bool magicEnabled = true,
   }) async {
     final ref = _rooms.doc();
     final size = boardSize ?? Env.boardSize;
@@ -64,6 +65,7 @@ class GameRepository {
       'board': List<String>.filled(size * size, ''),
       'currentTurn': 0,
       'createdAt': FieldValue.serverTimestamp(),
+      'magicEnabled': magicEnabled,
     };
     await ref.set(room);
     return GameRoom.fromDoc(await ref.get());

@@ -20,10 +20,12 @@ class LocalGameBoardScreen extends ConsumerStatefulWidget {
     super.key,
     required this.boardSize,
     required this.playerNames,
+    required this.magicEnabled,
   });
 
   final int boardSize;
   final List<String> playerNames;
+  final bool magicEnabled;
 
   @override
   ConsumerState<LocalGameBoardScreen> createState() =>
@@ -212,7 +214,7 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (!state.finished && user != null) ...[
+                if (!state.finished && user != null && widget.magicEnabled) ...[
                   _SpellBar(
                     eraserMode: _eraserMode,
                     undoCount: user.inventory['undo_move'] ?? 0,

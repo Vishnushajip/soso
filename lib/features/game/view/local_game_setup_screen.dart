@@ -22,6 +22,7 @@ class _LocalGameSetupScreenState extends ConsumerState<LocalGameSetupScreen>
     with SingleTickerProviderStateMixin {
   int _playerCount = 2;
   int _boardSize = Env.boardSize;
+  bool _magicEnabled = true;
   late final List<TextEditingController> _names = List.generate(
     AppConstants.maxPlayersLocal,
     (i) => TextEditingController(text: 'Player ${i + 1}'),
@@ -126,6 +127,14 @@ class _LocalGameSetupScreenState extends ConsumerState<LocalGameSetupScreen>
               },
             ),
             const SizedBox(height: 14),
+            _MagicSpellsCard(
+              enabled: _magicEnabled,
+              onChanged: (v) {
+                HapticFeedback.selectionClick();
+                setState(() => _magicEnabled = v);
+              },
+            ),
+            const SizedBox(height: 14),
             _NamesCard(playerCount: _playerCount, controllers: _names),
             const SizedBox(height: 28),
             _StartButton(
@@ -139,7 +148,7 @@ class _LocalGameSetupScreenState extends ConsumerState<LocalGameSetupScreen>
                       (c) => c.text.trim().isEmpty ? 'Player' : c.text.trim(),
                     );
                 context.push(
-                  '${RouteNames.localBoard}?size=$_boardSize&names=${names.join(',')}',
+                  '${RouteNames.localBoard}?size=$_boardSize&names=${names.join(',')}&magicEnabled=$_magicEnabled',
                 );
               },
             ),
@@ -684,6 +693,77 @@ class _CardLabel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MagicSpellsCard extends StatelessWidget {
+  const _MagicSpellsCard({
+    required this.enabled,
+    required this.onChanged,
+  });
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GameCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _CardLabel(
+            label: 'Match Settings',
+            icon: Icons.settings_rounded,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Allow Magic Spells',
+                      style: GoogleFonts.luckiestGuy(
+                        fontSize: 14,
+                        color: AppColors.onSurface,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Enable undo, erase, and hints during gameplay',
+                      style: GoogleFonts.outfit(
+                        color: AppColors.onSurfaceMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: enabled,
+                activeTrackColor: AppColors.primary,
+                onChanged: onChanged,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

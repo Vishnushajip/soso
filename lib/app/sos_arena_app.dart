@@ -31,14 +31,21 @@ Future<void> firebaseBackgroundMessageHandler(RemoteMessage message) async {
   final title = n?.title ?? data['title'];
   final body = n?.body ?? data['body'];
   final roomId = data['roomId'] as String?;
+  final type = data['type'] as String?;
   
   if (title != null && body != null) {
     final localNotif = LocalNotificationsService();
     await localNotif.init();
+    
+    String payload = roomId ?? '';
+    if (type == 'challenge') {
+      payload = 'challenge_$payload';
+    }
+    
     await localNotif.show(
       title: title,
       body: body,
-      payload: roomId ?? '',
+      payload: payload,
     );
   }
 }
@@ -89,6 +96,9 @@ final bootstrapProvider = Provider<void>((ref) {
           final router = ref.read(appRouterProvider);
           if (payload.startsWith('match_')) {
             router.push('${RouteNames.gameBoard}?roomId=$payload');
+          } else if (payload.startsWith('challenge_')) {
+            final roomId = payload.substring('challenge_'.length);
+            router.push('${RouteNames.chatRoom}?roomId=$roomId&autoSend=I%20am%20ready%20for%20challenge');
           } else {
             router.push('${RouteNames.chatRoom}?roomId=$payload');
           }

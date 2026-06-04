@@ -408,6 +408,37 @@ class _FriendCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _RoundIconBtn(
+                  icon: Icons.sports_esports_rounded,
+                  color: AppColors.secondary,
+                  tooltip: 'Challenge',
+                  onTap: () async {
+                    HapticFeedback.lightImpact();
+                    if (me == null) return;
+                    final myUser = ref.read(currentUserProvider).valueOrNull;
+                    if (myUser == null) return;
+                    
+                    try {
+                      await ref.read(chatRepositoryProvider).sendChallenge(
+                        me: me!,
+                        myName: myUser.name,
+                        otherUid: otherUid,
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Challenge sent!')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to send challenge: $e')),
+                        );
+                      }
+                    }
+                  },
+                ),
+                const SizedBox(width: 6),
+                _RoundIconBtn(
                   icon: Icons.chat_bubble_rounded,
                   color: AppColors.primary,
                   tooltip: 'Chat',

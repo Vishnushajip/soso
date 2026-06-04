@@ -58,6 +58,7 @@ class FcmService {
         final title = n?.title ?? data['title'];
         final body = n?.body ?? data['body'];
         final roomId = data['roomId'] as String?;
+        final type = data['type'] as String?;
 
         if (title != null && body != null) {
           final activeChatRoomId = _ref.read(activeChatRoomIdProvider);
@@ -65,10 +66,15 @@ class FcmService {
             return;
           }
           
+          String payload = roomId ?? '';
+          if (type == 'challenge') {
+            payload = 'challenge_$payload';
+          }
+          
           _localNotifications.show(
             title: title,
             body: body,
-            payload: roomId ?? '',
+            payload: payload,
           );
         }
       });

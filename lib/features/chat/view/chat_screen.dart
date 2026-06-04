@@ -16,8 +16,9 @@ import '../../../providers/user_providers.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.roomId});
+  const ChatScreen({super.key, required this.roomId, this.autoSend});
   final String roomId;
+  final String? autoSend;
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
@@ -54,6 +55,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (me != null) {
         await ref.read(chatRepositoryProvider).markRead(roomId: widget.roomId, uid: me.uid);
         await ref.read(chatRepositoryProvider).markMessagesAsRead(roomId: widget.roomId, myUid: me.uid);
+      }
+      
+      if (widget.autoSend != null && widget.autoSend!.isNotEmpty) {
+        _ctrl.text = widget.autoSend!;
+        _send();
       }
     } catch (_) {}
   }

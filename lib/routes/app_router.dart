@@ -95,7 +95,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: RouteNames.localBoard, builder: (context, state) {
         final size = int.tryParse(state.uri.queryParameters['size'] ?? '') ?? 8;
         final names = (state.uri.queryParameters['names'] ?? '').split(',');
-        return LocalGameBoardScreen(boardSize: size, playerNames: names);
+        final magic = state.uri.queryParameters['magicEnabled'] != 'false';
+        return LocalGameBoardScreen(
+          boardSize: size,
+          playerNames: names,
+          magicEnabled: magic,
+        );
       }),
       GoRoute(path: RouteNames.onlineLobby, builder: (context, state) => const OnlineLobbyScreen()),
       GoRoute(path: RouteNames.gameBoard, builder: (context, state) {
@@ -111,7 +116,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: RouteNames.addFriend, builder: (context, state) => const AddFriendScreen()),
       GoRoute(path: RouteNames.chatRoom, builder: (context, state) {
         final roomId = state.uri.queryParameters['roomId'] ?? '';
-        return ChatScreen(roomId: roomId);
+        final autoSend = state.uri.queryParameters['autoSend'];
+        return ChatScreen(roomId: roomId, autoSend: autoSend);
       }),
       GoRoute(path: RouteNames.globalChat, builder: (context, state) => const GlobalChatScreen()),
 

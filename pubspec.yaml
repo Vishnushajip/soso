@@ -46,6 +46,7 @@ dependencies:
   video_player: ^2.11.1
   googleapis_auth: ^1.4.1
   flutter_displaymode: ^0.7.0
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

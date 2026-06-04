@@ -27,7 +27,7 @@ class SignInScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.arenaBgBottom,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -35,32 +35,37 @@ class SignInScreen extends ConsumerWidget {
           SafeArea(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 450),
+                constraints: const BoxConstraints(maxWidth: 420),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     return SingleChildScrollView(
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 28,
+                            vertical: 32,
+                          ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 16),
                               const _LogoSection(),
-                              const SizedBox(height: 48),
-                              const _BoardPreview(),
-                              const SizedBox(height: 48),
+                              const SizedBox(height: 64),
                               _SignInButton(
                                 busy: busy,
                                 onTap: () => notifier.signInWithGoogle(),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 20),
                               Text(
                                 'By continuing you agree to our Terms & Privacy Policy.',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.outfit(
-                                  color: AppColors.onSurfaceMuted.withOpacity(0.7),
+                                  color: AppColors.onArenaMuted.withOpacity(
+                                    0.5,
+                                  ),
                                   fontSize: 11,
                                   letterSpacing: 0.2,
                                 ),
@@ -71,7 +76,7 @@ class SignInScreen extends ConsumerWidget {
                         ),
                       ),
                     );
-                  }
+                  },
                 ),
               ),
             ),
@@ -87,8 +92,11 @@ class SignInScreen extends ConsumerWidget {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.board,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: AppColors.arenaStone,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.arenaStoneEdge, width: 1.5),
+        ),
         title: Text(
           'Sign-in Failed',
           style: GoogleFonts.luckiestGuy(
@@ -98,7 +106,7 @@ class SignInScreen extends ConsumerWidget {
         ),
         content: Text(
           message,
-          style: GoogleFonts.outfit(color: AppColors.onSurface, fontSize: 14),
+          style: GoogleFonts.outfit(color: AppColors.onArena, fontSize: 14),
         ),
         actions: [
           TextButton(
@@ -107,7 +115,7 @@ class SignInScreen extends ConsumerWidget {
               'OK',
               style: GoogleFonts.outfit(
                 fontWeight: FontWeight.w800,
-                color: AppColors.primary,
+                color: AppColors.inversePrimary,
               ),
             ),
           ),
@@ -125,36 +133,46 @@ class _BackgroundDecor extends StatelessWidget {
     final size = MediaQuery.sizeOf(context);
     return Stack(
       children: [
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [AppColors.arenaBgTop, AppColors.arenaBgBottom],
+            ),
+          ),
+          child: SizedBox.expand(),
+        ),
         Positioned(
-          top: -60,
-          left: -60,
+          top: -80,
+          left: -80,
           child: _DecorCircle(
-            size: 200,
-            color: AppColors.sColor.withOpacity(0.06),
+            size: 260,
+            color: AppColors.sColor.withOpacity(0.08),
           ),
         ),
         Positioned(
-          top: size.height * 0.15,
-          right: -40,
-          child: _DecorCircle(
-            size: 140,
-            color: AppColors.oColor.withOpacity(0.07),
-          ),
-        ),
-        Positioned(
-          bottom: size.height * 0.18,
-          left: -30,
-          child: _DecorCircle(
-            size: 120,
-            color: AppColors.highlight.withOpacity(0.06),
-          ),
-        ),
-        Positioned(
-          bottom: -50,
-          right: -50,
+          top: size.height * 0.22,
+          right: -60,
           child: _DecorCircle(
             size: 180,
-            color: AppColors.secondary.withOpacity(0.06),
+            color: AppColors.oColor.withOpacity(0.09),
+          ),
+        ),
+        Positioned(
+          bottom: size.height * 0.20,
+          left: -40,
+          child: _DecorCircle(
+            size: 150,
+            color: AppColors.arenaGlow.withOpacity(0.07),
+          ),
+        ),
+        Positioned(
+          bottom: -60,
+          right: -60,
+          child: _DecorCircle(
+            size: 220,
+            color: AppColors.primaryContainer.withOpacity(0.10),
           ),
         ),
         ..._buildDots(size),
@@ -164,35 +182,35 @@ class _BackgroundDecor extends StatelessWidget {
 
   List<Widget> _buildDots(Size size) {
     final positions = [
-      (0.12, 0.12),
-      (0.88, 0.08),
-      (0.05, 0.45),
-      (0.92, 0.38),
-      (0.18, 0.78),
-      (0.80, 0.72),
-      (0.50, 0.06),
-      (0.60, 0.92),
+      (0.10, 0.10),
+      (0.88, 0.07),
+      (0.04, 0.48),
+      (0.94, 0.35),
+      (0.15, 0.80),
+      (0.82, 0.74),
+      (0.50, 0.05),
+      (0.62, 0.93),
     ];
     final colors = [
       AppColors.sColor,
       AppColors.oColor,
-      AppColors.highlight,
-      AppColors.secondary,
-      AppColors.primary,
+      AppColors.arenaGold,
+      AppColors.inversePrimary,
+      AppColors.arenaGlow,
       AppColors.sColor,
       AppColors.oColor,
-      AppColors.highlight,
+      AppColors.arenaGold,
     ];
     return List.generate(positions.length, (i) {
       final p = positions[i];
       return Positioned(
-        left: size.width * p.$1 - 5,
-        top: size.height * p.$2 - 5,
+        left: size.width * p.$1 - 4,
+        top: size.height * p.$2 - 4,
         child: Container(
-          width: 8,
-          height: 8,
+          width: 6,
+          height: 6,
           decoration: BoxDecoration(
-            color: colors[i % colors.length].withOpacity(0.25),
+            color: colors[i % colors.length].withOpacity(0.3),
             shape: BoxShape.circle,
           ),
         ),
@@ -223,256 +241,90 @@ class _LogoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.sColor.withOpacity(0.35),
+                blurRadius: 40,
+                spreadRadius: 4,
+              ),
+              BoxShadow(
+                color: AppColors.oColor.withOpacity(0.2),
+                blurRadius: 60,
+                spreadRadius: 8,
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Image.asset('assets/images/app_icon.png', fit: BoxFit.cover),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'SOS ARENA',
+          style: GoogleFonts.luckiestGuy(
+            fontSize: 32,
+            color: AppColors.onArena,
+            letterSpacing: 6,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Place · Score · Dominate',
+          style: GoogleFonts.outfit(
+            color: AppColors.onArenaMuted.withOpacity(0.6),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 16),
         const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _GlowLetter(letter: 'S', color: AppColors.sColor),
-            _GlowLetter(letter: 'O', color: AppColors.oColor),
-            _GlowLetter(letter: 'S', color: AppColors.sColor),
+            _PillBadge(label: 'S', color: AppColors.sColor),
+            SizedBox(width: 6),
+            _PillBadge(label: 'O', color: AppColors.oColor),
+            SizedBox(width: 6),
+            _PillBadge(label: 'S', color: AppColors.sColor),
           ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          'ARENA',
-          style: GoogleFonts.luckiestGuy(
-            fontSize: 18,
-            color: AppColors.onSurfaceMuted,
-            letterSpacing: 10,
-          ),
-        ),
-        const SizedBox(height: 18),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.15),
-              width: 1.5,
-            ),
-          ),
-          child: Text(
-            'Place S · Place O · Score Combos · Win',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
-              color: AppColors.onSurfaceMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ),
       ],
     );
   }
 }
 
-class _GlowLetter extends StatelessWidget {
-  const _GlowLetter({required this.letter, required this.color});
-  final String letter;
+class _PillBadge extends StatelessWidget {
+  const _PillBadge({required this.label, required this.color});
+  final String label;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Text(
-          letter,
-          style: GoogleFonts.luckiestGuy(
-            fontSize: 72,
-            foreground: Paint()
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 8
-              ..strokeJoin = StrokeJoin.round
-              ..color = color.withOpacity(0.25),
-          ),
-        ),
-        Text(
-          letter,
-          style: GoogleFonts.luckiestGuy(
-            fontSize: 72,
-            color: color,
-            shadows: [
-              Shadow(color: color.withOpacity(0.5), blurRadius: 20),
-              Shadow(color: color.withOpacity(0.3), blurRadius: 40),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _BoardPreview extends StatelessWidget {
-  const _BoardPreview();
-
-  static const _cells = [
-    ('S', true),
-    ('', false),
-    ('O', true),
-    ('', false),
-    ('S', true),
-    ('', false),
-    ('O', true),
-    ('', false),
-    ('S', true),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          'HOW IT WORKS',
-          style: GoogleFonts.luckiestGuy(
-            fontSize: 12,
-            color: AppColors.primary,
-            letterSpacing: 3,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.board,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.grid.withOpacity(0.5),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.10),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 6,
-                  crossAxisSpacing: 6,
-                  childAspectRatio: 1,
-                ),
-                itemCount: 9,
-                itemBuilder: (_, i) {
-                  final cell = _cells[i];
-                  return _BoardCell(letter: cell.$1, isScored: cell.$2);
-                },
-              ),
-              const SizedBox(height: 10),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _LegendDot(color: AppColors.sColor, label: 'S tile'),
-                  SizedBox(width: 16),
-                  _LegendDot(color: AppColors.oColor, label: 'O tile'),
-                  SizedBox(width: 16),
-                  _LegendDot(color: AppColors.success, label: 'SOS scored'),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _BoardCell extends StatelessWidget {
-  const _BoardCell({required this.letter, required this.isScored});
-  final String letter;
-  final bool isScored;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasLetter = letter.isNotEmpty;
-    final color = letter == 'S'
-        ? AppColors.sColor
-        : letter == 'O'
-        ? AppColors.oColor
-        : AppColors.grid;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+    return Container(
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
-        color: isScored
-            ? AppColors.success.withOpacity(0.15)
-            : hasLetter
-            ? color.withOpacity(0.10)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isScored
-              ? AppColors.success.withOpacity(0.6)
-              : hasLetter
-              ? color.withOpacity(0.4)
-              : AppColors.grid.withOpacity(0.3),
-          width: 1.5,
-        ),
-        boxShadow: isScored
-            ? [
-                BoxShadow(
-                  color: AppColors.success.withOpacity(0.2),
-                  blurRadius: 8,
-                ),
-              ]
-            : null,
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+        boxShadow: [BoxShadow(color: color.withOpacity(0.2), blurRadius: 12)],
       ),
       child: Center(
-        child: hasLetter
-            ? Text(
-                letter,
-                style: GoogleFonts.luckiestGuy(
-                  fontSize: 26,
-                  color: isScored ? AppColors.success : color,
-                  shadows: isScored
-                      ? [
-                          Shadow(
-                            color: AppColors.success.withOpacity(0.5),
-                            blurRadius: 10,
-                          ),
-                        ]
-                      : null,
-                ),
-              )
-            : null,
-      ),
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(
+        child: Text(
           label,
-          style: GoogleFonts.outfit(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: AppColors.onSurfaceMuted,
+          style: GoogleFonts.luckiestGuy(
+            fontSize: 20,
+            color: color,
+            shadows: [Shadow(color: color.withOpacity(0.6), blurRadius: 10)],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -488,17 +340,24 @@ class _SignInButton extends StatelessWidget {
       onTap: busy ? null : onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [AppColors.primary, AppColors.sColor],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.primaryContainer, AppColors.sColor],
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.45),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: AppColors.sColor.withOpacity(0.5),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: AppColors.primaryContainer.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -506,10 +365,10 @@ class _SignInButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.white.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.login_rounded,
@@ -517,13 +376,13 @@ class _SignInButton extends StatelessWidget {
                 size: 18,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Text(
               'Continue with Google',
               style: GoogleFonts.luckiestGuy(
                 fontSize: 18,
                 color: Colors.white,
-                letterSpacing: 1,
+                letterSpacing: 0.8,
               ),
             ),
           ],
@@ -566,21 +425,18 @@ class _SignInOverlayState extends State<_SignInOverlay>
     return Positioned.fill(
       child: AbsorbPointer(
         child: Container(
-          color: Colors.black.withOpacity(0.6),
+          color: Colors.black.withOpacity(0.65),
           child: Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
               decoration: BoxDecoration(
-                color: AppColors.board,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: AppColors.primary.withOpacity(0.3),
-                  width: 2,
-                ),
+                color: AppColors.arenaStone,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: AppColors.arenaStoneEdge, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.2),
-                    blurRadius: 30,
+                    color: AppColors.sColor.withOpacity(0.18),
+                    blurRadius: 40,
                     spreadRadius: 4,
                   ),
                 ],
@@ -593,8 +449,8 @@ class _SignInOverlayState extends State<_SignInOverlay>
                     builder: (_, _) => Transform.rotate(
                       angle: _spin.value,
                       child: Container(
-                        width: 52,
-                        height: 52,
+                        width: 56,
+                        height: 56,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: SweepGradient(
@@ -609,13 +465,13 @@ class _SignInOverlayState extends State<_SignInOverlay>
                           margin: const EdgeInsets.all(4),
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.board,
+                            color: AppColors.arenaStone,
                           ),
                           child: Center(
                             child: Text(
                               'S',
                               style: GoogleFonts.luckiestGuy(
-                                fontSize: 20,
+                                fontSize: 22,
                                 color: AppColors.sColor,
                               ),
                             ),
@@ -624,12 +480,12 @@ class _SignInOverlayState extends State<_SignInOverlay>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
                   Text(
                     'Signing In…',
                     style: GoogleFonts.luckiestGuy(
                       fontSize: 20,
-                      color: AppColors.onSurface,
+                      color: AppColors.onArena,
                       letterSpacing: 1,
                     ),
                   ),
@@ -637,7 +493,7 @@ class _SignInOverlayState extends State<_SignInOverlay>
                   Text(
                     'Talking to Google',
                     style: GoogleFonts.outfit(
-                      color: AppColors.onSurfaceMuted,
+                      color: AppColors.onArenaMuted,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),

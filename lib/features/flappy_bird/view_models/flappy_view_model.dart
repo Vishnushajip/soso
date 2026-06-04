@@ -101,7 +101,7 @@ const double kPipeWidth = 0.16;
 const double kBirdX = 0.28;
 const double kBirdRadius = 0.045;
 const double kGravity = 0.00045;
-const double kFlapImpulse = -0.016;
+const double kFlapImpulse = -0.011;
 const double kMaxFall = 0.025;
 
 class Pipe {

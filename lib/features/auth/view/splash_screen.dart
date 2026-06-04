@@ -7,6 +7,9 @@ import 'package:video_player/video_player.dart';
 import '../../../providers/auth_providers.dart';
 import '../../../routes/route_names.dart';
 
+
+final _splashMutedProvider = StateProvider.autoDispose<bool>((ref) => kIsWeb);
+
 final _videoControllerProvider =
     FutureProvider.autoDispose<VideoPlayerController>((ref) async {
       final controller = VideoPlayerController.asset(
@@ -16,7 +19,7 @@ final _videoControllerProvider =
       await controller.initialize();
       await controller.setVolume(kIsWeb ? 0.0 : 1.0);
       await controller.setLooping(false);
-      
+
       try {
         await controller.play();
       } catch (e) {
@@ -37,9 +40,26 @@ class SplashScreen extends ConsumerWidget {
     context.go(loggedIn ? RouteNames.home : RouteNames.signIn);
   }
 
+  Future<void> _handleTap(WidgetRef ref, BuildContext context) async {
+    final muted = ref.read(_splashMutedProvider);
+   
+    if (muted) {
+      final controller = ref.read(_videoControllerProvider).valueOrNull;
+      if (controller != null) {
+        ref.read(_splashMutedProvider.notifier).state = false;
+        await controller.setVolume(1.0);
+        await controller.seekTo(Duration.zero);
+        await controller.play();
+        return;
+      }
+    }
+    _navigateToNextScreen(ref, context);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final videoAsync = ref.watch(_videoControllerProvider);
+    final muted = ref.watch(_splashMutedProvider);
 
     ref.listen<AsyncValue<VideoPlayerController>>(_videoControllerProvider, (
       _,
@@ -56,7 +76,7 @@ class SplashScreen extends ConsumerWidget {
     });
 
     return GestureDetector(
-      onTap: () => _navigateToNextScreen(ref, context),
+      onTap: () => _handleTap(ref, context),
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Stack(
@@ -85,15 +105,42 @@ class SplashScreen extends ConsumerWidget {
                 curve: Curves.easeInOut,
                 builder: (_, value, child) =>
                     Opacity(opacity: value, child: child),
-                child: Text(
-                  'Tap to continue',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white38,
-                    letterSpacing: 2.0,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (muted)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.volume_off_rounded,
+                            size: 16,
+                            color: Colors.white38,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Tap for sound',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.white38,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        'Tap to continue',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white38,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),

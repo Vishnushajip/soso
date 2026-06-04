@@ -25,7 +25,7 @@ class FlappyBirdSection extends ConsumerWidget {
 
         final r = kBirdRadius * h;
         final birdSize =
-            r * 2.2; // Slightly larger to accommodate the image's bounding box
+            r * 2.2; 
         final bx = kBirdX * w;
         final by = state.birdY * h;
         final tilt = (state.birdVel * 14).clamp(-0.6, 1.2).toDouble();
@@ -46,7 +46,7 @@ class FlappyBirdSection extends ConsumerWidget {
                 child: Transform.rotate(
                   angle: tilt,
                   child: Image.asset(
-                    'assets/images/flappy-bird.pngg',
+                    'assets/images/flappy-bird.png',
                     fit: BoxFit.contain,
                   ),
                 ),

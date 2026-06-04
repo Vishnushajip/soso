@@ -249,16 +249,18 @@ class _PointsPill extends StatelessWidget {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Image.network(
             'https://img.icons8.com/3d-fluency/94/star.png',
-            width: 16,
-            height: 16,
+            width: 13,
+            height: 13,
             errorBuilder: (_, _, _) => const Icon(
               Icons.stars_rounded,
               color: AppColors.secondary,
-              size: 15,
+              size: 13,
             ),
           ),
           const SizedBox(width: 4),

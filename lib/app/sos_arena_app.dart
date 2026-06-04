@@ -22,6 +22,7 @@ import '../providers/chat_providers.dart';
 import '../providers/notification_providers.dart';
 import '../providers/service_providers.dart';
 import '../routes/app_router.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseBackgroundMessageHandler(RemoteMessage message) async {
@@ -59,12 +60,11 @@ class AppBootstrap {
     if (!kIsWeb && Platform.isAndroid) {
       try {
         await FlutterDisplayMode.setHighRefreshRate();
-      } catch (e) {
-        // Ignore on devices where display mode is not supported
-      }
+      } catch (e) {}
     }
-
-    // Run heavy initialization tasks concurrently to reduce app startup time
+    if (kIsWeb) {
+      usePathUrlStrategy();
+    }
     final futures = await Future.wait([
       Env.load(),
       Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),

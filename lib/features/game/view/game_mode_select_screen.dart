@@ -1,10 +1,12 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../features/home/widgets/download_app_banner.dart';
 import '../../../providers/user_providers.dart';
 import '../../../routes/route_names.dart';
 
@@ -24,6 +26,10 @@ class GameModeSelectScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (kIsWeb) ...[
+                  const DownloadAppBanner(),
+                  const SizedBox(height: 24),
+                ],
                 _SectionLabel(
                   label: 'Same Device',
                   trailing: Row(
@@ -55,24 +61,15 @@ class GameModeSelectScreen extends ConsumerWidget {
                 const _SectionLabel(label: 'Online', trailing: _OnlineBadge()),
                 const SizedBox(height: 14),
                 _OnlineGrid(
-                  onQuickMatch: () =>
-                      context.push('${RouteNames.onlineLobby}?mode=quick'),
                   onRanked: () =>
                       context.push('${RouteNames.onlineLobby}?mode=ranked'),
-                  onPrivateRoom: () =>
-                      context.push('${RouteNames.onlineLobby}?mode=private'),
                   onFriendChallenge: () =>
                       context.push('${RouteNames.onlineLobby}?mode=friend'),
                 ),
                 const SizedBox(height: 26),
-                const _SectionLabel(
-                  label: 'Solo Fun',
-                  trailing: _SoloBadge(),
-                ),
+                const _SectionLabel(label: 'Solo Fun', trailing: _SoloBadge()),
                 const SizedBox(height: 12),
-                _SoloPlayCard(
-                  onTap: () => context.push(RouteNames.flappyGame),
-                ),
+                _SoloPlayCard(onTap: () => context.push(RouteNames.flappyGame)),
                 const SizedBox(height: 36),
                 const _Footer(),
               ],
@@ -180,61 +177,94 @@ class _Header extends StatelessWidget {
 
                   Center(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
+                          padding: const EdgeInsets.fromLTRB(14, 14, 20, 14),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.15),
                               width: 1.2,
                             ),
                           ),
-                          child: Column(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.emoji_events,
-                                    color: AppColors.secondary,
-                                    size: 16,
+                              // App logo badge.
+                              Container(
+                                width: 60,
+                                height: 60,
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.25),
+                                    width: 1.5,
                                   ),
-                                  const SizedBox(width: 6),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.secondary.withValues(
+                                        alpha: 0.35,
+                                      ),
+                                      blurRadius: 16,
+                                      spreadRadius: -2,
+                                    ),
+                                  ],
+                                ),
+                                child: Image.asset(
+                                  'assets/images/app_icon.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.emoji_events,
+                                        color: AppColors.secondary,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'SOS ARENA PRO',
+                                        style: GoogleFonts.luckiestGuy(
+                                          fontSize: 11,
+                                          color: AppColors.secondary,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    'SOS ARENA PRO',
+                                    'Compete & Win',
                                     style: GoogleFonts.luckiestGuy(
-                                      fontSize: 12,
-                                      color: AppColors.secondary,
-                                      letterSpacing: 1.5,
+                                      fontSize: 20,
+                                      color: Colors.white,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Players worldwide',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white.withValues(
+                                        alpha: 0.65,
+                                      ),
                                     ),
                                   ),
                                 ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Compete & Win',
-                                style: GoogleFonts.luckiestGuy(
-                                  fontSize: 20,
-                                  color: Colors.white,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Connect with players worldwide',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white.withValues(alpha: 0.65),
-                                ),
                               ),
                             ],
                           ),
@@ -692,15 +722,8 @@ class _SoloPlayCardState extends State<_SoloPlayCard>
 }
 
 class _OnlineGrid extends StatelessWidget {
-  const _OnlineGrid({
-    required this.onQuickMatch,
-    required this.onRanked,
-    required this.onPrivateRoom,
-    required this.onFriendChallenge,
-  });
-  final VoidCallback onQuickMatch;
+  const _OnlineGrid({required this.onRanked, required this.onFriendChallenge});
   final VoidCallback onRanked;
-  final VoidCallback onPrivateRoom;
   final VoidCallback onFriendChallenge;
 
   @override
@@ -709,54 +732,28 @@ class _OnlineGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Column(
-            children: [
-              _AnimatedGridCard(
-                imagePath: 'assets/icons/quick_match.png',
-                title: 'Quick Match',
-                sub: 'Instant random match',
-                bgColor: const Color(0xFFEDF4FF),
-                borderColor: const Color(0xFFD4E6FF),
-                onTap: onQuickMatch,
-                floatDuration: const Duration(milliseconds: 2200),
-              ),
-              const SizedBox(height: 14),
-              _AnimatedGridCard(
-                imagePath: 'assets/icons/private_room.png',
-                title: 'Private Room',
-                sub: 'Play with specific code',
-                bgColor: const Color(0xFFFAF0FF),
-                borderColor: const Color(0xFFF0D5FF),
-                onTap: onPrivateRoom,
-                floatDuration: const Duration(milliseconds: 2350),
-              ),
-            ],
+          child: _AnimatedGridCard(
+            imagePath: 'assets/icons/ranked_match.png',
+            title: 'Ranked Match',
+            sub: 'Climb the global leaderboard',
+            bgColor: const Color(0xFFFFF7ED),
+            borderColor: const Color(0xFFFFE5D0),
+            accent: AppColors.secondary,
+            onTap: onRanked,
+            floatDuration: const Duration(milliseconds: 2500),
           ),
         ),
         const SizedBox(width: 14),
         Expanded(
-          child: Column(
-            children: [
-              _AnimatedGridCard(
-                imagePath: 'assets/icons/ranked_match.png',
-                title: 'Ranked Match',
-                sub: 'Climb the global leaderboard',
-                bgColor: const Color(0xFFFFF7ED),
-                borderColor: const Color(0xFFFFE5D0),
-                onTap: onRanked,
-                floatDuration: const Duration(milliseconds: 2500),
-              ),
-              const SizedBox(height: 14),
-              _AnimatedGridCard(
-                imagePath: 'assets/icons/friend_challenge.png',
-                title: 'Friend Challenge',
-                sub: 'Invite your online friends',
-                bgColor: const Color(0xFFF0FDF4),
-                borderColor: const Color(0xFFDCF7E9),
-                onTap: onFriendChallenge,
-                floatDuration: const Duration(milliseconds: 2600),
-              ),
-            ],
+          child: _AnimatedGridCard(
+            imagePath: 'assets/icons/friend_challenge.png',
+            title: 'Friend Challenge',
+            sub: 'Invite your online friends',
+            bgColor: const Color(0xFFF0FDF4),
+            borderColor: const Color(0xFFDCF7E9),
+            accent: AppColors.tertiary,
+            onTap: onFriendChallenge,
+            floatDuration: const Duration(milliseconds: 2600),
           ),
         ),
       ],
@@ -771,6 +768,7 @@ class _AnimatedGridCard extends StatefulWidget {
     required this.sub,
     required this.bgColor,
     required this.borderColor,
+    required this.accent,
     required this.onTap,
     required this.floatDuration,
   });
@@ -780,6 +778,7 @@ class _AnimatedGridCard extends StatefulWidget {
   final String sub;
   final Color bgColor;
   final Color borderColor;
+  final Color accent;
   final VoidCallback onTap;
   final Duration floatDuration;
 
@@ -860,23 +859,27 @@ class _AnimatedGridCardState extends State<_AnimatedGridCard>
               children: [
                 // Card container
                 Container(
-                  margin: const EdgeInsets.only(top: 32),
+                  margin: const EdgeInsets.only(top: 38),
                   width: double.infinity,
-                  height: 146,
+                  height: 168,
                   decoration: BoxDecoration(
-                    color: widget.bgColor,
-                    borderRadius: BorderRadius.circular(24),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.white, widget.bgColor],
+                    ),
+                    borderRadius: BorderRadius.circular(26),
                     border: Border.all(color: widget.borderColor, width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: widget.borderColor.withValues(alpha: 0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
+                        color: widget.accent.withValues(alpha: 0.18),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
                       ),
                     ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 48, 12, 12),
+                    padding: const EdgeInsets.fromLTRB(12, 54, 12, 14),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -891,6 +894,15 @@ class _AnimatedGridCardState extends State<_AnimatedGridCard>
                           ),
                         ),
                         const SizedBox(height: 6),
+                        // Accent divider pill
+                        Container(
+                          width: 26,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: widget.accent,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
                         Expanded(
                           child: Center(
                             child: Text(
@@ -905,6 +917,37 @@ class _AnimatedGridCardState extends State<_AnimatedGridCard>
                                 height: 1.25,
                               ),
                             ),
+                          ),
+                        ),
+                        // Play affordance chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: widget.accent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'PLAY',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  color: widget.accent,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 12,
+                                color: widget.accent,
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -926,10 +969,18 @@ class _AnimatedGridCardState extends State<_AnimatedGridCard>
                       );
                     },
                     child: Container(
-                      width: 78,
-                      height: 78,
+                      width: 84,
+                      height: 84,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
+                        // Soft accent glow ring behind the icon.
+                        gradient: RadialGradient(
+                          colors: [
+                            widget.accent.withValues(alpha: 0.22),
+                            widget.accent.withValues(alpha: 0.0),
+                          ],
+                          stops: const [0.55, 1.0],
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.08),
@@ -938,7 +989,13 @@ class _AnimatedGridCardState extends State<_AnimatedGridCard>
                           ),
                         ],
                       ),
-                      child: Image.asset(widget.imagePath, fit: BoxFit.contain),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Image.asset(
+                          widget.imagePath,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1071,14 +1128,14 @@ class _Footer extends StatelessWidget {
             Container(
               width: 24,
               height: 1.5,
-              color: AppColors.primary.withOpacity(0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
             ),
             const SizedBox(width: 10),
             Text(
               '★ UNLEASH THE GAMER WITHIN ★',
               style: GoogleFonts.luckiestGuy(
                 fontSize: 10,
-                color: AppColors.primary.withOpacity(0.4),
+                color: AppColors.primary.withValues(alpha: 0.4),
                 letterSpacing: 1.5,
               ),
             ),
@@ -1086,7 +1143,7 @@ class _Footer extends StatelessWidget {
             Container(
               width: 24,
               height: 1.5,
-              color: AppColors.primary.withOpacity(0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
             ),
           ],
         ),
@@ -1096,7 +1153,7 @@ class _Footer extends StatelessWidget {
           style: GoogleFonts.outfit(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: AppColors.onSurface.withOpacity(0.6),
+            color: AppColors.onSurface.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 4),
@@ -1105,7 +1162,7 @@ class _Footer extends StatelessWidget {
           style: GoogleFonts.outfit(
             fontSize: 9,
             fontWeight: FontWeight.w500,
-            color: AppColors.onSurfaceMuted.withOpacity(0.5),
+            color: AppColors.onSurfaceMuted.withValues(alpha: 0.5),
             letterSpacing: 0.5,
           ),
         ),

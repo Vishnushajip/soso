@@ -13,7 +13,8 @@ enum AppSound {
   friendAccept('friend_accept.mp3'),
   notify('notify.mp3'),
   rankUp('rank_up.mp3'),
-  versus('versus.mp3');
+  versus('versus.mp3'),
+  flap('flappy_bird_sound.mp3');
 
   final String fileName;
   const AppSound(this.fileName);
@@ -67,8 +68,18 @@ class SoundService {
 
   Future<void> play(AppSound sound) async {
     if (!_enabled || !_ready) return;
-    final player = _players[sound];
-    if (player == null) return;
+    var player = _players[sound];
+    if (player == null) {
+      try {
+        player = AudioPlayer();
+        await player.setReleaseMode(ReleaseMode.stop);
+        await player.setSource(AssetSource('sounds/${sound.fileName}'));
+        _players[sound] = player;
+      } catch (e) {
+        appLogger.d('Sound ${sound.fileName} skipped: $e');
+        return;
+      }
+    }
     try {
       // Restart from the beginning, then resume the already-loaded source.
       // No new fetch/decode happens here — so web effects play reliably.
@@ -77,6 +88,17 @@ class SoundService {
     } catch (e) {
       // Never let audio crash gameplay (e.g. web autoplay policy before a gesture).
       appLogger.d('Sound ${sound.fileName} skipped: $e');
+    }
+  }
+
+  Future<void> stop(AppSound sound) async {
+    if (!_ready) return;
+    final player = _players[sound];
+    if (player == null) return;
+    try {
+      await player.stop();
+    } catch (e) {
+      appLogger.d('Sound ${sound.fileName} stop skipped: $e');
     }
   }
 

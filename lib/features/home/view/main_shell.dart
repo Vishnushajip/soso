@@ -17,33 +17,27 @@ class MainShell extends ConsumerWidget {
     _TabData(
       path: RouteNames.home,
       label: 'Play',
-      iconUrl: 'https://img.icons8.com/3d-fluency/94/controller.png',
-      iconUrlActive: 'https://img.icons8.com/3d-fluency/94/controller.png',
+      icon: Icons.sports_esports_rounded,
     ),
     _TabData(
       path: RouteNames.friends,
       label: 'Friends',
-      iconUrl: 'https://img.icons8.com/3d-fluency/94/group.png',
-      iconUrlActive: 'https://img.icons8.com/3d-fluency/94/group.png',
+      icon: Icons.people_alt_rounded,
     ),
     _TabData(
       path: RouteNames.chatList,
       label: 'Chats',
-      iconUrl: 'https://img.icons8.com/3d-fluency/94/chat.png',
-      iconUrlActive: 'https://img.icons8.com/3d-fluency/94/chat.png',
+      icon: Icons.chat_bubble_rounded,
     ),
     _TabData(
       path: RouteNames.leaderboard,
       label: 'Ranks',
-      iconUrl: 'https://img.icons8.com/3d-fluency/94/trophy.png',
-      iconUrlActive: 'https://img.icons8.com/3d-fluency/94/trophy.png',
+      icon: Icons.emoji_events_rounded,
     ),
     _TabData(
       path: RouteNames.profile,
       label: 'Profile',
-      iconUrl: 'https://img.icons8.com/3d-fluency/94/user-male-circle.png',
-      iconUrlActive:
-          'https://img.icons8.com/3d-fluency/94/user-male-circle.png',
+      icon: Icons.account_circle_rounded,
     ),
   ];
 
@@ -118,13 +112,11 @@ class _TabData {
   const _TabData({
     required this.path,
     required this.label,
-    required this.iconUrl,
-    required this.iconUrlActive,
+    required this.icon,
   });
   final String path;
   final String label;
-  final String iconUrl;
-  final String iconUrlActive;
+  final IconData icon;
 }
 
 class _AppBarTitle extends StatelessWidget {
@@ -159,19 +151,18 @@ class _AppBarTitle extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.network(
+                Icon(
                   selectedLabel == 'Play'
-                      ? 'https://img.icons8.com/3d-fluency/94/controller.png'
+                      ? Icons.sports_esports_rounded
                       : selectedLabel == 'Friends'
-                      ? 'https://img.icons8.com/3d-fluency/94/group.png'
+                      ? Icons.people_alt_rounded
                       : selectedLabel == 'Chats'
-                      ? 'https://img.icons8.com/3d-fluency/94/chat.png'
+                      ? Icons.chat_bubble_rounded
                       : selectedLabel == 'Ranks'
-                      ? 'https://img.icons8.com/3d-fluency/94/trophy.png'
-                      : 'https://img.icons8.com/3d-fluency/94/user-male-circle.png',
-                  width: 12,
-                  height: 12,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ? Icons.emoji_events_rounded
+                      : Icons.account_circle_rounded,
+                  size: 14,
+                  color: AppColors.primary,
                 ),
                 const SizedBox(width: 3),
                 Text(
@@ -253,15 +244,10 @@ class _PointsPill extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.network(
-            'https://img.icons8.com/3d-fluency/94/star.png',
-            width: 13,
-            height: 13,
-            errorBuilder: (_, _, _) => const Icon(
-              Icons.stars_rounded,
-              color: AppColors.secondary,
-              size: 13,
-            ),
+          const Icon(
+            Icons.stars_rounded,
+            color: AppColors.secondary,
+            size: 15,
           ),
           const SizedBox(width: 4),
           Text(
@@ -293,15 +279,10 @@ class _NotificationBell extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Image.network(
-              'https://img.icons8.com/3d-fluency/94/appointment-reminders.png',
-              width: 28,
-              height: 28,
-              errorBuilder: (_, _, _) => Icon(
-                Icons.notifications_rounded,
-                color: AppColors.onSurface.withOpacity(0.75),
-                size: 24,
-              ),
+            Icon(
+              Icons.notifications_rounded,
+              color: AppColors.onSurface.withOpacity(0.75),
+              size: 26,
             ),
             if (unread > 0)
               Positioned(
@@ -350,15 +331,10 @@ class _SettingsButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-        child: Image.network(
-          'https://img.icons8.com/3d-fluency/94/settings.png',
-          width: 28,
-          height: 28,
-          errorBuilder: (_, _, _) => Icon(
-            Icons.settings_rounded,
-            color: AppColors.onSurface.withOpacity(0.75),
-            size: 24,
-          ),
+        child: Icon(
+          Icons.settings_rounded,
+          color: AppColors.onSurface.withOpacity(0.75),
+          size: 26,
         ),
       ),
     );
@@ -460,28 +436,12 @@ class _NavItem extends StatelessWidget {
                 scale: isSelected ? 1.15 : 1.0,
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutBack,
-                child: ColorFiltered(
-                  colorFilter: isSelected
-                      ? const ColorFilter.mode(
-                          Colors.transparent,
-                          BlendMode.multiply,
-                        )
-                      : const ColorFilter.mode(
-                          Color(0xFF9E9E9E),
-                          BlendMode.srcIn,
-                        ),
-                  child: Image.network(
-                    tab.iconUrl,
-                    width: 28,
-                    height: 28,
-                    errorBuilder: (_, _, _) => Icon(
-                      Icons.circle,
-                      size: 24,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.onSurfaceMuted,
-                    ),
-                  ),
+                child: Icon(
+                  tab.icon,
+                  size: 26,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.onSurfaceMuted,
                 ),
               ),
             ),

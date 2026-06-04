@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soso/core/theme/app_colors.dart';
+import 'package:soso/core/services/sound_service.dart';
+import 'package:soso/providers/service_providers.dart';
 
 enum FlappyStatus { idle, playing, gameOver }
 
@@ -158,9 +160,10 @@ class FlappyState {
 }
 
 class FlappyController extends StateNotifier<FlappyState> {
-  FlappyController(this.config) : super(FlappyState.initial());
+  FlappyController(this.config, this.soundService) : super(FlappyState.initial());
 
   final FlappyDifficultyConfig config;
+  final SoundService soundService;
   final _rng = Random();
   Timer? _ticker;
 
@@ -192,9 +195,14 @@ class FlappyController extends StateNotifier<FlappyState> {
   void flap() {
     if (state.status == FlappyStatus.idle ||
         state.status == FlappyStatus.gameOver) {
+      if (state.status == FlappyStatus.gameOver) {
+        soundService.stop(AppSound.lose);
+      }
+      soundService.play(AppSound.flap);
       start();
       return;
     }
+    soundService.play(AppSound.flap);
     state = state.copyWith(birdVel: kFlapImpulse);
   }
 
@@ -247,6 +255,7 @@ class FlappyController extends StateNotifier<FlappyState> {
 
     if (dead) {
       _ticker?.cancel();
+      soundService.play(AppSound.lose);
       state = state.copyWith(
         status: FlappyStatus.gameOver,
         best: max(state.best, score),
@@ -271,5 +280,5 @@ class FlappyController extends StateNotifier<FlappyState> {
 final flappyControllerProvider = StateNotifierProvider.autoDispose
     .family<FlappyController, FlappyState, FlappyDifficulty>(
       (ref, difficulty) =>
-          FlappyController(FlappyDifficultyConfig.of(difficulty)),
+          FlappyController(FlappyDifficultyConfig.of(difficulty), ref.read(soundServiceProvider)),
     );

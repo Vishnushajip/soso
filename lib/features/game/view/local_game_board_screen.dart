@@ -10,6 +10,8 @@ import '../../../core/widgets/app_snack_bar.dart';
 import '../../../providers/game_providers.dart';
 import '../../../providers/repository_providers.dart';
 import '../../../providers/user_providers.dart';
+import '../../../core/theme/board_theme.dart';
+import '../widgets/board_theme_selection_sheet.dart';
 import '../widgets/arena_widgets.dart';
 import '../widgets/confetti_shower.dart';
 import '../widgets/game_board_widget.dart';
@@ -73,6 +75,7 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
         AppColors.playerPalette[playerIdx % AppColors.playerPalette.length],
       ),
     );
+    final boardTheme = ref.watch(boardThemeProvider);
 
     if (state.finished && !_didTriggerWin) {
       _didTriggerWin = true;
@@ -135,6 +138,29 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
           actions: [
             GestureDetector(
               onTap: () {
+                HapticFeedback.lightImpact();
+                BoardThemeSelectionSheet.show(context);
+              },
+              child: Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 10, right: 10),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.arenaStone,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.arenaGold.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.palette_rounded,
+                  size: 18,
+                  color: AppColors.arenaGold,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
                 HapticFeedback.mediumImpact();
                 setState(() {
                   _eraserMode = false;
@@ -176,7 +202,7 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                 Expanded(
                   child: Center(
                     child: GameBoardWidget(
-                      arena: true,
+                      theme: boardTheme,
                       size: state.boardSize,
                       board: state.board,
                       highlightCells: state.customHighlights.toSet(),

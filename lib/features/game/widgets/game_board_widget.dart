@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/board_theme.dart';
 import '../../../core/utils/sos_engine.dart';
 
 class GameBoardWidget extends StatefulWidget {
@@ -14,7 +15,7 @@ class GameBoardWidget extends StatefulWidget {
     this.sosLines = const [],
     this.lineColors = const {},
     this.lastPlacedPosition,
-    this.arena = false,
+    this.theme = BoardTheme.classic,
   });
 
   final int size;
@@ -25,10 +26,7 @@ class GameBoardWidget extends StatefulWidget {
   final List<SosLine> sosLines;
   final Map<SosLine, Color> lineColors;
   final int? lastPlacedPosition;
-
-  /// When true the board renders the dark "battle arena" skin (glossy 3D gem
-  /// tiles on stone). Defaults to false so the classic light board is untouched.
-  final bool arena;
+  final BoardTheme theme;
 
   @override
   State<GameBoardWidget> createState() => _GameBoardWidgetState();
@@ -95,16 +93,16 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: widget.arena ? AppColors.arenaStone : AppColors.board,
+          color: widget.theme.boardBgColor,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: widget.arena ? AppColors.arenaStoneEdge : AppColors.divider,
-            width: widget.arena ? 2 : 1,
+            color: widget.theme.boardBorderColor,
+            width: widget.theme.isGlossy ? 2 : 1,
           ),
-          boxShadow: widget.arena
+          boxShadow: widget.theme.isGlossy
               ? [
                   BoxShadow(
-                    color: AppColors.arenaGlow.withValues(alpha: 0.18),
+                    color: widget.theme.highlightColor.withValues(alpha: 0.18),
                     blurRadius: 24,
                     spreadRadius: 1,
                   ),
@@ -135,7 +133,7 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
                 final isCellInSos = linesWithCell.isNotEmpty;
                 final cellSosColor = isCellInSos ? widget.lineColors[linesWithCell.last] : null;
 
-                if (widget.arena) {
+                if (widget.theme.isGlossy) {
                   return _ArenaCell(
                     value: v,
                     size: widget.size,
@@ -143,14 +141,15 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
                     isLastPlaced: isLastPlaced,
                     isInSos: isCellInSos,
                     sosColor: cellSosColor,
+                    theme: widget.theme,
                     onTap: widget.disabled ? null : () => widget.onTap(i),
                   );
                 }
 
                 final color = v == 'S'
-                    ? AppColors.sColor
+                    ? widget.theme.sColor
                     : v == 'O'
-                        ? AppColors.oColor
+                        ? widget.theme.oColor
                         : AppColors.onSurface;
                 
                 return AnimatedContainer(
@@ -158,24 +157,24 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
                   curve: Curves.easeOutCubic,
                   decoration: BoxDecoration(
                     color: isHighlighted
-                        ? AppColors.highlight.withValues(alpha: 0.35)
+                        ? widget.theme.highlightColor.withValues(alpha: 0.35)
                         : isLastPlaced
                             ? AppColors.secondary.withValues(alpha: 0.25)
                             : isCellInSos
-                                ? (cellSosColor ?? AppColors.primary).withValues(alpha: 0.16)
-                                : AppColors.grid,
+                                ? (cellSosColor ?? widget.theme.highlightColor).withValues(alpha: 0.16)
+                                : widget.theme.cellBgColor,
                     borderRadius: BorderRadius.circular(8),
                     border: isHighlighted
-                        ? Border.all(color: AppColors.highlight, width: 2)
+                        ? Border.all(color: widget.theme.highlightColor, width: 2)
                         : isLastPlaced
                             ? Border.all(color: AppColors.secondary, width: 2)
                             : isCellInSos
-                                ? Border.all(color: (cellSosColor ?? AppColors.primary).withValues(alpha: 0.5), width: 1.5)
+                                ? Border.all(color: (cellSosColor ?? widget.theme.highlightColor).withValues(alpha: 0.5), width: 1.5)
                                 : null,
                     boxShadow: isCellInSos
                         ? [
                             BoxShadow(
-                              color: (cellSosColor ?? AppColors.primary).withValues(alpha: 0.15),
+                              color: (cellSosColor ?? widget.theme.highlightColor).withValues(alpha: 0.15),
                               blurRadius: 6,
                               spreadRadius: 0.5,
                             ),
@@ -321,6 +320,7 @@ class _ArenaCell extends StatelessWidget {
     required this.isLastPlaced,
     required this.isInSos,
     required this.sosColor,
+    required this.theme,
     required this.onTap,
   });
 
@@ -330,16 +330,17 @@ class _ArenaCell extends StatelessWidget {
   final bool isLastPlaced;
   final bool isInSos;
   final Color? sosColor;
+  final BoardTheme theme;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final filled = value.isNotEmpty;
     final base = value == 'S'
-        ? AppColors.sColor
+        ? theme.sColor
         : value == 'O'
-            ? AppColors.oColor
-            : AppColors.arenaCell;
+            ? theme.oColor
+            : theme.cellBgColor;
 
     // Empty socket vs. raised gem.
     final Color light = Color.lerp(base, Colors.white, 0.42)!;
@@ -347,17 +348,17 @@ class _ArenaCell extends StatelessWidget {
 
     // Outline + glow priority: hint > last placed > SOS member > neutral.
     final Color edge = isHighlighted
-        ? AppColors.arenaGold
+        ? theme.highlightColor
         : isLastPlaced
             ? Colors.white
             : isInSos
-                ? (sosColor ?? AppColors.arenaGold)
+                ? (sosColor ?? theme.highlightColor)
                 : (filled
                     ? Colors.white.withValues(alpha: 0.22)
                     : Colors.white.withValues(alpha: 0.05));
     final bool glows = isHighlighted || isLastPlaced || isInSos;
     final Color glowColor = isHighlighted
-        ? AppColors.arenaGold
+        ? theme.highlightColor
         : isLastPlaced
             ? Colors.white
             : (sosColor ?? base);
@@ -374,7 +375,7 @@ class _ArenaCell extends StatelessWidget {
                 stops: const [0.0, 0.5, 1.0],
               )
             : null,
-        color: filled ? null : AppColors.arenaCell,
+        color: filled ? null : theme.cellBgColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: edge,

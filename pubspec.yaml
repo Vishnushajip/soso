@@ -47,6 +47,7 @@ dependencies:
   googleapis_auth: ^1.4.1
   flutter_displaymode: ^0.7.0
   url_launcher: ^6.3.0
+  connectivity_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:

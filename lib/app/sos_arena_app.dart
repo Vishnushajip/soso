@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soso/core/services/local_notifications_service.dart';
 import 'package:soso/core/services/sound_service.dart';
 import 'package:soso/routes/route_names.dart';
+import '../core/widgets/no_internet_banner.dart';
 
 import '../core/constants/env.dart';
 import '../core/theme/app_theme.dart';
@@ -182,11 +183,13 @@ class SosArenaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(bootstrapProvider);
-    return MaterialApp.router(
-      title: Env.appName,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
-      routerConfig: ref.watch(appRouterProvider),
+    return NetworkConnectivityWrapper(
+      child: MaterialApp.router(
+        title: Env.appName,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.dark(),
+        routerConfig: ref.watch(appRouterProvider),
+      ),
     );
   }
 }

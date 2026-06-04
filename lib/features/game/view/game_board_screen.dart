@@ -28,9 +28,12 @@ import '../../../providers/repository_providers.dart';
 import '../../../providers/user_providers.dart';
 import '../../../providers/service_providers.dart';
 import '../../../routes/route_names.dart';
+import '../../../core/theme/board_theme.dart';
+import '../widgets/board_theme_selection_sheet.dart';
 import '../widgets/game_board_widget.dart';
 import '../widgets/vs_animation_overlay.dart';
 import '../widgets/confetti_shower.dart';
+import '../widgets/firecrackers_effect.dart';
 import '../widgets/circular_turn_timer.dart';
 
 class GameBoardScreen extends ConsumerStatefulWidget {
@@ -529,6 +532,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
     final asyncRoom = ref.watch(gameRoomProvider(widget.roomId));
     final me = ref.watch(currentUidProvider);
     final user = ref.watch(currentUserProvider).valueOrNull;
+    final boardTheme = ref.watch(boardThemeProvider);
 
     ref.listen<AsyncValue<List<Message>>>(
       roomMessagesProvider('match_${widget.roomId}'),
@@ -619,6 +623,29 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
           ),
           centerTitle: true,
           actions: [
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                BoardThemeSelectionSheet.show(context);
+              },
+              child: Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 10, right: 10),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.arenaStone,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.arenaGold.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.palette_rounded,
+                  size: 18,
+                  color: AppColors.arenaGold,
+                ),
+              ),
+            ),
             if (_matchChatRoom != null)
               _ChatActionButton(
                 roomId: 'match_${widget.roomId}',
@@ -673,13 +700,32 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                   }
                 }
 
+                bool isWinner = false;
+                if (room.status == GameRoomStatus.finished && me != null && room.players.isNotEmpty) {
+                  final mePlayer = room.players.firstWhere((p) => p.uid == me, orElse: () => room.players.first);
+                  final maxScore = room.players.map((p) => p.score).reduce(math.max);
+                  if (mePlayer.score == maxScore) {
+                    isWinner = true;
+                  }
+                }
+
                 if (room.status == GameRoomStatus.finished && !_summaryShown) {
                   _summaryShown = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
-                      context.pushReplacement(
-                        '${RouteNames.matchSummary}?roomId=${room.id}',
-                      );
+                      if (isWinner) {
+                        Future.delayed(const Duration(seconds: 3), () {
+                          if (mounted) {
+                            context.pushReplacement(
+                              '${RouteNames.matchSummary}?roomId=${room.id}',
+                            );
+                          }
+                        });
+                      } else {
+                        context.pushReplacement(
+                          '${RouteNames.matchSummary}?roomId=${room.id}',
+                        );
+                      }
                     }
                   });
                 }
@@ -799,7 +845,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                         Expanded(
                           child: Center(
                             child: GameBoardWidget(
-                              arena: true,
+                              theme: boardTheme,
                               size: room.boardSize,
                               board: room.board,
                               highlightCells: _customHighlights,
@@ -1142,6 +1188,17 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                             }
                           },
                         ),
+                      ),
+                    ],
+                  );
+                }
+
+                if (room.status == GameRoomStatus.finished && isWinner) {
+                  return Stack(
+                    children: [
+                      screen,
+                      const Positioned.fill(
+                        child: FirecrackersEffect(),
                       ),
                     ],
                   );

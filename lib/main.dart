@@ -10,8 +10,8 @@ Future<void> main() async {
   final prefs = await AppBootstrap.initialize();
 
   if (!kIsWeb) {
-    await FirebaseAnalytics.instance
-        .setAnalyticsCollectionEnabled(!kDebugMode);
+    // Fire-and-forget: don't block the first frame on this.
+    FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(!kDebugMode);
   }
 
   ErrorWidget.builder = (FlutterErrorDetails details) {

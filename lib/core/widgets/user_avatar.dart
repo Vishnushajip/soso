@@ -34,10 +34,15 @@ class UserAvatar extends StatelessWidget {
 
     Widget avatar;
     if (photoUrl != null && photoUrl!.isNotEmpty) {
+      // Decode at the display resolution (capped for hi-DPI) instead of the
+      // source size — keeps avatar lists light on memory.
+      final decodePx = (size * 3).round();
       avatar = ClipOval(
         child: CachedNetworkImage(
           imageUrl: photoUrl!,
           width: size, height: size, fit: BoxFit.cover,
+          memCacheWidth: decodePx,
+          memCacheHeight: decodePx,
           errorWidget: (context, url, error) => _fallback(initial),
           placeholder: (context, url) => _fallback(initial),
         ),

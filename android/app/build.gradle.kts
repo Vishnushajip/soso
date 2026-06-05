@@ -38,6 +38,14 @@ android {
         release {
             // TODO: Add your own signing config for the release build.
             signingConfig = signingConfigs.getByName("debug")
+            // Shrink + obfuscate Dart-host Java/Kotlin and strip unused
+            // resources to cut APK/AAB size and improve runtime.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

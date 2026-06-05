@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/game_room.dart';
 import '../../../providers/repository_providers.dart';
@@ -22,6 +24,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   String? _error;
   bool _magicEnabled = true;
   int _maxPlayers = 2;
+  int _boardSize = Env.boardSize;
   final _codeCtrl = TextEditingController();
 
   GameRoomType _modeFromQuery() {
@@ -67,6 +70,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
           host: user,
           type: mode,
           maxPlayers: _maxPlayers,
+          boardSize: _boardSize,
           magicEnabled: _magicEnabled,
         );
       }
@@ -185,6 +189,14 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
                       onChanged: (v) {
                         HapticFeedback.selectionClick();
                         setState(() => _maxPlayers = v);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    _BoardSizeCard(
+                      boardSize: _boardSize,
+                      onChanged: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _boardSize = v);
                       },
                     ),
                     const SizedBox(height: 14),
@@ -729,7 +741,7 @@ class _PlayerCountCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              for (final count in const [2, 3, 4]) ...[
+              for (final count in const [2, 3, 4, 5, 6]) ...[
                 Expanded(
                   child: _PlayerCountChip(
                     count: count,
@@ -737,9 +749,92 @@ class _PlayerCountCard extends StatelessWidget {
                     onTap: () => onChanged(count),
                   ),
                 ),
-                if (count != 4) const SizedBox(width: 10),
+                if (count != 6) const SizedBox(width: 8),
               ],
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BoardSizeCard extends StatelessWidget {
+  const _BoardSizeCard({required this.boardSize, required this.onChanged});
+  final int boardSize;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GameCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _CardLabel(label: 'Board Size', icon: Icons.grid_4x4_rounded),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${AppConstants.minBoardSize}×${AppConstants.minBoardSize}',
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  color: AppColors.onSurfaceMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, AppColors.sColor],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '$boardSize × $boardSize',
+                  style: GoogleFonts.luckiestGuy(
+                    fontSize: 16,
+                    color: Colors.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              Text(
+                '${AppConstants.maxBoardSize}×${AppConstants.maxBoardSize}',
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  color: AppColors.onSurfaceMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: AppColors.primary.withOpacity(0.15),
+              thumbColor: AppColors.primary,
+              overlayColor: AppColors.primary.withOpacity(0.12),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              trackHeight: 5,
+            ),
+            child: Slider(
+              value: boardSize.toDouble(),
+              min: AppConstants.minBoardSize.toDouble(),
+              max: AppConstants.maxBoardSize.toDouble(),
+              divisions: AppConstants.maxBoardSize - AppConstants.minBoardSize,
+              label: '$boardSize × $boardSize',
+              onChanged: (v) => onChanged(v.round()),
+            ),
           ),
         ],
       ),

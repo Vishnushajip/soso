@@ -72,10 +72,19 @@ class AppColors {
   static const onArena = Color(0xFFF1ECFF);         // primary text on arena
   static const onArenaMuted = Color(0xFF9C92C7);    // secondary text on arena
 
-  static const player1 = accent;     // Electric Blue
-  static const player2 = secondary;  // Energetic Orange
-  static const player3 = primary;    // Royal Purple
-  static const player4 = tertiary;   // Vibrant Green
+  static const player1 = accent;             // Electric Blue
+  static const player2 = secondary;          // Energetic Orange
+  static const player3 = primary;            // Royal Purple
+  static const player4 = tertiary;           // Vibrant Green
+  static const player5 = Color(0xFFFF3D9A);  // Hot Pink
+  static const player6 = Color(0xFF00C2CB);  // Teal
 
-  static const List<Color> playerPalette = [player1, player2, player3, player4];
+  static const List<Color> playerPalette = [
+    player1,
+    player2,
+    player3,
+    player4,
+    player5,
+    player6,
+  ];
 }

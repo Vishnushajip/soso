@@ -185,8 +185,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ),
       ),
-      body: Container(
-        color: AppColors.bg,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.bg, AppColors.surfaceContainerLow],
+          ),
+        ),
         child: Column(
           children: [
             Expanded(
@@ -280,80 +286,135 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 },
               ),
             ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              controller: _ctrl,
-                              textInputAction: TextInputAction.send,
-                              onSubmitted: (_) {
-                                HapticFeedback.mediumImpact();
-                                _send();
-                              },
-                              style: GoogleFonts.outfit(
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.primary.withOpacity(0.1),
+                    width: 1.5,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.05),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainer,
+                            borderRadius: BorderRadius.circular(26),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.18),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _ctrl,
+                            minLines: 1,
+                            maxLines: 5,
+                            textInputAction: TextInputAction.send,
+                            textCapitalization: TextCapitalization.sentences,
+                            onSubmitted: (_) {
+                              HapticFeedback.mediumImpact();
+                              _send();
+                            },
+                            cursorColor: AppColors.primary,
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.onSurface,
+                            ),
+                            decoration: InputDecoration(
+                              isCollapsed: true,
+                              filled: false,
+                              hintText: 'Type a message...',
+                              hintStyle: GoogleFonts.outfit(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.onSurface,
+                                color: AppColors.onSurfaceMuted.withOpacity(0.5),
                               ),
-                              decoration: InputDecoration(
-                                hintText: 'Type a message...',
-                                hintStyle: GoogleFonts.outfit(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.onSurfaceMuted.withOpacity(0.5),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 13),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      AnimatedBuilder(
+                        animation: _ctrl,
+                        builder: (context, _) {
+                          final hasText = _ctrl.text.trim().isNotEmpty;
+                          return GestureDetector(
+                            onTap: () {
+                              HapticFeedback.mediumImpact();
+                              _send();
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              height: 48,
+                              width: 48,
+                              decoration: BoxDecoration(
+                                gradient: hasText
+                                    ? const LinearGradient(
+                                        colors: [
+                                          AppColors.primary,
+                                          AppColors.sColor,
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
+                                color: hasText
+                                    ? null
+                                    : AppColors.onSurfaceMuted
+                                        .withOpacity(0.18),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                  width: 2,
                                 ),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                boxShadow: hasText
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.primary
+                                              .withOpacity(0.35),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Icon(
+                                Icons.send_rounded,
+                                color: hasText
+                                    ? Colors.white
+                                    : AppColors.onSurfaceMuted,
+                                size: 20,
                               ),
                             ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.mediumImpact();
-                        _send();
-                      },
-                      child: Container(
-                        height: 48,
-                        width: 48,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppColors.primary, AppColors.sColor],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.35),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.send_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

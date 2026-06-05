@@ -30,19 +30,58 @@ final _videoControllerProvider =
       return controller;
     });
 
-class SplashScreen extends ConsumerWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
-  void _navigateToNextScreen(WidgetRef ref, BuildContext context) {
+  @override
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  bool _navigated = false;
+  VideoPlayerController? _listenedController;
+  VoidCallback? _tickListener;
+
+  void _attachCompletionListener(VideoPlayerController controller) {
+    if (identical(_listenedController, controller)) return;
+    _detachCompletionListener();
+    _listenedController = controller;
+    _tickListener = () {
+      final c = _listenedController;
+      if (c == null) return;
+      if (c.value.duration > Duration.zero &&
+          c.value.position >= c.value.duration) {
+        _navigateToNextScreen();
+      }
+    };
+    controller.addListener(_tickListener!);
+  }
+
+  void _detachCompletionListener() {
+    final c = _listenedController;
+    final l = _tickListener;
+    if (c != null && l != null) {
+      try {
+        c.removeListener(l);
+      } catch (_) {
+        // Controller already disposed by its provider — nothing to remove.
+      }
+    }
+    _listenedController = null;
+    _tickListener = null;
+  }
+
+  void _navigateToNextScreen() {
+    if (_navigated || !mounted) return;
     final auth = ref.read(authStateProvider);
     if (auth.isLoading) return;
+    _navigated = true;
     final loggedIn = auth.valueOrNull != null;
     context.go(loggedIn ? RouteNames.home : RouteNames.signIn);
   }
 
-  Future<void> _handleTap(WidgetRef ref, BuildContext context) async {
+  Future<void> _handleTap() async {
     final muted = ref.read(_splashMutedProvider);
-   
     if (muted) {
       final controller = ref.read(_videoControllerProvider).valueOrNull;
       if (controller != null) {
@@ -53,11 +92,17 @@ class SplashScreen extends ConsumerWidget {
         return;
       }
     }
-    _navigateToNextScreen(ref, context);
+    _navigateToNextScreen();
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _detachCompletionListener();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final videoAsync = ref.watch(_videoControllerProvider);
     final muted = ref.watch(_splashMutedProvider);
 
@@ -65,18 +110,11 @@ class SplashScreen extends ConsumerWidget {
       _,
       next,
     ) {
-      next.whenData((controller) {
-        controller.addListener(() {
-          if (controller.value.position >= controller.value.duration &&
-              controller.value.duration > Duration.zero) {
-            _navigateToNextScreen(ref, context);
-          }
-        });
-      });
+      next.whenData(_attachCompletionListener);
     });
 
     return GestureDetector(
-      onTap: () => _handleTap(ref, context),
+      onTap: _handleTap,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Stack(

@@ -11,7 +11,11 @@ final myChatRoomsProvider = StreamProvider<List<ChatRoom>>((ref) {
   return ref.watch(chatRepositoryProvider).watchMyRooms(uid);
 });
 
-final roomMessagesProvider = StreamProvider.family<List<Message>, String>(
+// autoDispose so the messages subscription is cancelled when no screen is
+// listening (e.g. after leaving a match/chat), preventing late stream emits
+// from rebuilding a disposed element ("defunct element" assertion).
+final roomMessagesProvider =
+    StreamProvider.autoDispose.family<List<Message>, String>(
   (ref, roomId) => ref.watch(chatRepositoryProvider).watchMessages(roomId),
 );
 

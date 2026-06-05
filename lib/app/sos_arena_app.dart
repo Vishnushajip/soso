@@ -52,6 +52,18 @@ Future<void> firebaseBackgroundMessageHandler(RemoteMessage message) async {
 
 final Set<String> _shownNotifIds = {};
 
+// A known, harmless Riverpod 2.x teardown race: a watched stream provider
+// fires an async transition into a widget element that is being disposed,
+// so Flutter calls markNeedsBuild() on a defunct element. It does not affect
+// the user, so we suppress it instead of reporting it as a crash.
+bool _isBenignElementTeardownRaw(Object error, StackTrace? stack) {
+  if (!error.toString().contains('_ElementLifecycle.defunct')) return false;
+  return stack?.toString().contains('markNeedsBuild') ?? false;
+}
+
+bool _isBenignElementTeardown(FlutterErrorDetails details) =>
+    _isBenignElementTeardownRaw(details.exception, details.stack);
+
 class AppBootstrap {
   AppBootstrap._();
 
@@ -73,14 +85,30 @@ class AppBootstrap {
     ]);
 
     if (Env.enableCrashlytics && !kIsWeb) {
-      FlutterError.onError =
-          FirebaseCrashlytics.instance.recordFlutterFatalError;
+      FlutterError.onError = (details) {
+        if (_isBenignElementTeardown(details)) {
+          FirebaseCrashlytics.instance.recordError(
+            details.exception,
+            details.stack,
+            reason: 'benign-riverpod-element-teardown',
+            fatal: false,
+          );
+          return;
+        }
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      };
       PlatformDispatcher.instance.onError = (error, stack) {
+        if (_isBenignElementTeardownRaw(error, stack)) return true;
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
       };
     } else {
+      FlutterError.onError = (details) {
+        if (_isBenignElementTeardown(details)) return;
+        FlutterError.presentError(details);
+      };
       PlatformDispatcher.instance.onError = (error, stack) {
+        if (_isBenignElementTeardownRaw(error, stack)) return true;
         appLogger.e('Uncaught', error: error, stackTrace: stack);
         return true;
       };

@@ -240,6 +240,9 @@ final localGameProvider =
 );
 
 /// ---------- ONLINE GAME ----------
-final gameRoomProvider = StreamProvider.family<GameRoom?, String>(
+// autoDispose so the Firestore room subscription is cancelled the moment the
+// match screen leaves. Without it, a late stream emit could fire into the
+// already-disposed screen element (Riverpod "defunct element" assertion).
+final gameRoomProvider = StreamProvider.autoDispose.family<GameRoom?, String>(
   (ref, roomId) => ref.watch(gameRepositoryProvider).watchRoom(roomId),
 );

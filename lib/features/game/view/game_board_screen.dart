@@ -1,13 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/constants/app_constants.dart';
 import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/bot_engine.dart';
@@ -35,6 +33,7 @@ import '../widgets/vs_animation_overlay.dart';
 import '../widgets/confetti_shower.dart';
 import '../widgets/firecrackers_effect.dart';
 import '../widgets/circular_turn_timer.dart';
+import '../widgets/in_game_chat_sheet.dart';
 
 class GameBoardScreen extends ConsumerStatefulWidget {
   const GameBoardScreen({super.key, required this.roomId});
@@ -53,6 +52,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
   bool _vsAnimationDone = false;
   final Map<SosLine, Color> _completedSosColors = {};
 
+  bool _leaving = false;
   bool _matchRoomEnsured = false;
   ChatRoom? _matchChatRoom;
   String? _lastProcessedMsgId;
@@ -100,7 +100,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       try {
         notifier?.state = null;
       } catch (_) {
-        // Provider scope already gone (e.g. app shutting down) — safe to ignore.
+        // Provider scope already gone (e.g. app shutting down) â€” safe to ignore.
       }
     });
     super.dispose();
@@ -116,7 +116,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       _botJoinTimer = null;
     }
 
-    // No human opponent yet → after a short wait, fill the room with a bot.
+    // No human opponent yet â†’ after a short wait, fill the room with a bot.
     final isMatchmade =
         room.type == GameRoomType.ranked || room.type == GameRoomType.quick;
     if (isMatchmade &&
@@ -129,7 +129,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       });
     }
 
-    // It's a bot's turn → play it after a lifelike pause.
+    // It's a bot's turn â†’ play it after a lifelike pause.
     if (room.status == GameRoomStatus.active &&
         room.players.isNotEmpty &&
         room.players[room.currentTurn].isBot &&
@@ -170,7 +170,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
             .play(sos > 0 ? AppSound.sos : AppSound.point);
       }
     } catch (_) {
-      // Turn already advanced or room changed — safe to ignore.
+      // Turn already advanced or room changed â€” safe to ignore.
     }
   }
 
@@ -239,16 +239,16 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
         final diff = current.players[i].score - oldPlayer.score;
         final sosCount = diff ~/ 10;
         _eventLogs.add(
-          '🔥 [SOS] ${current.players[i].name} created $sosCount SOS! (+$diff pts)',
+          'ðŸ”¥ [SOS] ${current.players[i].name} created $sosCount SOS! (+$diff pts)',
         );
       }
     }
 
     if (current.status != _prevRoom!.status) {
       if (current.status == GameRoomStatus.abandoned) {
-        _eventLogs.add('🚨 [Exit] Match abandoned by opponent');
+        _eventLogs.add('ðŸš¨ [Exit] Match abandoned by opponent');
       } else if (current.status == GameRoomStatus.finished) {
-        _eventLogs.add('🏆 [End] Match finished!');
+        _eventLogs.add('ðŸ† [End] Match finished!');
       }
     }
   }
@@ -308,6 +308,17 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       }
     }
     setState(() => _customHighlights = hints);
+  }
+
+  Future<void> _confirmAndExit() async {
+    if (_leaving) return;
+    final shouldPop = await _showExitConfirmationDialog(context);
+    if (!shouldPop || !mounted) return;
+    setState(() => _leaving = true);
+    try {
+      await ref.read(gameRepositoryProvider).abandon(widget.roomId);
+    } catch (_) {}
+    if (mounted) context.pop();
   }
 
   Future<bool> _showExitConfirmationDialog(BuildContext context) async {
@@ -518,7 +529,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _InGameChatWidget(
+      builder: (context) => InGameChatSheet(
         room: _matchChatRoom!,
         onClose: () => setState(() => _chatSheetOpen = false),
       ),
@@ -545,7 +556,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
 
             final meUid = ref.read(currentUidProvider);
             final text = lastMsg.text;
-            if (['👍', '😂', '🔥', '😮', '❤️'].contains(text)) {
+            if (['ðŸ‘', 'ðŸ˜‚', 'ðŸ”¥', 'ðŸ˜®', 'â¤ï¸'].contains(text)) {
               _triggerFloatingReaction(text);
             }
             if (lastMsg.senderId != meUid) {
@@ -570,16 +581,11 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        final shouldPop = await _showExitConfirmationDialog(context);
-        if (shouldPop && context.mounted) {
-          await ref.read(gameRepositoryProvider).abandon(widget.roomId);
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
-        }
+        await _confirmAndExit();
       },
       child: Scaffold(
         backgroundColor: AppColors.arenaBgBottom,
+        resizeToAvoidBottomInset: false,
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
@@ -588,13 +594,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
           leading: GestureDetector(
             onTap: () async {
               HapticFeedback.lightImpact();
-              final shouldPop = await _showExitConfirmationDialog(context);
-              if (shouldPop && context.mounted) {
-                await ref.read(gameRepositoryProvider).abandon(widget.roomId);
-                if (context.mounted) {
-                  context.pop();
-                }
-              }
+              await _confirmAndExit();
             },
             child: Container(
               margin: const EdgeInsets.all(10),
@@ -660,7 +660,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
           children: [
             const Positioned.fill(child: _ArenaBackground()),
             asyncRoom.when(
-              loading: () => const AppLoader(label: 'Loading room…'),
+              loading: () => const AppLoader(label: 'Loading roomâ€¦'),
               error: (e, _) => ErrorView(message: '$e'),
               data: (room) {
                 if (room == null)
@@ -730,7 +730,9 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                   });
                 }
 
-                if (room.status == GameRoomStatus.abandoned && !_summaryShown) {
+                if (room.status == GameRoomStatus.abandoned &&
+                    !_summaryShown &&
+                    !_leaving) {
                   _summaryShown = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
@@ -1154,7 +1156,9 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                     children: [
                       screen,
                       Positioned(
-                        top: 10,
+                        top: MediaQuery.of(context).padding.top +
+                            kToolbarHeight +
+                            6,
                         left: 20,
                         right: 20,
                         child: _IncomingMessageTicker(
@@ -1443,434 +1447,6 @@ class _IncomingMessageTicker extends StatelessWidget {
   }
 }
 
-class _InGameChatWidget extends ConsumerStatefulWidget {
-  const _InGameChatWidget({required this.room, required this.onClose});
-  final ChatRoom room;
-  final VoidCallback onClose;
-
-  @override
-  ConsumerState<_InGameChatWidget> createState() => _InGameChatWidgetState();
-}
-
-class _InGameChatWidgetState extends ConsumerState<_InGameChatWidget> {
-  final _ctrl = TextEditingController();
-  final _scrollCtrl = ScrollController();
-  bool _isTyping = false;
-  Timer? _typingTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _markRead();
-  }
-
-  void _markRead() {
-    final me = ref.read(currentUserProvider).valueOrNull;
-    if (me != null) {
-      ref
-          .read(chatRepositoryProvider)
-          .markRead(roomId: widget.room.id, uid: me.uid);
-      ref
-          .read(chatRepositoryProvider)
-          .markMessagesAsRead(roomId: widget.room.id, myUid: me.uid);
-    }
-  }
-
-  void _onTyping() {
-    if (_isTyping) return;
-    _isTyping = true;
-    _updateFirestoreTyping(true);
-
-    _typingTimer?.cancel();
-    _typingTimer = Timer(const Duration(seconds: 2), () {
-      _isTyping = false;
-      _updateFirestoreTyping(false);
-    });
-  }
-
-  void _updateFirestoreTyping(bool typing) {
-    final me = ref.read(currentUidProvider);
-    if (me == null) return;
-    FirebaseFirestore.instance
-        .collection(AppConstants.chatRoomsCollection)
-        .doc(widget.room.id)
-        .set({
-          'typingState': {me: typing},
-        }, SetOptions(merge: true));
-  }
-
-  Future<void> _send(String text) async {
-    if (text.trim().isEmpty) return;
-    final me = ref.read(currentUserProvider).valueOrNull;
-    if (me == null) return;
-    _ctrl.clear();
-    _isTyping = false;
-    _updateFirestoreTyping(false);
-
-    try {
-      await ref
-          .read(chatRepositoryProvider)
-          .sendMessage(
-            room: widget.room,
-            senderId: me.uid,
-            senderName: me.name,
-            senderPhoto: me.photoUrl,
-            text: text.trim(),
-          );
-      _scrollCtrl.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    } catch (e) {
-      if (mounted) AppSnackBar.showError(context, e.toString());
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    _scrollCtrl.dispose();
-    _typingTimer?.cancel();
-    _updateFirestoreTyping(false);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final asyncMessages = ref.watch(roomMessagesProvider(widget.room.id));
-    final me = ref.watch(currentUserProvider).valueOrNull;
-    final otherUid = me != null ? widget.room.otherUid(me.uid) : '';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bg,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.18),
-          width: 1.5,
-        ),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: AppColors.primary.withOpacity(0.12),
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.chat_rounded,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'MATCH CHAT',
-                          style: GoogleFonts.luckiestGuy(
-                            fontSize: 16,
-                            color: AppColors.primary,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        widget.onClose();
-                        Navigator.pop(context);
-                      },
-                      child: const Icon(
-                        Icons.close_rounded,
-                        color: AppColors.onSurfaceMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 120),
-                  color: AppColors.surfaceContainerLow,
-                  child: asyncMessages.when(
-                    loading: () => const AppLoader(),
-                    error: (e, _) => ErrorView(message: '$e'),
-                    data: (messages) {
-                      if (messages.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'Say hello to your opponent! 👋',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.onSurfaceMuted,
-                            ),
-                          ),
-                        );
-                      }
-                      return ListView.builder(
-                        controller: _scrollCtrl,
-                        reverse: true,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        itemCount: messages.length,
-                        itemBuilder: (context, i) {
-                          final m = messages[messages.length - 1 - i];
-                          final isMine = m.senderId == me?.uid;
-                          return _InGameMessageBubble(
-                            message: m,
-                            isMine: isMine,
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ),
-              StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection(AppConstants.chatRoomsCollection)
-                    .doc(widget.room.id)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  final data = snapshot.data?.data();
-                  final typingMap = data?['typingState'] as Map?;
-                  final otherTyping = typingMap?[otherUid] as bool? ?? false;
-
-                  if (!otherTyping) return const SizedBox(height: 0);
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Opponent is typing...',
-                      style: GoogleFonts.outfit(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.secondary,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 14,
-                ),
-                color: AppColors.surface,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: ['👍', '😂', '🔥', '😮', '❤️'].map((emoji) {
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        _send(emoji);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHigh.withValues(
-                            alpha: 0.3,
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.1),
-                          ),
-                        ),
-                        child: Text(
-                          emoji,
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.18),
-                            width: 1.5,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: TextField(
-                          controller: _ctrl,
-                          textInputAction: TextInputAction.send,
-                          onChanged: (_) => _onTyping(),
-                          onSubmitted: (val) {
-                            HapticFeedback.mediumImpact();
-                            _send(val);
-                          },
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.onSurface,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Send message...',
-                            hintStyle: GoogleFonts.outfit(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.onSurfaceMuted.withOpacity(0.4),
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 10,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.mediumImpact();
-                        _send(_ctrl.text);
-                      },
-                      child: Container(
-                        height: 40,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppColors.primary, AppColors.sColor],
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.send_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InGameMessageBubble extends StatelessWidget {
-  const _InGameMessageBubble({required this.message, required this.isMine});
-  final Message message;
-  final bool isMine;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasSpell = ['👍', '😂', '🔥', '😮', '❤️'].contains(message.text);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: isMine
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        children: [
-          if (!isMine) ...[
-            UserAvatar(
-              photoUrl: message.senderPhoto,
-              name: message.senderName,
-              size: 24,
-            ),
-            const SizedBox(width: 6),
-          ],
-          Flexible(
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: hasSpell ? 10 : 12,
-                vertical: hasSpell ? 6 : 8,
-              ),
-              decoration: BoxDecoration(
-                color: hasSpell
-                    ? Colors.transparent
-                    : (isMine
-                          ? AppColors.primary
-                          : AppColors.surfaceContainerHigh),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(14),
-                  topRight: const Radius.circular(14),
-                  bottomLeft: Radius.circular(isMine ? 14 : 4),
-                  bottomRight: Radius.circular(isMine ? 4 : 14),
-                ),
-                border: hasSpell
-                    ? null
-                    : Border.all(
-                        color: isMine
-                            ? Colors.transparent
-                            : AppColors.primary.withOpacity(0.1),
-                        width: 1,
-                      ),
-              ),
-              child: Text(
-                message.text,
-                style: GoogleFonts.outfit(
-                  fontSize: hasSpell ? 26 : 13,
-                  fontWeight: FontWeight.w700,
-                  color: isMine ? Colors.white : AppColors.onSurface,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SpellButton extends StatelessWidget {
   const _SpellButton({
     required this.label,
@@ -1995,8 +1571,8 @@ class _Waiting extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 room.maxPlayers > 2
-                    ? 'Waiting for players…'
-                    : 'Waiting for opponent…',
+                    ? 'Waiting for playersâ€¦'
+                    : 'Waiting for opponentâ€¦',
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 18,

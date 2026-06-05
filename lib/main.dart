@@ -10,7 +10,6 @@ Future<void> main() async {
   final prefs = await AppBootstrap.initialize();
 
   if (!kIsWeb) {
-    // Fire-and-forget: don't block the first frame on this.
     FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(!kDebugMode);
   }
 

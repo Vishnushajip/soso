@@ -26,12 +26,16 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _ctrl = TextEditingController();
   ChatRoom? _room;
+  // Captured up-front so it can be cleared in dispose() — `ref` itself must not
+  // be used after the widget is disposed.
+  StateController<String?>? _activeRoomCtrl;
 
   @override
   void initState() {
     super.initState();
+    _activeRoomCtrl = ref.read(activeChatRoomIdProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(activeChatRoomIdProvider.notifier).state = widget.roomId;
+      _activeRoomCtrl?.state = widget.roomId;
       _loadRoom();
     });
   }
@@ -39,7 +43,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void dispose() {
     _ctrl.dispose();
-    ref.read(activeChatRoomIdProvider.notifier).state = null;
+    // Defer clearing the active room: modifying a provider synchronously during
+    // dispose happens while the widget tree is building, which Riverpod forbids.
+    // The provider is global (not autoDispose) so the controller outlives us.
+    final ctrl = _activeRoomCtrl;
+    Future(() => ctrl?.state = null);
     super.dispose();
   }
 

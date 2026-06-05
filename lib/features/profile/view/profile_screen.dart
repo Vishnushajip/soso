@@ -178,17 +178,23 @@ class _HeroHeader extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 16,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
+                  // Only draw the plain circular ring when the user has no
+                  // purchased frame — an owned frame provides its own border.
+                  decoration:
+                      (u.avatarFrameColor == null ||
+                          u.avatarFrameColor!.isEmpty)
+                      ? BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.surface, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.3),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        )
+                      : null,
                   child: UserAvatar(
                     photoUrl: u.photoUrl,
                     name: u.name,

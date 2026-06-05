@@ -122,7 +122,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             videoAsync.when(
               data: (controller) => SizedBox.expand(
                 child: FittedBox(
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                   child: SizedBox(
                     width: controller.value.size.width,
                     height: controller.value.size.height,

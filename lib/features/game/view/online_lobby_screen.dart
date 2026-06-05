@@ -11,7 +11,8 @@ import '../../../models/game_room.dart';
 import '../../../providers/repository_providers.dart';
 import '../../../providers/user_providers.dart';
 import '../../../routes/route_names.dart';
-
+import '../../../core/theme/board_theme.dart';
+import '../widgets/board_theme_selection_sheet.dart';
 class OnlineLobbyScreen extends ConsumerStatefulWidget {
   const OnlineLobbyScreen({super.key});
 
@@ -207,6 +208,8 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
                         setState(() => _magicEnabled = v);
                       },
                     ),
+                    const SizedBox(height: 14),
+                    _BoardThemeCard(),
                   ],
                   const SizedBox(height: 14),
                   _JoinCodeCard(controller: _codeCtrl, onJoin: _joinByCode),
@@ -965,6 +968,93 @@ class _MagicSpellsCard extends StatelessWidget {
                 onChanged: onChanged,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BoardThemeCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(boardThemeProvider);
+    return _GameCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _CardLabel(
+            label: 'Board Theme',
+            icon: Icons.palette_rounded,
+          ),
+          const SizedBox(height: 14),
+          InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              BoardThemeSelectionSheet.show(context);
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: theme.boardBgColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.boardBorderColor,
+                  width: theme.isGlossy ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: theme.cellBgColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: theme.highlightColor.withOpacity(0.5)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'S',
+                        style: GoogleFonts.luckiestGuy(
+                          fontSize: 16,
+                          color: theme.sColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          theme.name,
+                          style: GoogleFonts.luckiestGuy(
+                            fontSize: 16,
+                            color: theme.sColor,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Text(
+                          'Tap to change theme',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color: theme.oColor.withOpacity(0.8),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: theme.sColor,
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

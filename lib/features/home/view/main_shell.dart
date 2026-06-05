@@ -25,9 +25,9 @@ class MainShell extends ConsumerWidget {
       icon: Icons.people_alt_rounded,
     ),
     _TabData(
-      path: RouteNames.chatList,
-      label: 'Chats',
-      icon: Icons.chat_bubble_rounded,
+      path: RouteNames.shop,
+      label: 'Shop',
+      icon: Icons.storefront_outlined,
     ),
     _TabData(
       path: RouteNames.leaderboard,
@@ -80,11 +80,20 @@ class MainShell extends ConsumerWidget {
               context.push(RouteNames.notifications);
             },
           ),
-          _SettingsButton(
+          GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
-              context.push(RouteNames.settings);
+              context.push(RouteNames.chatList);
             },
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+              child: Icon(
+                Icons.chat_bubble_rounded,
+                color: AppColors.onSurface.withOpacity(0.75),
+                size: 26,
+              ),
+            ),
           ),
           const SizedBox(width: 4),
         ],
@@ -109,11 +118,7 @@ class MainShell extends ConsumerWidget {
 }
 
 class _TabData {
-  const _TabData({
-    required this.path,
-    required this.label,
-    required this.icon,
-  });
+  const _TabData({required this.path, required this.label, required this.icon});
   final String path;
   final String label;
   final IconData icon;
@@ -156,8 +161,8 @@ class _AppBarTitle extends StatelessWidget {
                       ? Icons.sports_esports_rounded
                       : selectedLabel == 'Friends'
                       ? Icons.people_alt_rounded
-                      : selectedLabel == 'Chats'
-                      ? Icons.chat_bubble_rounded
+                      : selectedLabel == 'Shop'
+                      ? Icons.store_rounded
                       : selectedLabel == 'Ranks'
                       ? Icons.emoji_events_rounded
                       : Icons.account_circle_rounded,
@@ -244,11 +249,7 @@ class _PointsPill extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.stars_rounded,
-            color: AppColors.secondary,
-            size: 15,
-          ),
+          const Icon(Icons.stars_rounded, color: AppColors.secondary, size: 15),
           const SizedBox(width: 4),
           Text(
             '$points',
@@ -314,27 +315,6 @@ class _NotificationBell extends StatelessWidget {
                 ),
               ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsButton extends StatelessWidget {
-  const _SettingsButton({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-        child: Icon(
-          Icons.settings_rounded,
-          color: AppColors.onSurface.withOpacity(0.75),
-          size: 26,
         ),
       ),
     );

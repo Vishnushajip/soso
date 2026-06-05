@@ -23,55 +23,94 @@ class ChatListScreen extends ConsumerWidget {
     final rooms = ref.watch(myChatRoomsProvider);
     final me = ref.watch(currentUidProvider);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _GlobalChatBanner(),
-          const SizedBox(height: 14),
-          const _SectionLabel(
-            label: 'Direct Messages',
-            icon: Icons.chat_bubble_rounded,
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: rooms.when(
-              loading: () => const AppLoader(),
-              error: (e, _) => ErrorView(message: '$e'),
-              data: (list) {
-                final direct = list
-                    .where((r) => r.type == ChatRoomType.direct)
-                    .toList();
-                if (direct.isEmpty) return const _EmptyState();
-                return ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  itemCount: direct.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    final room = direct[i];
-                    final otherUid = me == null ? '' : room.otherUid(me);
-                    final other = ref
-                        .watch(userByUidProvider(otherUid))
-                        .valueOrNull;
-                    final unread = room.unreadCount[me] ?? 0;
-                    return _ChatCard(
-                      room: room,
-                      other: other,
-                      unread: unread,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        context.push(
-                          '${RouteNames.chatRoom}?roomId=${room.id}',
-                        );
-                      },
-                    );
-                  },
-                );
-              },
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        backgroundColor: AppColors.bg,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.of(context).pop();
+          },
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.18),
+                width: 1.5,
+              ),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: AppColors.primary,
             ),
           ),
-        ],
+        ),
+        title: Text(
+          'Chats',
+          style: GoogleFonts.luckiestGuy(
+            fontSize: 22,
+            color: AppColors.primary,
+            letterSpacing: 2,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _GlobalChatBanner(),
+            const SizedBox(height: 14),
+            const _SectionLabel(
+              label: 'Direct Messages',
+              icon: Icons.chat_bubble_rounded,
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: rooms.when(
+                loading: () => const AppLoader(),
+                error: (e, _) => ErrorView(message: '$e'),
+                data: (list) {
+                  final direct = list
+                      .where((r) => r.type == ChatRoomType.direct)
+                      .toList();
+                  if (direct.isEmpty) return const _EmptyState();
+                  return ListView.separated(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    itemCount: direct.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) {
+                      final room = direct[i];
+                      final otherUid = me == null ? '' : room.otherUid(me);
+                      final other = ref
+                          .watch(userByUidProvider(otherUid))
+                          .valueOrNull;
+                      final unread = room.unreadCount[me] ?? 0;
+                      return _ChatCard(
+                        room: room,
+                        other: other,
+                        unread: unread,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          context.push(
+                            '${RouteNames.chatRoom}?roomId=${room.id}',
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

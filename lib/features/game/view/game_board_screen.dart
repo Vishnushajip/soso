@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -218,9 +218,17 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       }
     }
 
+    bool opponentPlayed = false;
+    bool opponentScoredSos = false;
+
     if (current.lastPlacedPosition != _prevRoom!.lastPlacedPosition &&
         current.lastPlacedPosition != null) {
       final placerId = current.lastPlacedPlayerId;
+      final me = ref.read(currentUidProvider);
+      if (placerId != null && placerId != me) {
+        opponentPlayed = true;
+      }
+
       final player = current.players.firstWhere(
         (p) => p.uid == placerId,
         orElse: () => current.players[0],
@@ -239,8 +247,22 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
         final diff = current.players[i].score - oldPlayer.score;
         final sosCount = diff ~/ 10;
         _eventLogs.add(
-          'ðŸ”¥ [SOS] ${current.players[i].name} created $sosCount SOS! (+$diff pts)',
+          '🔥 [SOS] ${current.players[i].name} created $sosCount SOS! (+$diff pts)',
         );
+        final me = ref.read(currentUidProvider);
+        if (current.players[i].uid != me) {
+          opponentScoredSos = true;
+        }
+      }
+    }
+
+    if (opponentPlayed) {
+      final sound = ref.read(soundServiceProvider);
+      if (opponentScoredSos) {
+        sound.play(AppSound.sos);
+        HapticFeedback.mediumImpact();
+      } else {
+        sound.play(AppSound.point);
       }
     }
 

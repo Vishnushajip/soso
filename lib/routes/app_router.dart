@@ -85,7 +85,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: RouteNames.home, builder: (context, state) => const GameModeSelectScreen()),
           GoRoute(path: RouteNames.friends, builder: (context, state) => const FriendsScreen()),
-          GoRoute(path: RouteNames.chatList, builder: (context, state) => const ChatListScreen()),
+          GoRoute(path: RouteNames.shop, builder: (context, state) => const ShopScreen()),
           GoRoute(path: RouteNames.leaderboard, builder: (context, state) => const LeaderboardScreen()),
           GoRoute(path: RouteNames.profile, builder: (context, state) => const ProfileScreen()),
         ],
@@ -130,7 +130,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: RouteNames.privacy, builder: (context, state) => const PrivacyScreen()),
       GoRoute(path: RouteNames.terms, builder: (context, state) => const TermsScreen()),
       GoRoute(path: RouteNames.contact, builder: (context, state) => const ContactSupportScreen()),
-      GoRoute(path: RouteNames.shop, builder: (context, state) => const ShopScreen()),
+      GoRoute(path: RouteNames.chatList, builder: (context, state) => const ChatListScreen()),
       GoRoute(path: RouteNames.profileDetail, builder: (context, state) {
         final uid = state.uri.queryParameters['uid'];
         return ProfileScreen(uid: uid);

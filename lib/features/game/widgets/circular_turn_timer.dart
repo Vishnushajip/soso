@@ -8,13 +8,18 @@ class CircularTurnTimer extends StatefulWidget {
   const CircularTurnTimer({
     super.key,
     required this.duration,
-    required this.currentTurn,
+    required this.resetKey,
     required this.onTimeout,
     required this.isActive,
   });
 
   final int duration;
-  final int currentTurn;
+
+  /// A value that changes whenever the countdown should restart from
+  /// [duration]. Pass something that increments on every move (e.g. the number
+  /// of placed cells) so the timer resets both on turn changes AND when the
+  /// same player keeps the turn after completing an SOS.
+  final int resetKey;
   final VoidCallback onTimeout;
   final bool isActive;
 
@@ -44,8 +49,9 @@ class _CircularTurnTimerState extends State<CircularTurnTimer>
   @override
   void didUpdateWidget(covariant CircularTurnTimer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentTurn != widget.currentTurn) {
-      // Reset timer on turn change
+    if (oldWidget.resetKey != widget.resetKey) {
+      // Reset timer on every move (turn change OR an SOS-streak that keeps
+      // the same player's turn).
       _timer?.cancel();
       setState(() {
         _timeLeft = widget.duration;

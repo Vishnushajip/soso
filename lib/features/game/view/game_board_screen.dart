@@ -830,7 +830,8 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                               ),
                               CircularTurnTimer(
                                 duration: 30,
-                                currentTurn: room.currentTurn,
+                                resetKey:
+                                    room.board.where((c) => c.isNotEmpty).length,
                                 isActive: room.status == GameRoomStatus.active,
                                 onTimeout: () {
                                   if (myTurn) {

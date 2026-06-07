@@ -64,7 +64,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       try {
         c.removeListener(l);
       } catch (_) {
-        // Controller already disposed by its provider — nothing to remove.
       }
     }
     _listenedController = null;

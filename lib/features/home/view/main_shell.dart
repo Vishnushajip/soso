@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:soso/features/update/view/update_dialog.dart';
 
+import '../../../core/services/haptic_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/notification_providers.dart';
+import '../../../providers/service_providers.dart';
 import '../../../providers/user_providers.dart';
 import '../../../routes/route_names.dart';
 
@@ -17,27 +19,32 @@ class MainShell extends ConsumerWidget {
     _TabData(
       path: RouteNames.home,
       label: 'Play',
-      icon: Icons.sports_esports_rounded,
+      icon: Icons.sports_esports_outlined,
+      activeIcon: Icons.sports_esports_rounded,
     ),
     _TabData(
       path: RouteNames.friends,
       label: 'Friends',
-      icon: Icons.people_alt_rounded,
+      icon: Icons.people_alt_outlined,
+      activeIcon: Icons.people_alt_rounded,
     ),
     _TabData(
       path: RouteNames.shop,
       label: 'Shop',
       icon: Icons.storefront_outlined,
+      activeIcon: Icons.storefront_rounded,
     ),
     _TabData(
       path: RouteNames.leaderboard,
       label: 'Ranks',
-      icon: Icons.emoji_events_rounded,
+      icon: Icons.emoji_events_outlined,
+      activeIcon: Icons.emoji_events_rounded,
     ),
     _TabData(
       path: RouteNames.profile,
       label: 'Profile',
-      icon: Icons.account_circle_rounded,
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
     ),
   ];
 
@@ -52,12 +59,18 @@ class MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
     final selected = _indexOfLocation(location);
-    final unread = ref.watch(unreadNotificationsCountProvider).valueOrNull ?? 0;
-    final user = ref.watch(currentUserProvider).valueOrNull;
-    final points = user?.totalPoints ?? 0;
-    final firstLetter = (user?.name.isNotEmpty == true)
-        ? user!.name[0].toUpperCase()
-        : 'P';
+
+    final unread = ref.watch(
+      unreadNotificationsCountProvider.select((v) => v.valueOrNull ?? 0),
+    );
+    final name = ref.watch(
+      currentUserProvider.select((u) => u.valueOrNull?.name ?? ''),
+    );
+    final points = ref.watch(
+      currentUserProvider.select((u) => u.valueOrNull?.totalPoints ?? 0),
+    );
+    final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'P';
+    final haptic = ref.read(hapticServiceProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -67,7 +80,7 @@ class MainShell extends ConsumerWidget {
         scrolledUnderElevation: 0,
         centerTitle: false,
         title: _AppBarTitle(
-          user: user,
+          name: name,
           firstLetter: firstLetter,
           selectedLabel: _tabs[selected].label,
         ),
@@ -76,62 +89,82 @@ class MainShell extends ConsumerWidget {
           _NotificationBell(
             unread: unread,
             onTap: () {
-              HapticFeedback.lightImpact();
+              haptic.fire(HapticEvent.tap);
               context.push(RouteNames.notifications);
             },
           ),
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              context.push(RouteNames.chatList);
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-              child: Icon(
-                Icons.chat_bubble_rounded,
-                color: AppColors.onSurface.withOpacity(0.75),
-                size: 26,
+          Semantics(
+            button: true,
+            label: 'Messages',
+            child: Tooltip(
+              message: 'Messages',
+              child: GestureDetector(
+                onTap: () {
+                  haptic.fire(HapticEvent.tap);
+                  context.push(RouteNames.chatList);
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 10,
+                  ),
+                  child: Icon(
+                    Icons.chat_bubble_rounded,
+                    color: AppColors.onSurface.withOpacity(0.75),
+                    size: 26,
+                  ),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 4),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 700),
-          child: child,
+      body: AppUpdateGate(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: child,
+          ),
         ),
       ),
-      bottomNavigationBar: _GameNavBar(
-        selected: selected,
-        tabs: _tabs,
-        onTap: (i) {
-          if (i == selected) return;
-          HapticFeedback.selectionClick();
-          context.go(_tabs[i].path);
-        },
+      bottomNavigationBar: RepaintBoundary(
+        child: _GameNavBar(
+          selected: selected,
+          tabs: _tabs,
+          onTap: (i) {
+            if (i == selected) return;
+            haptic.fire(HapticEvent.selection);
+            context.go(_tabs[i].path);
+          },
+        ),
       ),
     );
   }
 }
 
 class _TabData {
-  const _TabData({required this.path, required this.label, required this.icon});
+  const _TabData({
+    required this.path,
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+  });
   final String path;
   final String label;
   final IconData icon;
+  final IconData activeIcon;
 }
 
 class _AppBarTitle extends StatelessWidget {
   const _AppBarTitle({
-    required this.user,
+    required this.name,
     required this.firstLetter,
     required this.selectedLabel,
   });
 
-  final dynamic user;
+  final String name;
   final String firstLetter;
   final String selectedLabel;
 
@@ -146,7 +179,7 @@ class _AppBarTitle extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              user?.name ?? 'Player',
+              name.isNotEmpty ? name : 'Player',
               style: GoogleFonts.luckiestGuy(
                 fontSize: 15,
                 color: AppColors.onSurface,
@@ -388,57 +421,68 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutBack,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary.withOpacity(0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                border: isSelected
-                    ? Border.all(
-                        color: AppColors.primary.withOpacity(0.22),
-                        width: 1.5,
-                      )
-                    : null,
-              ),
-              child: AnimatedScale(
-                scale: isSelected ? 1.15 : 1.0,
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutBack,
-                child: Icon(
-                  tab.icon,
-                  size: 26,
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.onSurfaceMuted,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: tab.label,
+      child: Tooltip(
+        message: tab.label,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutBack,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withOpacity(0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    border: isSelected
+                        ? Border.all(
+                            color: AppColors.primary.withOpacity(0.22),
+                            width: 1.5,
+                          )
+                        : null,
+                  ),
+                  child: AnimatedScale(
+                    scale: isSelected ? 1.15 : 1.0,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutBack,
+                    child: Icon(
+                      isSelected ? tab.activeIcon : tab.icon,
+                      size: 26,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.onSurfaceMuted,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 3),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: GoogleFonts.outfit(
+                    fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.onSurfaceMuted,
+                    letterSpacing: isSelected ? 0.4 : 0,
+                  ),
+                  child: Text(tab.label),
+                ),
+              ],
             ),
-            const SizedBox(height: 3),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: GoogleFonts.outfit(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.onSurfaceMuted,
-                letterSpacing: isSelected ? 0.4 : 0,
-              ),
-              child: Text(tab.label),
-            ),
-          ],
+          ),
         ),
       ),
     );

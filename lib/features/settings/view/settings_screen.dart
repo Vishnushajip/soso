@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../providers/app_update_providers.dart';
 import '../../../providers/service_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -140,13 +141,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        'Version 1.0.0',
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          color: AppColors.onSurfaceMuted,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final label = ref.watch(appVersionLabelProvider);
+                          return Text(
+                            label.isEmpty ? 'Version …' : 'Version $label',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: AppColors.onSurfaceMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

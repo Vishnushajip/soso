@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -45,12 +45,17 @@ class _GoRouterRefresh extends ChangeNotifier {
   }
 }
 
+/// Root navigator key — lets app-wide overlays (e.g. the update dialog) obtain
+/// a navigator/overlay context regardless of the current route.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authStream = ref.watch(authRepositoryProvider).authStateChanges;
   final refresh = _GoRouterRefresh(authStream);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: RouteNames.splash,
     refreshListenable: refresh,
     redirect: (context, state) {

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../features/home/widgets/download_app_banner.dart';
+import '../../../providers/app_update_providers.dart';
 import '../../../providers/user_providers.dart';
 import '../../../routes/route_names.dart';
 
@@ -1157,14 +1158,20 @@ class _Footer extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          'SOS ARENA · v1.0.0 · © 2026 soso',
-          style: GoogleFonts.outfit(
-            fontSize: 9,
-            fontWeight: FontWeight.w500,
-            color: AppColors.onSurfaceMuted.withValues(alpha: 0.5),
-            letterSpacing: 0.5,
-          ),
+        Consumer(
+          builder: (context, ref, _) {
+            final version = ref.watch(appVersionProvider);
+            final v = version.isEmpty ? '' : 'v$version · ';
+            return Text(
+              'SOS ARENA · $v© 2026 soso',
+              style: GoogleFonts.outfit(
+                fontSize: 9,
+                fontWeight: FontWeight.w500,
+                color: AppColors.onSurfaceMuted.withValues(alpha: 0.5),
+                letterSpacing: 0.5,
+              ),
+            );
+          },
         ),
       ],
     );

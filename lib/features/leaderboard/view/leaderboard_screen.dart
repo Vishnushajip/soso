@@ -14,92 +14,89 @@ import '../../../providers/auth_providers.dart';
 import '../../../providers/leaderboard_providers.dart';
 import '../../../routes/route_names.dart';
 
-class LeaderboardScreen extends ConsumerStatefulWidget {
+class LeaderboardScreen extends StatelessWidget {
   const LeaderboardScreen({super.key});
 
   @override
-  ConsumerState<LeaderboardScreen> createState() => _LeaderboardScreenState();
-}
-
-class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(
-    length: LeaderboardKind.values.length,
-    vsync: this,
-  );
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-          child: _CartoonTabBar(tabs: _tabs),
+          padding: EdgeInsets.fromLTRB(14, 12, 14, 6),
+          child: _RankHeading(),
         ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: TabBarView(
-            controller: _tabs,
-            children: [
-              for (final k in LeaderboardKind.values) _LeaderboardPage(kind: k),
-            ],
-          ),
-        ),
+        Expanded(child: _LeaderboardPage(kind: LeaderboardKind.global)),
       ],
     );
   }
 }
 
-class _CartoonTabBar extends StatelessWidget {
-  const _CartoonTabBar({required this.tabs});
-  final TabController tabs;
+/// Single-rank heading banner. The app now ranks players by Global Points only,
+/// so this replaces the previous multi-tab selector.
+class _RankHeading extends StatelessWidget {
+  const _RankHeading();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.15),
-          width: 1.5,
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.sColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ),
-      child: TabBar(
-        controller: tabs,
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        indicatorSize: TabBarIndicatorSize.tab,
-        indicator: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.primary, AppColors.sColor],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.4),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
             ),
-          ],
-        ),
-        dividerColor: Colors.transparent,
-        labelColor: Colors.white,
-        unselectedLabelColor: AppColors.onSurfaceMuted,
-        labelStyle: GoogleFonts.luckiestGuy(fontSize: 12, letterSpacing: 0.8),
-        unselectedLabelStyle: GoogleFonts.outfit(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-        onTap: (_) => HapticFeedback.selectionClick(),
-        tabs: [for (final k in LeaderboardKind.values) Tab(text: k.title)],
+            child: const Icon(
+              Icons.emoji_events_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Global Rankings',
+                  style: GoogleFonts.luckiestGuy(
+                    fontSize: 18,
+                    color: Colors.white,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Top players by total points',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withOpacity(0.85),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -20,7 +20,7 @@ class Env {
   }
 
   static String get appName => _s('APP_NAME', 'SOS Arena');
-  static String get supportEmail => _s('SUPPORT_EMAIL', 'support@example.com');
+  static String get supportEmail => _s('SUPPORT_EMAIL', 'info.playsoso@gmail.com');
   static String get googleClientIdWeb => _s('GOOGLE_CLIENT_ID_WEB');
   static String get googleServerClientId => _s('GOOGLE_SERVER_CLIENT_ID');
   static int get presenceHeartbeatSeconds => _i('PRESENCE_HEARTBEAT_SECONDS', 45);

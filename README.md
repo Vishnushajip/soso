@@ -28,3 +28,10 @@ dart update_version.dart minor decrement
 # Decrement Major Version
 
 dart update_version.dart major decrement
+
+
+
+flutter clean
+flutter pub get
+flutter build web --release
+firebase deploy --only hosting

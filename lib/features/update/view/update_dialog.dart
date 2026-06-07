@@ -7,10 +7,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../providers/app_update_providers.dart';
 import '../../../routes/app_router.dart';
-
+import 'package:flutter/foundation.dart';
+import 'package:universal_html/html.dart' as html;
 
 class AppUpdateGate extends ConsumerStatefulWidget {
   const AppUpdateGate({super.key, required this.child});
+
   final Widget child;
 
   @override
@@ -20,9 +22,18 @@ class AppUpdateGate extends ConsumerStatefulWidget {
 class _AppUpdateGateState extends ConsumerState<AppUpdateGate> {
   bool _shown = false;
 
+  bool get _isIosWeb {
+    if (!kIsWeb) return false;
+
+    final ua = html.window.navigator.userAgent.toLowerCase();
+
+    return ua.contains('iphone') || ua.contains('ipad') || ua.contains('ipod');
+  }
+
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeShow(ref.read(appUpdateDecisionProvider));
     });
@@ -30,34 +41,39 @@ class _AppUpdateGateState extends ConsumerState<AppUpdateGate> {
 
   @override
   Widget build(BuildContext context) {
-    
     ref.listen<UpdateDecision?>(
       appUpdateDecisionProvider,
       (_, next) => _maybeShow(next),
     );
+
     return widget.child;
   }
 
   void _maybeShow(UpdateDecision? decision) {
-    if (_shown || decision == null || !decision.shouldPrompt) return;
+    if (_isIosWeb) return;
+
+    if (_shown || decision == null || !decision.shouldPrompt) {
+      return;
+    }
+
     _shown = true;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = rootNavigatorKey.currentContext;
+
       if (ctx == null) {
-        _shown = false; 
+        _shown = false;
         return;
       }
+
       showDialog<void>(
         context: ctx,
-        // Never dismiss on an outside tap — the user must pick an action, and a
-        // stray tap must not close the dialog mid-download.
         barrierDismissible: false,
         builder: (_) => UpdateDialog(decision: decision),
       );
     });
   }
 }
-
 
 class UpdateDialog extends ConsumerWidget {
   const UpdateDialog({super.key, required this.decision});
@@ -72,8 +88,6 @@ class UpdateDialog extends ConsumerWidget {
     );
 
     return PopScope(
-      // Block back-button dismissal while forced, or while a download/install
-      // is in flight.
       canPop: !forced && !busy,
       child: Dialog(
         backgroundColor: Colors.transparent,
@@ -116,7 +130,9 @@ class UpdateDialog extends ConsumerWidget {
                   ],
                 ),
                 child: Icon(
-                  forced ? Icons.system_update_rounded : Icons.rocket_launch_rounded,
+                  forced
+                      ? Icons.system_update_rounded
+                      : Icons.rocket_launch_rounded,
                   color: Colors.white,
                   size: 30,
                 ),
@@ -156,7 +172,6 @@ class UpdateDialog extends ConsumerWidget {
   }
 }
 
-
 class _Actions extends ConsumerWidget {
   const _Actions({required this.decision});
   final UpdateDecision decision;
@@ -167,16 +182,14 @@ class _Actions extends ConsumerWidget {
     final canInstallInApp = ref.watch(apkInstallerProvider).isSupported;
     final download = ref.watch(apkDownloadControllerProvider);
 
-    if (canInstallInApp &&
-        download.status == ApkDownloadStatus.downloading) {
+    if (canInstallInApp && download.status == ApkDownloadStatus.downloading) {
       return _ProgressView(
         label: 'Downloading update',
-        
+
         progress: download.progress > 0 ? download.progress : null,
       );
     }
-    if (canInstallInApp &&
-        download.status == ApkDownloadStatus.installing) {
+    if (canInstallInApp && download.status == ApkDownloadStatus.installing) {
       return const _ProgressView(label: 'Opening installer…', progress: null);
     }
 
@@ -200,16 +213,14 @@ class _Actions extends ConsumerWidget {
             ),
           ),
         AppButton(
-          icon: isDone
-              ? Icons.install_mobile_rounded
-              : Icons.download_rounded,
+          icon: isDone ? Icons.install_mobile_rounded : Icons.download_rounded,
           label: isDone
               ? 'Install again'
               : isError
-                  ? 'Retry'
-                  : forced
-                      ? 'Update Now'
-                      : 'Update',
+              ? 'Retry'
+              : forced
+              ? 'Update Now'
+              : 'Update',
           expanded: true,
           onPressed: () => _start(context, ref, canInstallInApp),
         ),
@@ -241,7 +252,6 @@ class _Actions extends ConsumerWidget {
       return;
     }
     if (inApp) {
-    
       await ref
           .read(apkDownloadControllerProvider.notifier)
           .downloadAndInstall(url);
@@ -302,12 +312,18 @@ class _VersionRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withOpacity(0.14), width: 1.5),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.14),
+          width: 1.5,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _VersionChip(label: 'Current', value: current.isEmpty ? '—' : current),
+          _VersionChip(
+            label: 'Current',
+            value: current.isEmpty ? '—' : current,
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Icon(
@@ -316,7 +332,11 @@ class _VersionRow extends StatelessWidget {
               color: AppColors.primary.withOpacity(0.6),
             ),
           ),
-          _VersionChip(label: 'Latest', value: latest.isEmpty ? '—' : latest, highlight: true),
+          _VersionChip(
+            label: 'Latest',
+            value: latest.isEmpty ? '—' : latest,
+            highlight: true,
+          ),
         ],
       ),
     );

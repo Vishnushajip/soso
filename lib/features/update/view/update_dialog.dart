@@ -22,12 +22,12 @@ class AppUpdateGate extends ConsumerStatefulWidget {
 class _AppUpdateGateState extends ConsumerState<AppUpdateGate> {
   bool _shown = false;
 
-  bool get _isIosWeb {
-    if (!kIsWeb) return false;
+  bool get _shouldShowUpdateDialog {
+    if (!kIsWeb) return true;
 
-    final ua = html.window.navigator.userAgent.toLowerCase();
+    final userAgent = html.window.navigator.userAgent.toLowerCase();
 
-    return ua.contains('iphone') || ua.contains('ipad') || ua.contains('ipod');
+    return userAgent.contains('android');
   }
 
   @override
@@ -50,11 +50,11 @@ class _AppUpdateGateState extends ConsumerState<AppUpdateGate> {
   }
 
   void _maybeShow(UpdateDecision? decision) {
-    if (_isIosWeb) return;
+    if (!_shouldShowUpdateDialog) return;
 
-    if (_shown || decision == null || !decision.shouldPrompt) {
-      return;
-    }
+    if (_shown) return;
+    if (decision == null) return;
+    if (!decision.shouldPrompt) return;
 
     _shown = true;
 

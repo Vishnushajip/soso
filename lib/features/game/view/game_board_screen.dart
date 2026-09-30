@@ -1593,8 +1593,8 @@ class _Waiting extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 room.maxPlayers > 2
-                    ? 'Waiting for playersâ€¦'
-                    : 'Waiting for opponentâ€¦',
+                    ? 'Waiting for players to join'
+                    : 'Waiting for opponent',
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 18,

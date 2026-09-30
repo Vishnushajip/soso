@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:soso/features/update/view/update_dialog.dart';
@@ -11,6 +12,41 @@ import '../../../providers/service_providers.dart';
 import '../../../providers/user_providers.dart';
 import '../../../routes/route_names.dart';
 
+String _iconUrl(String icon, {Color? color}) {
+  final base = 'https://api.iconify.design/$icon.svg';
+  if (color == null) return base;
+  final hex = color.value.toRadixString(16).padLeft(8, '0').substring(2);
+  return '$base?color=%23$hex';
+}
+
+class _NetIcon extends StatelessWidget {
+  const _NetIcon({required this.icon, required this.size, required this.color});
+
+  final String icon;
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.network(
+      _iconUrl(icon, color: color),
+      width: size,
+      height: size,
+      placeholderBuilder: (_) => SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: SizedBox(
+            width: size * 0.5,
+            height: size * 0.5,
+            child: const CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.child});
   final Widget child;
@@ -19,32 +55,32 @@ class MainShell extends ConsumerWidget {
     _TabData(
       path: RouteNames.home,
       label: 'Play',
-      icon: Icons.sports_esports_outlined,
-      activeIcon: Icons.sports_esports_rounded,
+      icon: 'mdi:gamepad-variant-outline',
+      activeIcon: 'mdi:gamepad-variant',
     ),
     _TabData(
       path: RouteNames.friends,
       label: 'Friends',
-      icon: Icons.people_alt_outlined,
-      activeIcon: Icons.people_alt_rounded,
+      icon: 'mdi:account-group-outline',
+      activeIcon: 'mdi:account-group',
     ),
     _TabData(
       path: RouteNames.shop,
       label: 'Shop',
-      icon: Icons.storefront_outlined,
-      activeIcon: Icons.storefront_rounded,
+      icon: 'mdi:storefront-outline',
+      activeIcon: 'mdi:storefront',
     ),
     _TabData(
       path: RouteNames.leaderboard,
       label: 'Ranks',
-      icon: Icons.emoji_events_outlined,
-      activeIcon: Icons.emoji_events_rounded,
+      icon: 'mdi:trophy-outline',
+      activeIcon: 'mdi:trophy',
     ),
     _TabData(
       path: RouteNames.profile,
       label: 'Profile',
-      icon: Icons.person_outline_rounded,
-      activeIcon: Icons.person_rounded,
+      icon: 'mdi:account-outline',
+      activeIcon: 'mdi:account',
     ),
   ];
 
@@ -109,10 +145,10 @@ class MainShell extends ConsumerWidget {
                     horizontal: 6,
                     vertical: 10,
                   ),
-                  child: Icon(
-                    Icons.chat_bubble_rounded,
-                    color: AppColors.onSurface.withOpacity(0.75),
+                  child: _NetIcon(
+                    icon: 'mdi:chat',
                     size: 26,
+                    color: AppColors.onSurface.withOpacity(0.75),
                   ),
                 ),
               ),
@@ -153,8 +189,8 @@ class _TabData {
   });
   final String path;
   final String label;
-  final IconData icon;
-  final IconData activeIcon;
+  final String icon;
+  final String activeIcon;
 }
 
 class _AppBarTitle extends StatelessWidget {
@@ -167,6 +203,21 @@ class _AppBarTitle extends StatelessWidget {
   final String name;
   final String firstLetter;
   final String selectedLabel;
+
+  String _subIcon() {
+    switch (selectedLabel) {
+      case 'Play':
+        return 'mdi:gamepad-variant';
+      case 'Friends':
+        return 'mdi:account-group';
+      case 'Shop':
+        return 'mdi:store';
+      case 'Ranks':
+        return 'mdi:trophy';
+      default:
+        return 'mdi:account-circle';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,19 +240,7 @@ class _AppBarTitle extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  selectedLabel == 'Play'
-                      ? Icons.sports_esports_rounded
-                      : selectedLabel == 'Friends'
-                      ? Icons.people_alt_rounded
-                      : selectedLabel == 'Shop'
-                      ? Icons.store_rounded
-                      : selectedLabel == 'Ranks'
-                      ? Icons.emoji_events_rounded
-                      : Icons.account_circle_rounded,
-                  size: 14,
-                  color: AppColors.primary,
-                ),
+                _NetIcon(icon: _subIcon(), size: 14, color: AppColors.primary),
                 const SizedBox(width: 3),
                 Text(
                   selectedLabel == 'Play' ? 'Arena' : selectedLabel,
@@ -278,11 +317,13 @@ class _PointsPill extends StatelessWidget {
         ),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.stars_rounded, color: AppColors.secondary, size: 15),
+          const _NetIcon(
+            icon: 'mdi:star',
+            size: 15,
+            color: AppColors.secondary,
+          ),
           const SizedBox(width: 4),
           Text(
             '$points',
@@ -313,10 +354,10 @@ class _NotificationBell extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Icon(
-              Icons.notifications_rounded,
-              color: AppColors.onSurface.withOpacity(0.75),
+            _NetIcon(
+              icon: 'mdi:bell',
               size: 26,
+              color: AppColors.onSurface.withOpacity(0.75),
             ),
             if (unread > 0)
               Positioned(
@@ -385,7 +426,7 @@ class _GameNavBar extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: bottom, top: 6),
+        padding: EdgeInsets.only(bottom: bottom, top: 4),
         child: Center(
           heightFactor: 1.0,
           child: ConstrainedBox(
@@ -421,67 +462,52 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = isSelected ? AppColors.primary : AppColors.onSurfaceMuted;
     return Semantics(
       button: true,
       selected: isSelected,
       label: tab.label,
-      child: Tooltip(
-        message: tab.label,
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutBack,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary.withOpacity(0.12)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    border: isSelected
-                        ? Border.all(
-                            color: AppColors.primary.withOpacity(0.22),
-                            width: 1.5,
-                          )
-                        : null,
-                  ),
-                  child: AnimatedScale(
-                    scale: isSelected ? 1.15 : 1.0,
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutBack,
-                    child: Icon(
-                      isSelected ? tab.activeIcon : tab.icon,
-                      size: 26,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.onSurfaceMuted,
-                    ),
-                  ),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          height: 58,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: isSelected ? 24 : 0,
+                height: isSelected ? 3 : 0,
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 3),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.onSurfaceMuted,
-                    letterSpacing: isSelected ? 0.4 : 0,
-                  ),
-                  child: Text(tab.label),
+              ),
+              AnimatedScale(
+                scale: isSelected ? 1.18 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutBack,
+                child: _NetIcon(
+                  icon: isSelected ? tab.activeIcon : tab.icon,
+                  size: 24,
+                  color: color,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 180),
+                style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: color,
+                  letterSpacing: isSelected ? 0.3 : 0,
+                ),
+                child: Text(tab.label),
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
       ),

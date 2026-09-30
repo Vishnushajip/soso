@@ -1,4 +1,4 @@
-flutter build web --release
+flutter build web --release --no-tree-shake-icons
 firebase deploy --only hosting
 flutter build apk --release
 

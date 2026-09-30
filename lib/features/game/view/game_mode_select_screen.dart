@@ -10,9 +10,18 @@ import '../../../features/home/widgets/download_app_banner.dart';
 import '../../../providers/app_update_providers.dart';
 import '../../../providers/user_providers.dart';
 import '../../../routes/route_names.dart';
+import 'package:universal_html/html.dart' as html;
 
 class GameModeSelectScreen extends ConsumerWidget {
   const GameModeSelectScreen({super.key});
+
+ static bool get isAndroidWeb {
+    if (!kIsWeb) return false;
+
+    final ua = html.window.navigator.userAgent.toLowerCase();
+
+    return ua.contains('android');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +36,7 @@ class GameModeSelectScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (kIsWeb) ...[
+                if (isAndroidWeb) ...[
                   const DownloadAppBanner(),
                   const SizedBox(height: 24),
                 ],

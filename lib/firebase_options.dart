@@ -23,20 +23,11 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -50,20 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCHhr-TaJkiDUAh0LZ2g_7Y4XlBn093CyM',
-    appId: '1:151581458337:web:a17050730b7c820f25d5e0',
-    messagingSenderId: '151581458337',
-    projectId: 'soso-2c8df',
-    authDomain: 'soso-2c8df.firebaseapp.com',
-    storageBucket: 'soso-2c8df.firebasestorage.app',
-    measurementId: 'G-Z132XS5TW9',
+    apiKey: 'AIzaSyDhDUctQQ76D7ZYj8p_AX0i_l5Ig2Qq-uw',
+    appId: '1:680864203153:web:332ace03f053765114da30',
+    messagingSenderId: '680864203153',
+    projectId: 'jobservoo-84514',
+    authDomain: 'jobservoo-84514.firebaseapp.com',
+    storageBucket: 'jobservoo-84514.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCQyiXnDrZXZvMSv6Jh7uovLMkHLxaviPc',
-    appId: '1:151581458337:android:0ad78709ef38971125d5e0',
-    messagingSenderId: '151581458337',
-    projectId: 'soso-2c8df',
-    storageBucket: 'soso-2c8df.firebasestorage.app',
+    apiKey: 'AIzaSyCIlIS2XOQ2aSuSxjIpdIZLYt2AM-kic0I',
+    appId: '1:680864203153:android:fddfa8b267e8238114da30',
+    messagingSenderId: '680864203153',
+    projectId: 'jobservoo-84514',
+    storageBucket: 'jobservoo-84514.firebasestorage.app',
+  );
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyB2hLv4NHq9xGqz35AursKlKdLumYhBiRM',
+    appId: '1:680864203153:ios:752448d5c819fb6914da30',
+    messagingSenderId: '680864203153',
+    projectId: 'jobservoo-84514',
+    storageBucket: 'jobservoo-84514.firebasestorage.app',
+    androidClientId: '680864203153-8csekud5bbq87rgc3gf52ldfcaqmod9h.apps.googleusercontent.com',
+    iosClientId: '680864203153-gvfaemi9vpm6v4tdm26mbn12mdo1uh30.apps.googleusercontent.com',
+    iosBundleId: 'com.sosarena.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyB2hLv4NHq9xGqz35AursKlKdLumYhBiRM',
+    appId: '1:680864203153:ios:752448d5c819fb6914da30',
+    messagingSenderId: '680864203153',
+    projectId: 'jobservoo-84514',
+    storageBucket: 'jobservoo-84514.firebasestorage.app',
+    androidClientId: '680864203153-8csekud5bbq87rgc3gf52ldfcaqmod9h.apps.googleusercontent.com',
+    iosClientId: '680864203153-gvfaemi9vpm6v4tdm26mbn12mdo1uh30.apps.googleusercontent.com',
+    iosBundleId: 'com.sosarena.app',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDhDUctQQ76D7ZYj8p_AX0i_l5Ig2Qq-uw',
+    appId: '1:680864203153:web:5b3fbb92602637db14da30',
+    messagingSenderId: '680864203153',
+    projectId: 'jobservoo-84514',
+    authDomain: 'jobservoo-84514.firebaseapp.com',
+    storageBucket: 'jobservoo-84514.firebasestorage.app',
   );
 }

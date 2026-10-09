@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../providers/auth_providers.dart';
-import '../../../repositories/auth_repository.dart';
+import '../../../core/providers/auth_providers.dart';
+import '../../../core/repositories/auth_repository.dart';
 
 class SignInScreen extends ConsumerWidget {
   const SignInScreen({super.key});

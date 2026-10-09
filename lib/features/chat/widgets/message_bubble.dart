@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format_utils.dart';
-import '../../../models/message.dart';
+import '../../../core/models/message.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({super.key, required this.message, required this.mine});

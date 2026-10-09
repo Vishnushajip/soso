@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/cartoon_scaffold.dart';
-import '../../../providers/app_update_providers.dart';
+import '../../../core/providers/app_update_providers.dart';
 
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});

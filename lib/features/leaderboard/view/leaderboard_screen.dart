@@ -9,10 +9,10 @@ import '../../../core/utils/format_utils.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/user_avatar.dart';
-import '../../../models/leaderboard_entry.dart';
-import '../../../providers/auth_providers.dart';
-import '../../../providers/leaderboard_providers.dart';
-import '../../../routes/route_names.dart';
+import '../../../core/models/leaderboard_entry.dart';
+import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/leaderboard_providers.dart';
+import '../../../core/routes/route_names.dart';
 
 class LeaderboardScreen extends StatelessWidget {
   const LeaderboardScreen({super.key});

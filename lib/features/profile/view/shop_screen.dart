@@ -7,8 +7,8 @@ import '../../../core/customization/avatar_frame.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
-import '../../../providers/repository_providers.dart';
-import '../../../providers/user_providers.dart';
+import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/user_providers.dart';
 
 class ShopScreen extends ConsumerWidget {
   const ShopScreen({super.key});

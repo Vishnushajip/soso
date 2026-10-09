@@ -1,7 +1,7 @@
 name: soso
 description: "SOS Arena - real-time multiplayer SOS game."
 publish_to: 'none'
-version: 1.0.2
+version: 1.0.2+2
 
 environment:
   sdk: ^3.11.5
@@ -53,6 +53,8 @@ dependencies:
   path_provider: ^2.1.5
   open_filex: ^4.5.0
   universal_html: ^2.3.0
+  in_app_update: ^5.0.0
+  new_version_plus: ^0.1.1
 
 dev_dependencies:
   flutter_test:

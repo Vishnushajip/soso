@@ -9,10 +9,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/user_avatar.dart';
-import '../../../models/chat_room.dart';
-import '../../../providers/chat_providers.dart';
-import '../../../providers/repository_providers.dart';
-import '../../../providers/user_providers.dart';
+import '../../../core/models/chat_room.dart';
+import '../../../core/providers/chat_providers.dart';
+import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/user_providers.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {

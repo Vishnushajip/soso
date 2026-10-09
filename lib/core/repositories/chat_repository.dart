@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:googleapis_auth/auth_io.dart';
 
-import '../core/constants/app_constants.dart';
-import '../core/constants/env.dart';
-import '../core/utils/id_utils.dart';
-import '../core/utils/logger.dart';
+import '../constants/app_constants.dart';
+import '../constants/env.dart';
+import '../utils/id_utils.dart';
+import '../utils/logger.dart';
 import '../models/chat_room.dart';
 import '../models/message.dart';
 

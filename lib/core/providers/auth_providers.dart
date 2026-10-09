@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/utils/logger.dart';
+import '../utils/logger.dart';
 import 'repository_providers.dart';
 import 'service_providers.dart';
 

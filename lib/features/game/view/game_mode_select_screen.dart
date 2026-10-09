@@ -7,9 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../features/home/widgets/download_app_banner.dart';
-import '../../../providers/app_update_providers.dart';
-import '../../../providers/user_providers.dart';
-import '../../../routes/route_names.dart';
+import '../../../core/providers/app_update_providers.dart';
+import '../../../core/providers/user_providers.dart';
+import '../../../core/routes/route_names.dart';
 import 'package:universal_html/html.dart' as html;
 
 class GameModeSelectScreen extends ConsumerWidget {

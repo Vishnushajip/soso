@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:soso/providers/app_update_providers.dart';
+import 'package:soso/core/providers/app_update_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'web_download_stub.dart' if (dart.library.html) 'web_download.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../providers/app_download_providers.dart';
+import '../../../core/providers/app_download_providers.dart';
 
 class DownloadAppBanner extends ConsumerStatefulWidget {
   const DownloadAppBanner({super.key});

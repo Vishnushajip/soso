@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../core/constants/app_constants.dart';
-import '../core/utils/id_utils.dart';
+import '../constants/app_constants.dart';
+import '../utils/id_utils.dart';
 import '../models/friend_request.dart';
 import '../models/friendship.dart';
 

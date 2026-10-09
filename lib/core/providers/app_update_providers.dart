@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../core/services/apk_installer/apk_installer.dart';
-import '../core/services/app_update_service.dart';
+import '../services/apk_installer/apk_installer.dart';
+import '../services/app_update_service.dart';
 import '../models/app_version_config.dart';
 import 'app_download_providers.dart';
 import 'firebase_providers.dart';

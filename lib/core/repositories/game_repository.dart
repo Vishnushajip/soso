@@ -2,11 +2,11 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../core/constants/app_constants.dart';
-import '../core/constants/env.dart';
-import '../core/utils/bot_names.dart';
-import '../core/utils/id_utils.dart';
-import '../core/utils/sos_engine.dart';
+import '../constants/app_constants.dart';
+import '../constants/env.dart';
+import '../utils/bot_names.dart';
+import '../utils/id_utils.dart';
+import '../utils/sos_engine.dart';
 import '../models/app_user.dart';
 import '../models/game_room.dart';
 

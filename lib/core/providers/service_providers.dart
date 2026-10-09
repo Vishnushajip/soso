@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/services/analytics_service.dart';
-import '../core/services/crashlytics_service.dart';
-import '../core/services/fcm_service.dart';
-import '../core/services/haptic_service.dart';
-import '../core/services/local_notifications_service.dart';
-import '../core/services/presence_service.dart';
-import '../core/services/sound_service.dart';
-import '../core/services/storage_service.dart';
+import '../services/analytics_service.dart';
+import '../services/crashlytics_service.dart';
+import '../services/fcm_service.dart';
+import '../services/haptic_service.dart';
+import '../services/local_notifications_service.dart';
+import '../services/presence_service.dart';
+import '../services/sound_service.dart';
+import '../services/storage_service.dart';
 import 'firebase_providers.dart';
 
 final analyticsServiceProvider = Provider<AnalyticsService>(

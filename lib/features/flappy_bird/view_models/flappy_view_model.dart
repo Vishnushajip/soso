@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soso/core/theme/app_colors.dart';
 import 'package:soso/core/services/sound_service.dart';
-import 'package:soso/providers/service_providers.dart';
+import 'package:soso/core/providers/service_providers.dart';
 
 enum FlappyStatus { idle, playing, gameOver }
 

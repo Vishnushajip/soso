@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import '../core/constants/env.dart';
-import '../core/utils/logger.dart';
+import '../constants/env.dart';
+import '../utils/logger.dart';
 
 class AuthRepository {
   AuthRepository(this._auth, this._google);

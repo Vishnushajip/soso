@@ -11,12 +11,12 @@ import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/user_avatar.dart';
-import '../../../models/chat_room.dart';
-import '../../../models/message.dart';
-import '../../../providers/auth_providers.dart';
-import '../../../providers/chat_providers.dart';
-import '../../../providers/repository_providers.dart';
-import '../../../providers/user_providers.dart';
+import '../../../core/models/chat_room.dart';
+import '../../../core/models/message.dart';
+import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/chat_providers.dart';
+import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/user_providers.dart';
 
 const _quickReactions = ['👍', '😂', '🔥', '😮', '❤️'];
 

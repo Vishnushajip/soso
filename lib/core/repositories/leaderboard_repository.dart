@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../core/constants/app_constants.dart';
+import '../constants/app_constants.dart';
 import '../models/app_user.dart';
 import '../models/leaderboard_entry.dart';
 

@@ -5,8 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/app_update_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
-import '../../../providers/app_update_providers.dart';
-import '../../../routes/app_router.dart';
+import '../../../core/providers/app_update_providers.dart';
+import '../../../core/routes/app_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:universal_html/html.dart' as html;
 

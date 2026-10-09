@@ -10,12 +10,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/user_avatar.dart';
-import '../../../models/game_room.dart';
-import '../../../providers/auth_providers.dart';
-import '../../../providers/game_providers.dart';
-import '../../../providers/repository_providers.dart';
-import '../../../providers/service_providers.dart';
-import '../../../routes/route_names.dart';
+import '../../../core/models/game_room.dart';
+import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/game_providers.dart';
+import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/service_providers.dart';
+import '../../../core/routes/route_names.dart';
 import '../widgets/confetti_shower.dart';
 
 class MatchSummaryScreen extends ConsumerStatefulWidget {

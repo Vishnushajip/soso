@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/constants/app_constants.dart';
-import '../core/services/haptic_service.dart';
-import '../core/services/sound_service.dart';
-import '../core/utils/sos_engine.dart';
+import '../constants/app_constants.dart';
+import '../services/haptic_service.dart';
+import '../services/sound_service.dart';
+import '../utils/sos_engine.dart';
 import '../models/game_room.dart';
 import 'auth_providers.dart';
 import 'repository_providers.dart';

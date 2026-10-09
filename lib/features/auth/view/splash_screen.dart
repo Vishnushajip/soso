@@ -1,12 +1,13 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
-import '../../../providers/auth_providers.dart';
-import '../../../routes/route_names.dart';
-
+import '../../../core/providers/auth_providers.dart';
+import '../../../core/routes/route_names.dart';
+import '../../../core/services/update_service.dart';
 
 final _splashMutedProvider = StateProvider.autoDispose<bool>((ref) => kIsWeb);
 
@@ -42,6 +43,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   VideoPlayerController? _listenedController;
   VoidCallback? _tickListener;
 
+  @override
+  void initState() {
+    super.initState();
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    if (!kIsWeb && Platform.isAndroid) {
+      await InAppUpdateService().checkForUpdate(context);
+    }
+  }
+
   void _attachCompletionListener(VideoPlayerController controller) {
     if (identical(_listenedController, controller)) return;
     _detachCompletionListener();
@@ -63,8 +76,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (c != null && l != null) {
       try {
         c.removeListener(l);
-      } catch (_) {
-      }
+      } catch (_) {}
     }
     _listenedController = null;
     _tickListener = null;

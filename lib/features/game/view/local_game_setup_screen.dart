@@ -7,8 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../providers/user_providers.dart';
-import '../../../routes/route_names.dart';
+import '../../../core/providers/user_providers.dart';
+import '../../../core/routes/route_names.dart';
 import '../../../core/theme/board_theme.dart';
 import '../widgets/board_theme_selection_sheet.dart';
 

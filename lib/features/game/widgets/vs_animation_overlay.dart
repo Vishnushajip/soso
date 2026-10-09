@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../providers/service_providers.dart';
+import '../../../core/providers/service_providers.dart';
 import '../../../core/widgets/user_avatar.dart';
 
 class VsAnimationOverlay extends ConsumerStatefulWidget {

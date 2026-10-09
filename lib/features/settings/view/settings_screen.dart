@@ -5,8 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../providers/app_update_providers.dart';
-import '../../../providers/service_providers.dart';
+import '../../../core/providers/app_update_providers.dart';
+import '../../../core/providers/service_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});

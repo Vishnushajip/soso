@@ -7,10 +7,10 @@ import 'package:soso/features/update/view/update_dialog.dart';
 
 import '../../../core/services/haptic_service.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../providers/notification_providers.dart';
-import '../../../providers/service_providers.dart';
-import '../../../providers/user_providers.dart';
-import '../../../routes/route_names.dart';
+import '../../../core/providers/notification_providers.dart';
+import '../../../core/providers/service_providers.dart';
+import '../../../core/providers/user_providers.dart';
+import '../../../core/routes/route_names.dart';
 
 String _iconUrl(String icon, {Color? color}) {
   final base = 'https://api.iconify.design/$icon.svg';

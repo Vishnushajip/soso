@@ -2,7 +2,7 @@ import 'dart:math' as dart_math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
-import '../core/constants/app_constants.dart';
+import '../constants/app_constants.dart';
 import '../models/app_user.dart';
 
 class UserRepository {

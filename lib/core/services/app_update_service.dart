@@ -1,6 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../models/app_version_config.dart';
+import '../models/app_version_config.dart';
 import '../utils/version_utils.dart';
 
 enum UpdateStatus { upToDate, optional, forced }

@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/chat_providers.dart';
+import '../providers/chat_providers.dart';
 import '../constants/app_constants.dart';
 import '../utils/logger.dart';
 import 'local_notifications_service.dart';

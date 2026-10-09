@@ -11,11 +11,11 @@ import '../../../core/utils/format_utils.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/user_avatar.dart';
-import '../../../providers/auth_providers.dart';
-import '../../../providers/friend_providers.dart';
-import '../../../providers/repository_providers.dart';
-import '../../../providers/user_providers.dart';
-import '../../../routes/route_names.dart';
+import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/friend_providers.dart';
+import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/user_providers.dart';
+import '../../../core/routes/route_names.dart';
 
 class FriendsScreen extends ConsumerWidget {
   const FriendsScreen({super.key});

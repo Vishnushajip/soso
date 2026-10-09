@@ -6,10 +6,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../core/widgets/user_avatar.dart';
-import '../../../models/app_user.dart';
-import '../../../providers/repository_providers.dart';
-import '../../../providers/service_providers.dart';
-import '../../../providers/user_providers.dart';
+import '../../../core/models/app_user.dart';
+import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/service_providers.dart';
+import '../../../core/providers/user_providers.dart';
 
 class AddFriendScreen extends ConsumerStatefulWidget {
   const AddFriendScreen({super.key});

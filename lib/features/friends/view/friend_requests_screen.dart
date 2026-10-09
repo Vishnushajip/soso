@@ -3,18 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../routes/route_names.dart';
+import '../../../core/routes/route_names.dart';
 
 import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/user_avatar.dart';
-import '../../../models/friend_request.dart';
-import '../../../providers/friend_providers.dart';
-import '../../../providers/repository_providers.dart';
-import '../../../providers/service_providers.dart';
-import '../../../providers/user_providers.dart';
+import '../../../core/models/friend_request.dart';
+import '../../../core/providers/friend_providers.dart';
+import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/service_providers.dart';
+import '../../../core/providers/user_providers.dart';
 
 final friendRequestsTabProvider = StateProvider<int>((ref) => 0);
 

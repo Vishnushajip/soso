@@ -1,101 +1,58 @@
 {
   "project_info": {
-    "project_number": "680864203153",
-    "project_id": "jobservoo-84514",
-    "storage_bucket": "jobservoo-84514.firebasestorage.app"
+    "project_number": "151581458337",
+    "project_id": "soso-2c8df",
+    "storage_bucket": "soso-2c8df.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:680864203153:android:3709d3a1d4e2c5de14da30",
+        "mobilesdk_app_id": "1:151581458337:android:0ad78709ef38971125d5e0",
         "android_client_info": {
-          "package_name": "com.example.job_servo_admin"
+          "package_name": "com.example.soso"
         }
       },
       "oauth_client": [
         {
-          "client_id": "680864203153-8csekud5bbq87rgc3gf52ldfcaqmod9h.apps.googleusercontent.com",
+          "client_id": "151581458337-67riif05qoe1agrs1io77delp47fc5dq.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.job_servo_admin",
-            "certificate_hash": "b3644c3edb107b6b1a3a9606d05522a35eeb5b64"
-          }
-        },
-        {
-          "client_id": "680864203153-avhseoidjhjuja6hd81i3shtuot9as8f.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCIlIS2XOQ2aSuSxjIpdIZLYt2AM-kic0I"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "680864203153-avhseoidjhjuja6hd81i3shtuot9as8f.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "680864203153-phbjktq3qcl9np8vvg37g9bjcf40di6k.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.jobServoAdmin"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:680864203153:android:25b907c6f235314f14da30",
-        "android_client_info": {
-          "package_name": "com.jobservo.app"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "680864203153-as6eg12g5a22331k5smhf1svoi51bf4k.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.jobservo.app",
+            "package_name": "com.example.soso",
             "certificate_hash": "9f155de8484339f2b52a7cb3de46bda4c5f2a5ee"
           }
         },
         {
-          "client_id": "680864203153-ej9rhp1pt8m96goipdknagla50mdht50.apps.googleusercontent.com",
+          "client_id": "151581458337-pmgia7sl1er7237nlgggvqpeacsddvqs.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.jobservo.app",
-            "certificate_hash": "b3644c3edb107b6b1a3a9606d05522a35eeb5b64"
+            "package_name": "com.example.soso",
+            "certificate_hash": "0cb25f9ee5ee08b5bc08ff991707746b547c49df"
           }
         },
         {
-          "client_id": "680864203153-avhseoidjhjuja6hd81i3shtuot9as8f.apps.googleusercontent.com",
+          "client_id": "151581458337-va2jt414kemjqra7djoero2rmgv61411.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.soso",
+            "certificate_hash": "0d206beac5390b0aa67c6d22e9eab7635592e5e8"
+          }
+        },
+        {
+          "client_id": "151581458337-tr0g62nffhjpi10rkbt53tkitm0adcud.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCIlIS2XOQ2aSuSxjIpdIZLYt2AM-kic0I"
+          "current_key": "AIzaSyCQyiXnDrZXZvMSv6Jh7uovLMkHLxaviPc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "680864203153-avhseoidjhjuja6hd81i3shtuot9as8f.apps.googleusercontent.com",
+              "client_id": "151581458337-tr0g62nffhjpi10rkbt53tkitm0adcud.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "680864203153-phbjktq3qcl9np8vvg37g9bjcf40di6k.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.jobServoAdmin"
-              }
             }
           ]
         }
@@ -103,35 +60,65 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:680864203153:android:fddfa8b267e8238114da30",
+        "mobilesdk_app_id": "1:151581458337:android:b97863491af6c30125d5e0",
+        "android_client_info": {
+          "package_name": "com.example.soso_admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "151581458337-tr0g62nffhjpi10rkbt53tkitm0adcud.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQyiXnDrZXZvMSv6Jh7uovLMkHLxaviPc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "151581458337-tr0g62nffhjpi10rkbt53tkitm0adcud.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:151581458337:android:ad2e028a49bfc97925d5e0",
         "android_client_info": {
           "package_name": "com.sosarena.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "680864203153-avhseoidjhjuja6hd81i3shtuot9as8f.apps.googleusercontent.com",
+          "client_id": "151581458337-vecfe0el66e1vlqesbqqr44s3v298145.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sosarena.app",
+            "certificate_hash": "0cb25f9ee5ee08b5bc08ff991707746b547c49df"
+          }
+        },
+        {
+          "client_id": "151581458337-tr0g62nffhjpi10rkbt53tkitm0adcud.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCIlIS2XOQ2aSuSxjIpdIZLYt2AM-kic0I"
+          "current_key": "AIzaSyCQyiXnDrZXZvMSv6Jh7uovLMkHLxaviPc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "680864203153-avhseoidjhjuja6hd81i3shtuot9as8f.apps.googleusercontent.com",
+              "client_id": "151581458337-tr0g62nffhjpi10rkbt53tkitm0adcud.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "680864203153-phbjktq3qcl9np8vvg37g9bjcf40di6k.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.jobServoAdmin"
-              }
             }
           ]
         }

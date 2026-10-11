@@ -13,6 +13,7 @@ import '../../features/friends/view/add_friend_screen.dart';
 import '../../features/friends/view/friend_requests_screen.dart';
 import '../../features/friends/view/friends_screen.dart';
 import '../../features/flappy_bird/view/flappy_difficulty_screen.dart';
+import '../../features/game/view/ai_game_board_screen.dart';
 import '../../features/game/view/game_board_screen.dart';
 import '../../features/game/view/game_mode_select_screen.dart';
 import '../../features/game/view/local_game_board_screen.dart';
@@ -24,8 +25,10 @@ import '../../features/leaderboard/view/leaderboard_screen.dart';
 import '../../features/notifications/view/notifications_screen.dart';
 import '../../features/profile/view/about_screen.dart';
 import '../../features/profile/view/contact_support_screen.dart';
+import '../../features/profile/view/match_history_screen.dart';
 import '../../features/profile/view/privacy_screen.dart';
 import '../../features/profile/view/profile_screen.dart';
+import '../utils/bot_engine.dart';
 import '../../features/profile/view/shop_screen.dart';
 import '../../features/profile/view/terms_screen.dart';
 import '../../features/settings/view/settings_screen.dart';
@@ -85,14 +88,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: RouteNames.splash, builder: (context, state) => const SplashScreen()),
       GoRoute(path: RouteNames.signIn, builder: (context, state) => const SignInScreen()),
 
-      ShellRoute(
-        builder: (context, state, child) => MainShell(child: child),
-        routes: [
-          GoRoute(path: RouteNames.home, builder: (context, state) => const GameModeSelectScreen()),
-          GoRoute(path: RouteNames.friends, builder: (context, state) => const FriendsScreen()),
-          GoRoute(path: RouteNames.shop, builder: (context, state) => const ShopScreen()),
-          GoRoute(path: RouteNames.leaderboard, builder: (context, state) => const LeaderboardScreen()),
-          GoRoute(path: RouteNames.profile, builder: (context, state) => const ProfileScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: RouteNames.home, builder: (context, state) => const GameModeSelectScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: RouteNames.friends, builder: (context, state) => const FriendsScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: RouteNames.shop, builder: (context, state) => const ShopScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: RouteNames.leaderboard, builder: (context, state) => const LeaderboardScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: RouteNames.profile, builder: (context, state) => const ProfileScreen()),
+            ],
+          ),
         ],
       ),
 
@@ -140,6 +163,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         final uid = state.uri.queryParameters['uid'];
         return ProfileScreen(uid: uid);
       }),
+      GoRoute(path: RouteNames.aiBoard, builder: (context, state) {
+        final size = int.tryParse(state.uri.queryParameters['size'] ?? '') ?? 8;
+        final diffStr = state.uri.queryParameters['difficulty'] ?? 'medium';
+        final difficulty = BotDifficulty.values.firstWhere(
+          (d) => d.name == diffStr,
+          orElse: () => BotDifficulty.medium,
+        );
+        final magic = state.uri.queryParameters['magic'] != 'false';
+        return AIGameBoardScreen(
+          boardSize: size,
+          difficulty: difficulty,
+          magicEnabled: magic,
+        );
+      }),
+      GoRoute(path: RouteNames.matchHistory, builder: (context, state) => const MatchHistoryScreen()),
+      GoRoute(path: RouteNames.matchReplay, builder: (context, state) => const MatchHistoryScreen()),
     ],
   );
 });

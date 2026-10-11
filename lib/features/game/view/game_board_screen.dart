@@ -27,13 +27,19 @@ import '../../../core/providers/user_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/routes/route_names.dart';
 import '../../../core/theme/board_theme.dart';
+import '../../../core/models/emote.dart';
 import '../widgets/board_theme_selection_sheet.dart';
-import '../widgets/game_board_widget.dart';
-import '../widgets/vs_animation_overlay.dart';
-import '../widgets/confetti_shower.dart';
-import '../widgets/firecrackers_effect.dart';
 import '../widgets/circular_turn_timer.dart';
+import '../widgets/confetti_shower.dart';
+import '../widgets/emote_wheel_sheet.dart';
+import '../widgets/firecrackers_effect.dart';
+import '../widgets/floating_cartoon_emote.dart';
+import '../widgets/game_board_widget.dart';
 import '../widgets/in_game_chat_sheet.dart';
+import '../widgets/vs_animation_overlay.dart';
+
+final gameBoardActiveEmoteProvider = StateProvider.autoDispose<Emote?>((ref) => null);
+final gameBoardActiveEmoteSenderIdProvider = StateProvider.autoDispose<String?>((ref) => null);
 
 class GameBoardScreen extends ConsumerStatefulWidget {
   const GameBoardScreen({super.key, required this.roomId});
@@ -65,6 +71,31 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
   bool _showLogs = false;
   GameRoom? _prevRoom;
 
+  dynamic _lastEmoteSentAt;
+  Timer? _emoteClearTimer;
+
+  void _handleIncomingEmote(Map<String, dynamic> emoteData) {
+    final senderId = emoteData['senderId'] as String?;
+    final emoteId = emoteData['emoteId'] as String?;
+    final sentAt = emoteData['sentAt'];
+    if (sentAt == _lastEmoteSentAt || emoteId == null) return;
+    _lastEmoteSentAt = sentAt;
+
+    final emote = Emote.all.firstWhere((e) => e.id == emoteId, orElse: () => Emote.all.first);
+    _soundService?.play(emote.sound);
+
+    _emoteClearTimer?.cancel();
+    ref.read(gameBoardActiveEmoteProvider.notifier).state = emote;
+    ref.read(gameBoardActiveEmoteSenderIdProvider.notifier).state = senderId;
+
+    _emoteClearTimer = Timer(const Duration(milliseconds: 2600), () {
+      if (mounted) {
+        ref.read(gameBoardActiveEmoteProvider.notifier).state = null;
+        ref.read(gameBoardActiveEmoteSenderIdProvider.notifier).state = null;
+      }
+    });
+  }
+
   // Fill-in AI opponent: timer that adds a bot if no human shows up, and a
   // guard so we only schedule one automatic bot move per turn.
   Timer? _botJoinTimer;
@@ -73,9 +104,13 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
   // Cached so dispose() can clear it without touching the disposed `ref`.
   StateController<String?>? _activeChatRoomNotifier;
 
+  SoundService? _soundService;
+
   @override
   void initState() {
     super.initState();
+    _soundService = ref.read(soundServiceProvider);
+    _soundService?.onGameStarted();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(activeChatRoomIdProvider.notifier).state =
@@ -91,7 +126,9 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
 
   @override
   void dispose() {
+    _emoteClearTimer?.cancel();
     _botJoinTimer?.cancel();
+    _soundService?.onGameEnded();
     // Clear the active chat room id via the cached notifier (reading `ref`
     // after disposal throws), and defer it with Future() so we don't modify a
     // provider synchronously during widget-tree teardown.
@@ -100,7 +137,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
       try {
         notifier?.state = null;
       } catch (_) {
-        // Provider scope already gone (e.g. app shutting down) â€” safe to ignore.
+        // Provider scope already gone (e.g. app shutting down) — safe to ignore.
       }
     });
     super.dispose();
@@ -687,6 +724,11 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
               data: (room) {
                 if (room == null)
                   return const ErrorView(message: 'Room not found');
+                if (room.status == GameRoomStatus.active && _summaryShown) {
+                  _summaryShown = false;
+                  _completedSosColors.clear();
+                  _vsAnimationDone = false;
+                }
                 _checkRoomEvents(room);
                 _prevRoom = room;
                 _maybeDriveBot(room, me);
@@ -738,6 +780,11 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                       if (isWinner) {
                         Future.delayed(const Duration(seconds: 3), () {
                           if (mounted) {
+                            final latest =
+                                ref.read(gameRoomProvider(widget.roomId)).valueOrNull;
+                            if (latest != null && latest.status == GameRoomStatus.active) {
+                              return;
+                            }
                             context.pushReplacement(
                               '${RouteNames.matchSummary}?roomId=${room.id}',
                             );
@@ -781,6 +828,12 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                   });
                 }
 
+                if (room.lastEmote != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _handleIncomingEmote(room.lastEmote!);
+                  });
+                }
+
                 final myTurn =
                     me != null && room.players[room.currentTurn].uid == me;
                 final currentColor =
@@ -792,7 +845,11 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                     padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
                     child: Column(
                       children: [
-                        _BattleHeader(room: room),
+                        _BattleHeader(
+                          room: room,
+                          activeEmote: ref.watch(gameBoardActiveEmoteProvider),
+                          activeEmoteSenderId: ref.watch(gameBoardActiveEmoteSenderIdProvider),
+                        ),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1099,6 +1156,33 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                                     HapticFeedback.selectionClick();
                                     setState(() => _letter = SosLetter.o);
                                   },
+                                ),
+                                const SizedBox(width: 10),
+                                GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    EmoteWheelSheet.show(
+                                      context,
+                                      onEmoteSelected: (emote) {
+                                        if (me != null) {
+                                          ref.read(gameRepositoryProvider).sendEmote(
+                                            roomId: widget.roomId,
+                                            senderId: me,
+                                            emoteId: emote.id,
+                                          );
+                                        }
+                                      },
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.arenaGold.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: AppColors.arenaGold, width: 1.5),
+                                    ),
+                                    child: const Text('🎭', style: TextStyle(fontSize: 18)),
+                                  ),
                                 ),
                               ],
                             ),
@@ -1741,8 +1825,14 @@ class _ArenaBackground extends StatelessWidget {
 }
 
 class _BattleHeader extends StatelessWidget {
-  const _BattleHeader({required this.room});
+  const _BattleHeader({
+    required this.room,
+    this.activeEmote,
+    this.activeEmoteSenderId,
+  });
   final GameRoom room;
+  final Emote? activeEmote;
+  final String? activeEmoteSenderId;
 
   @override
   Widget build(BuildContext context) {
@@ -1768,6 +1858,7 @@ class _BattleHeader extends StatelessWidget {
               isCurrentTurn: room.currentTurn == 0,
               fill: players[0].score / maxScore,
               mirrored: false,
+              emote: (activeEmoteSenderId == players[0].uid) ? activeEmote : null,
             ),
           ),
           const _VsBadge(),
@@ -1780,6 +1871,7 @@ class _BattleHeader extends StatelessWidget {
               isCurrentTurn: room.currentTurn == 1,
               fill: players[1].score / maxScore,
               mirrored: true,
+              emote: (activeEmoteSenderId == players[1].uid) ? activeEmote : null,
             ),
           ),
         ],
@@ -1801,6 +1893,7 @@ class _BattleHeader extends StatelessWidget {
                 isCurrentTurn: room.currentTurn == i,
                 fill: players[i].score / maxScore,
                 mirrored: false,
+                emote: (activeEmoteSenderId == players[i].uid) ? activeEmote : null,
               ),
             ),
             const SizedBox(width: 8),
@@ -1820,6 +1913,7 @@ class _PlayerBattleCard extends StatelessWidget {
     required this.isCurrentTurn,
     required this.fill,
     required this.mirrored,
+    this.emote,
   });
 
   final String name;
@@ -1829,6 +1923,7 @@ class _PlayerBattleCard extends StatelessWidget {
   final bool isCurrentTurn;
   final double fill;
   final bool mirrored;
+  final Emote? emote;
 
   @override
   Widget build(BuildContext context) {
@@ -1924,38 +2019,50 @@ class _PlayerBattleCard extends StatelessWidget {
       Expanded(child: info),
     ];
 
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 220),
-      opacity: isCurrentTurn ? 1.0 : 0.6,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: mirrored ? Alignment.centerRight : Alignment.centerLeft,
-            end: mirrored ? Alignment.centerLeft : Alignment.centerRight,
-            colors: [
-              color.withValues(alpha: 0.55),
-              color.withValues(alpha: 0.12),
-            ],
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 220),
+          opacity: isCurrentTurn ? 1.0 : 0.6,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: mirrored ? Alignment.centerRight : Alignment.centerLeft,
+                end: mirrored ? Alignment.centerLeft : Alignment.centerRight,
+                colors: [
+                  color.withValues(alpha: 0.55),
+                  color.withValues(alpha: 0.12),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isCurrentTurn ? color : color.withValues(alpha: 0.3),
+                width: isCurrentTurn ? 2.2 : 1,
+              ),
+              boxShadow: isCurrentTurn
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.45),
+                        blurRadius: 14,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(children: mirrored ? children.reversed.toList() : children),
           ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isCurrentTurn ? color : color.withValues(alpha: 0.3),
-            width: isCurrentTurn ? 2.2 : 1,
-          ),
-          boxShadow: isCurrentTurn
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.45),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
         ),
-        child: Row(children: mirrored ? children.reversed.toList() : children),
-      ),
+        if (emote != null)
+          Positioned(
+            top: -55,
+            left: mirrored ? null : 10,
+            right: mirrored ? 10 : null,
+            child: FloatingCartoonEmote(emote: emote!),
+          ),
+      ],
     );
   }
 }

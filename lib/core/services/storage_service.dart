@@ -7,7 +7,8 @@ class StorageService {
   final FirebaseStorage _storage;
 
   Future<String> uploadAvatar({required String uid, required Uint8List bytes}) async {
-    final ref = _storage.ref('avatars/$uid.jpg');
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final ref = _storage.ref('avatars/${uid}_$timestamp.jpg');
     await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
     return ref.getDownloadURL();
   }

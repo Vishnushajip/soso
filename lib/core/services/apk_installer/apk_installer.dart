@@ -13,6 +13,10 @@ class ApkInstallException implements Exception {
 /// the app. Only meaningful on Android; on iOS/Web [isSupported] is false and
 /// callers should fall back to opening the store/download URL externally.
 abstract class ApkInstaller {
+  /// Direct Google Play Store testing install link for web users.
+  static const String playStoreUrl =
+      'https://play.google.com/apps/testing/com.sosarena.app';
+
   /// Whether in-app download + install is available on this platform.
   bool get isSupported;
 

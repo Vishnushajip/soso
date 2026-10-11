@@ -59,4 +59,50 @@ class AppSnackBar {
       ),
     );
   }
+
+  static void showWarning(BuildContext context, String message) {
+    final cleaned = _cleanMessage(message);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          cleaned,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontSize: 14,
+          ),
+        ),
+        backgroundColor: AppColors.secondary,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  static void showInfo(BuildContext context, String message) {
+    final cleaned = _cleanMessage(message);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          cleaned,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontSize: 14,
+          ),
+        ),
+        backgroundColor: AppColors.accent,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
 }

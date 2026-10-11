@@ -7,8 +7,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/user_providers.dart';
 import '../../../core/routes/route_names.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/theme/board_theme.dart';
 import '../widgets/board_theme_selection_sheet.dart';
 
@@ -144,6 +146,7 @@ class _LocalGameSetupScreenState extends ConsumerState<LocalGameSetupScreen>
             _StartButton(
               bounceAnim: _bounceAnim,
               onTap: () {
+                ref.read(soundServiceProvider).play(AppSound.buttonClick);
                 HapticFeedback.heavyImpact();
                 _triggerBounce();
                 final names = _names

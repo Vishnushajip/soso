@@ -9,9 +9,12 @@ import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/game_room.dart';
 import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/user_providers.dart';
 import '../../../core/routes/route_names.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/theme/board_theme.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../widgets/board_theme_selection_sheet.dart';
 class OnlineLobbyScreen extends ConsumerStatefulWidget {
   const OnlineLobbyScreen({super.key});
@@ -48,6 +51,18 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   }
 
   Future<void> _startMatch(GameRoomType mode) async {
+    if (mode == GameRoomType.friend) {
+      if (!GuestGooglePromptDialog.allowAction(
+        context,
+        ref,
+        feature: 'Friend Match',
+        description:
+            'Guest accounts cannot play friend matches. Sign in with Google to challenge and play with your friends!',
+      )) {
+        return;
+      }
+    }
+    ref.read(soundServiceProvider).play(AppSound.buttonClick);
     HapticFeedback.heavyImpact();
     setState(() {
       _busy = true;
@@ -86,6 +101,18 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   }
 
   Future<void> _joinByCode() async {
+    final mode = _modeFromQuery();
+    if (mode == GameRoomType.friend) {
+      if (!GuestGooglePromptDialog.allowAction(
+        context,
+        ref,
+        feature: 'Friend Match',
+        description:
+            'Guest accounts cannot play friend matches. Sign in with Google to challenge and play with your friends!',
+      )) {
+        return;
+      }
+    }
     final code = _codeCtrl.text.trim().toUpperCase();
     if (code.isEmpty) {
       HapticFeedback.lightImpact();

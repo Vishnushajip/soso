@@ -35,9 +35,33 @@ class ChatRoom {
       lastMessage: d['lastMessage'] as String?,
       lastMessageBy: d['lastMessageBy'] as String?,
       lastMessageAt: (d['lastMessageAt'] as Timestamp?)?.toDate(),
-      unreadCount: ((d['unreadCount'] as Map?) ?? const {}).map(
-        (k, v) => MapEntry(k as String, (v as num).toInt()),
-      ),
+      unreadCount: () {
+        final map = <String, int>{};
+        final rawMap = d['unreadCount'];
+        if (rawMap is Map) {
+          rawMap.forEach((k, v) {
+            if (k != null && v is num) {
+              map[k.toString()] = v.toInt();
+            }
+          });
+        }
+        d.forEach((k, v) {
+          if (k.startsWith('unreadCount.') && v is num) {
+            final uid = k.substring('unreadCount.'.length);
+            final val = v.toInt();
+            if (map.containsKey(uid)) {
+              if (val == 0 || map[uid] == 0) {
+                map[uid] = 0;
+              } else {
+                map[uid] = val;
+              }
+            } else {
+              map[uid] = val;
+            }
+          }
+        });
+        return map;
+      }(),
       title: d['title'] as String?,
     );
   }

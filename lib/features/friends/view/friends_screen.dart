@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -10,12 +11,15 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/friend_providers.dart';
 import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/user_providers.dart';
 import '../../../core/routes/route_names.dart';
+import '../../../core/services/sound_service.dart';
 
 class FriendsScreen extends ConsumerWidget {
   const FriendsScreen({super.key});
@@ -460,7 +464,7 @@ class _EmptyStateState extends State<_EmptyState>
   }
 }
 
-class _FriendCard extends StatelessWidget {
+class _FriendCard extends StatefulWidget {
   const _FriendCard({
     required this.other,
     required this.otherUid,
@@ -473,15 +477,46 @@ class _FriendCard extends StatelessWidget {
   final String? me;
   final WidgetRef ref;
 
+  @override
+  State<_FriendCard> createState() => _FriendCardState();
+}
+
+class _FriendCardState extends State<_FriendCard> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-check presence every 5 seconds so the 30-second window updates live.
+    _ticker = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
   Future<void> _challenge(BuildContext context) async {
+    widget.ref.read(soundServiceProvider).play(AppSound.buttonClick);
     HapticFeedback.mediumImpact();
-    if (me == null) return;
-    final myUser = ref.read(currentUserProvider).valueOrNull;
+    if (!GuestGooglePromptDialog.allowAction(
+      context,
+      widget.ref,
+      feature: 'Friend Match',
+      description: 'Sign in with Google to challenge friends to a match!',
+    )) {
+      return;
+    }
+    if (widget.me == null) return;
+    final myUser = widget.ref.read(currentUserProvider).valueOrNull;
     if (myUser == null) return;
     try {
-      await ref
+      await widget.ref
           .read(chatRepositoryProvider)
-          .sendChallenge(me: me!, myName: myUser.name, otherUid: otherUid);
+          .sendChallenge(me: widget.me!, myName: myUser.name, otherUid: widget.otherUid);
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
@@ -498,10 +533,18 @@ class _FriendCard extends StatelessWidget {
 
   Future<void> _chat(BuildContext context) async {
     HapticFeedback.lightImpact();
-    if (me == null) return;
-    final room = await ref
+    if (!GuestGooglePromptDialog.allowAction(
+      context,
+      widget.ref,
+      feature: 'Direct Chat',
+      description: 'Sign in with Google to chat with friends!',
+    )) {
+      return;
+    }
+    if (widget.me == null) return;
+    final room = await widget.ref
         .read(chatRepositoryProvider)
-        .openDirectChat(me: me!, other: otherUid);
+        .openDirectChat(me: widget.me!, other: widget.otherUid);
     if (context.mounted) {
       context.push('${RouteNames.chatRoom}?roomId=${room.id}');
     }
@@ -511,17 +554,18 @@ class _FriendCard extends StatelessWidget {
     HapticFeedback.mediumImpact();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => _RemoveFriendDialog(name: other?.name ?? 'this player'),
+      builder: (ctx) => _RemoveFriendDialog(name: widget.other?.name ?? 'this player'),
     );
     if (confirmed != true) return;
     HapticFeedback.mediumImpact();
-    await ref
+    await widget.ref
         .read(friendRepositoryProvider)
-        .removeFriend(me: me ?? '', other: otherUid);
+        .removeFriend(me: widget.me ?? '', other: widget.otherUid);
   }
 
   @override
   Widget build(BuildContext context) {
+    final other = widget.other;
     final isOnline = other?.isOnline ?? false;
     final accent = isOnline ? AppColors.success : AppColors.primary;
 

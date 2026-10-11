@@ -8,15 +8,21 @@ import '../../../core/services/haptic_service.dart';
 import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../core/models/game_room.dart';
+import '../../../core/models/match_record.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/game_providers.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/routes/route_names.dart';
 import '../widgets/confetti_shower.dart';
+
+final matchAwardedPointsProvider = StateProvider.autoDispose<int?>((ref) => null);
+final matchStatsAppliedProvider = StateProvider.autoDispose<bool>((ref) => false);
+final restartMatchLoadingProvider = StateProvider.autoDispose<bool>((ref) => false);
 
 class MatchSummaryScreen extends ConsumerStatefulWidget {
   const MatchSummaryScreen({super.key, required this.roomId});
@@ -27,9 +33,6 @@ class MatchSummaryScreen extends ConsumerStatefulWidget {
 
 class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
     with TickerProviderStateMixin {
-  bool _statsApplied = false;
-  int? _awardedPoints;
-
   late final AnimationController _entryCtrl;
   late final AnimationController _glowCtrl;
   late final Animation<double> _panelScale;
@@ -59,8 +62,8 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
   }
 
   Future<void> _applyStats(GameRoom room) async {
-    if (_statsApplied) return;
-    _statsApplied = true;
+    if (ref.read(matchStatsAppliedProvider)) return;
+    ref.read(matchStatsAppliedProvider.notifier).state = true;
     final me = ref.read(currentUidProvider);
     if (me == null) return;
     final myPlayer = room.players.firstWhere(
@@ -78,13 +81,43 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
           pointsDelta: delta,
           won: won,
         );
-    if (mounted) setState(() => _awardedPoints = delta);
+
+    final p1 = room.players.isNotEmpty ? room.players[0] : const GamePlayer(uid: '', name: 'Player 1');
+    final p2 = room.players.length > 1 ? room.players[1] : const GamePlayer(uid: '', name: 'Player 2');
+    final winnerIndex = room.winnerId == null ? null : (room.winnerId == p1.uid ? 0 : (room.winnerId == p2.uid ? 1 : null));
+    final winnerName = room.winnerId == null ? null : (room.winnerId == p1.uid ? p1.name : p2.name);
+
+    final record = MatchRecord(
+      id: room.id,
+      gameType: room.type.name,
+      boardSize: room.boardSize,
+      p1Name: p1.name,
+      p1Score: p1.score,
+      p1PhotoUrl: p1.photoUrl,
+      p2Name: p2.name,
+      p2Score: p2.score,
+      p2PhotoUrl: p2.photoUrl,
+      winnerName: winnerName,
+      winnerIndex: winnerIndex,
+      playedAt: room.finishedAt ?? DateTime.now(),
+      moves: const [],
+    );
+    ref.read(matchHistoryRepositoryProvider).saveMatch(
+      uid: me,
+      match: record,
+    );
+
+    if (mounted) {
+      ref.read(matchAwardedPointsProvider.notifier).state = delta;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final asyncRoom = ref.watch(gameRoomProvider(widget.roomId));
     final me = ref.watch(currentUidProvider);
+    final awardedPoints = ref.watch(matchAwardedPointsProvider);
+    final isRestarting = ref.watch(restartMatchLoadingProvider);
 
     return Scaffold(
       backgroundColor: AppColors.arenaBgBottom,
@@ -98,8 +131,18 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
               if (room == null) {
                 return const ErrorView(message: 'Room not found');
               }
+
+              // If match was restarted, navigate both players back to the game board
+              if (room.status == GameRoomStatus.active) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    context.pushReplacement('${RouteNames.gameBoard}?roomId=${room.id}');
+                  }
+                });
+              }
+
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) _applyStats(room);
+                if (mounted && room.status == GameRoomStatus.finished) _applyStats(room);
               });
 
               final ranked = [...room.players]
@@ -112,6 +155,8 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
                       (p) => p.uid == room.winnerId,
                       orElse: () => ranked.first,
                     );
+              final canRestart =
+                  room.type == GameRoomType.friend || room.type == GameRoomType.private;
 
               return Stack(
                 children: [
@@ -131,7 +176,7 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
                                 isTie: isTie,
                                 iWon: iWon,
                                 winnerName: winner?.name,
-                                awardedPoints: _awardedPoints,
+                                awardedPoints: awardedPoints,
                               ),
                             ),
                             const SizedBox(height: 18),
@@ -179,11 +224,39 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
                               ),
                             ),
                             const SizedBox(height: 14),
-                            _PrimaryButton(
-                              label: 'Back to Lobby',
-                              icon: Icons.home_rounded,
-                              onTap: () => context.go(RouteNames.home),
-                            ),
+                            if (canRestart) ...[
+                              _PrimaryButton(
+                                label: isRestarting ? 'Restarting Match…' : 'Restart Match',
+                                icon: Icons.replay_rounded,
+                                isLoading: isRestarting,
+                                onTap: () async {
+                                  if (isRestarting) return;
+                                  ref.read(restartMatchLoadingProvider.notifier).state = true;
+                                  ref.read(soundServiceProvider).play(AppSound.buttonClick);
+                                  ref.read(hapticServiceProvider).fire(HapticEvent.tap);
+                                  try {
+                                    await ref.read(gameRepositoryProvider).restartRoom(roomId: room.id);
+                                  } catch (e) {
+                                    ref.read(restartMatchLoadingProvider.notifier).state = false;
+                                    if (context.mounted) {
+                                      AppSnackBar.showError(context, 'Could not restart match: $e');
+                                    }
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              _SecondaryButton(
+                                label: 'Back to Lobby',
+                                icon: Icons.home_rounded,
+                                onTap: () => context.go(RouteNames.home),
+                              ),
+                            ] else ...[
+                              _PrimaryButton(
+                                label: 'Back to Lobby',
+                                icon: Icons.home_rounded,
+                                onTap: () => context.go(RouteNames.home),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -519,16 +592,18 @@ class _PrimaryButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onTap,
+    this.isLoading = false,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
@@ -548,13 +623,70 @@ class _PrimaryButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
+            if (isLoading) ...[
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ] else ...[
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+            ],
             Text(
               label,
               style: GoogleFonts.luckiestGuy(
                 fontSize: 17,
                 color: Colors.white,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryButton extends StatelessWidget {
+  const _SecondaryButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.arenaStone,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: AppColors.arenaGold.withValues(alpha: 0.35),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: AppColors.onArenaMuted, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.luckiestGuy(
+                fontSize: 15,
+                color: AppColors.onArenaMuted,
                 letterSpacing: 0.8,
               ),
             ),

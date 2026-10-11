@@ -8,10 +8,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../core/models/chat_room.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/chat_providers.dart';
+import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/user_providers.dart';
 import '../../../core/routes/route_names.dart';
 
@@ -66,7 +68,7 @@ class ChatListScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _GlobalChatBanner(),
+            const _GlobalChatBanner(),
             const SizedBox(height: 14),
             const _SectionLabel(
               label: 'Direct Messages',
@@ -99,6 +101,17 @@ class ChatListScreen extends ConsumerWidget {
                         unread: unread,
                         onTap: () {
                           HapticFeedback.lightImpact();
+                          if (!GuestGooglePromptDialog.allowAction(
+                            context,
+                            ref,
+                            feature: 'Direct Chat',
+                            description: 'Sign in with Google to chat with your friends!',
+                          )) {
+                            return;
+                          }
+                          if (me != null) {
+                            ref.read(chatRepositoryProvider).markRead(roomId: room.id, uid: me);
+                          }
                           context.push(
                             '${RouteNames.chatRoom}?roomId=${room.id}',
                           );
@@ -116,12 +129,22 @@ class ChatListScreen extends ConsumerWidget {
   }
 }
 
-class _GlobalChatBanner extends StatelessWidget {
+class _GlobalChatBanner extends ConsumerWidget {
+  const _GlobalChatBanner();
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
+        if (!GuestGooglePromptDialog.allowAction(
+          context,
+          ref,
+          feature: 'Global Chat',
+          description: 'Sign in with Google to join the global chat!',
+        )) {
+          return;
+        }
         context.push(RouteNames.globalChat);
       },
       child: Container(

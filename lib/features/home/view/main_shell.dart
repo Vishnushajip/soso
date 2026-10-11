@@ -6,81 +6,59 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:soso/features/update/view/update_dialog.dart';
 
 import '../../../core/services/haptic_service.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/chat_providers.dart';
 import '../../../core/providers/notification_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/user_providers.dart';
 import '../../../core/routes/route_names.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
+import '../../../core/widgets/user_avatar.dart';
+import '../../rewards/view/daily_reward_dialog.dart';
 
-String _iconUrl(String icon, {Color? color}) {
-  final base = 'https://api.iconify.design/$icon.svg';
-  if (color == null) return base;
-  final hex = color.value.toRadixString(16).padLeft(8, '0').substring(2);
-  return '$base?color=%23$hex';
-}
 
-class _NetIcon extends StatelessWidget {
-  const _NetIcon({required this.icon, required this.size, required this.color});
-
-  final String icon;
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return SvgPicture.network(
-      _iconUrl(icon, color: color),
-      width: size,
-      height: size,
-      placeholderBuilder: (_) => SizedBox(
-        width: size,
-        height: size,
-        child: Center(
-          child: SizedBox(
-            width: size * 0.5,
-            height: size * 0.5,
-            child: const CircularProgressIndicator(strokeWidth: 1.5),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class MainShell extends ConsumerWidget {
-  const MainShell({super.key, required this.child});
-  final Widget child;
+  const MainShell({
+    super.key,
+    this.navigationShell,
+    this.child,
+  });
+
+  final StatefulNavigationShell? navigationShell;
+  final Widget? child;
 
   static const _tabs = [
     _TabData(
       path: RouteNames.home,
       label: 'Play',
-      icon: 'mdi:gamepad-variant-outline',
-      activeIcon: 'mdi:gamepad-variant',
+      icon: Icons.sports_esports_outlined,
+      activeIcon: Icons.sports_esports_rounded,
     ),
     _TabData(
       path: RouteNames.friends,
       label: 'Friends',
-      icon: 'mdi:account-group-outline',
-      activeIcon: 'mdi:account-group',
+      icon: Icons.group_outlined,
+      activeIcon: Icons.group_rounded,
     ),
     _TabData(
       path: RouteNames.shop,
       label: 'Shop',
-      icon: 'mdi:storefront-outline',
-      activeIcon: 'mdi:storefront',
+      icon: Icons.storefront_outlined,
+      activeIcon: Icons.storefront_rounded,
     ),
     _TabData(
       path: RouteNames.leaderboard,
       label: 'Ranks',
-      icon: 'mdi:trophy-outline',
-      activeIcon: 'mdi:trophy',
+      icon: Icons.emoji_events_outlined,
+      activeIcon: Icons.emoji_events_rounded,
     ),
     _TabData(
       path: RouteNames.profile,
       label: 'Profile',
-      icon: 'mdi:account-outline',
-      activeIcon: 'mdi:account',
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
     ),
   ];
 
@@ -93,17 +71,34 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).matchedLocation;
-    final selected = _indexOfLocation(location);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(soundServiceProvider).startBgm();
+    });
+
+    final selected = navigationShell?.currentIndex ??
+        _indexOfLocation(GoRouterState.of(context).matchedLocation);
 
     final unread = ref.watch(
       unreadNotificationsCountProvider.select((v) => v.valueOrNull ?? 0),
     );
+    final unreadMessages = ref.watch(unreadMessagesCountProvider);
     final name = ref.watch(
       currentUserProvider.select((u) => u.valueOrNull?.name ?? ''),
     );
+    final photoUrl = ref.watch(
+      currentUserProvider.select((u) => u.valueOrNull?.photoUrl),
+    );
+    final frameColor = ref.watch(
+      currentUserProvider.select((u) => u.valueOrNull?.avatarFrameColor),
+    );
     final points = ref.watch(
       currentUserProvider.select((u) => u.valueOrNull?.totalPoints ?? 0),
+    );
+    final streak = ref.watch(
+      currentUserProvider.select((u) => u.valueOrNull?.dailyStreak ?? 0),
+    );
+    final canClaim = ref.watch(
+      currentUserProvider.select((u) => u.valueOrNull?.canClaimDailyReward ?? false),
     );
     final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'P';
     final haptic = ref.read(hapticServiceProvider);
@@ -115,53 +110,61 @@ class MainShell extends ConsumerWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
+        titleSpacing: 10,
         title: _AppBarTitle(
           name: name,
           firstLetter: firstLetter,
           selectedLabel: _tabs[selected].label,
+          photoUrl: photoUrl,
+          frameColor: frameColor,
         ),
         actions: [
+          _StreakPill(
+            streak: streak,
+            canClaim: canClaim,
+            onTap: () {
+              haptic.fire(HapticEvent.tap);
+              ref.read(soundServiceProvider).play(AppSound.buttonClick);
+              DailyRewardDialog.show(context);
+            },
+          ),
+          const SizedBox(width: 4),
           _PointsPill(points: points),
+          const SizedBox(width: 4),
           _NotificationBell(
             unread: unread,
             onTap: () {
               haptic.fire(HapticEvent.tap);
+              ref.read(soundServiceProvider).play(AppSound.buttonClick);
               context.push(RouteNames.notifications);
             },
           ),
-          Semantics(
-            button: true,
-            label: 'Messages',
-            child: Tooltip(
-              message: 'Messages',
-              child: GestureDetector(
-                onTap: () {
-                  haptic.fire(HapticEvent.tap);
-                  context.push(RouteNames.chatList);
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 10,
-                  ),
-                  child: _NetIcon(
-                    icon: 'mdi:chat',
-                    size: 26,
-                    color: AppColors.onSurface.withOpacity(0.75),
-                  ),
-                ),
-              ),
-            ),
-          ),
           const SizedBox(width: 4),
+          _MessagesButton(
+            unread: unreadMessages,
+            onTap: () {
+              haptic.fire(HapticEvent.tap);
+              ref.read(soundServiceProvider).play(AppSound.buttonClick);
+              if (!GuestGooglePromptDialog.allowAction(
+                context,
+                ref,
+                feature: 'Messages & Chat',
+                description:
+                    'Guest accounts cannot use chat. Sign in with Google to message friends and chat in real-time!',
+              )) {
+                return;
+              }
+              context.push(RouteNames.chatList);
+            },
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: AppUpdateGate(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
-            child: child,
+            child: navigationShell ?? child ?? const SizedBox.shrink(),
           ),
         ),
       ),
@@ -170,9 +173,16 @@ class MainShell extends ConsumerWidget {
           selected: selected,
           tabs: _tabs,
           onTap: (i) {
-            if (i == selected) return;
             haptic.fire(HapticEvent.selection);
-            context.go(_tabs[i].path);
+            if (navigationShell != null) {
+              navigationShell!.goBranch(
+                i,
+                initialLocation: i == navigationShell!.currentIndex,
+              );
+            } else {
+              if (i == selected) return;
+              context.go(_tabs[i].path);
+            }
           },
         ),
       ),
@@ -189,8 +199,8 @@ class _TabData {
   });
   final String path;
   final String label;
-  final String icon;
-  final String activeIcon;
+  final IconData icon;
+  final IconData activeIcon;
 }
 
 class _AppBarTitle extends StatelessWidget {
@@ -198,197 +208,754 @@ class _AppBarTitle extends StatelessWidget {
     required this.name,
     required this.firstLetter,
     required this.selectedLabel,
+    this.photoUrl,
+    this.frameColor,
   });
 
   final String name;
   final String firstLetter;
   final String selectedLabel;
+  final String? photoUrl;
+  final String? frameColor;
 
-  String _subIcon() {
+  IconData _subIcon() {
     switch (selectedLabel) {
       case 'Play':
-        return 'mdi:gamepad-variant';
+        return Icons.sports_esports_rounded;
       case 'Friends':
-        return 'mdi:account-group';
+        return Icons.group_rounded;
       case 'Shop':
-        return 'mdi:store';
+        return Icons.storefront_rounded;
       case 'Ranks':
-        return 'mdi:trophy';
+        return Icons.emoji_events_rounded;
       default:
-        return 'mdi:account-circle';
+        return Icons.account_circle_rounded;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        _AvatarBubble(firstLetter: firstLetter),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              name.isNotEmpty ? name : 'Player',
-              style: GoogleFonts.luckiestGuy(
-                fontSize: 15,
-                color: AppColors.onSurface,
-                letterSpacing: 0.5,
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _NetIcon(icon: _subIcon(), size: 14, color: AppColors.primary),
-                const SizedBox(width: 3),
-                Text(
-                  selectedLabel == 'Play' ? 'Arena' : selectedLabel,
-                  style: GoogleFonts.outfit(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                    letterSpacing: 0.8,
-                  ),
+        _AvatarBubble(
+          firstLetter: firstLetter,
+          photoUrl: photoUrl,
+          name: name,
+          frameColor: frameColor,
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name.isNotEmpty ? name : 'Player',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.luckiestGuy(
+                  fontSize: 14,
+                  color: AppColors.onSurface,
+                  letterSpacing: 0.5,
                 ),
-              ],
-            ),
-          ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_subIcon(), size: 13, color: AppColors.primary),
+                  const SizedBox(width: 3),
+                  Text(
+                    selectedLabel == 'Play' ? 'Arena' : selectedLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-class _AvatarBubble extends StatelessWidget {
-  const _AvatarBubble({required this.firstLetter});
+class _AvatarBubble extends StatefulWidget {
+  const _AvatarBubble({
+    required this.firstLetter,
+    this.photoUrl,
+    this.name,
+    this.frameColor,
+  });
   final String firstLetter;
+  final String? photoUrl;
+  final String? name;
+  final String? frameColor;
+
+  @override
+  State<_AvatarBubble> createState() => _AvatarBubbleState();
+}
+
+class _AvatarBubbleState extends State<_AvatarBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.04).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _glowAnimation = Tween<double>(begin: 0.25, end: 0.60).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.sColor],
+    final disableMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (disableMotion) {
+      return _buildContent(1.0, 0.35);
+    }
+
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, _) =>
+          _buildContent(_scaleAnimation.value, _glowAnimation.value),
+    );
+  }
+
+  Widget _buildContent(double scale, double glowOpacity) {
+    final hasPhoto = widget.photoUrl != null && widget.photoUrl!.isNotEmpty;
+
+    return Transform.scale(
+      scale: scale,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.primary, AppColors.sColor],
+          ),
+          border: Border.all(color: AppColors.secondary, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: glowOpacity),
+              blurRadius: 10 + (glowOpacity * 6),
+              spreadRadius: glowOpacity * 1.2,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
-        border: Border.all(color: AppColors.secondary, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          firstLetter,
-          style: GoogleFonts.luckiestGuy(
-            color: Colors.white,
-            fontSize: 17,
-            letterSpacing: 0,
-          ),
+        child: Center(
+          child: hasPhoto
+              ? UserAvatar(
+                  photoUrl: widget.photoUrl,
+                  name: widget.name,
+                  size: 36,
+                  frameColor: widget.frameColor,
+                )
+              : Text(
+                  widget.firstLetter,
+                  style: GoogleFonts.luckiestGuy(
+                    color: Colors.white,
+                    fontSize: 17,
+                    letterSpacing: 0,
+                  ),
+                ),
         ),
       ),
     );
   }
 }
 
-class _PointsPill extends StatelessWidget {
+class _PointsPill extends StatefulWidget {
   const _PointsPill({required this.points});
   final int points;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 11),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.secondary.withOpacity(0.35),
-          width: 1.5,
-        ),
+  State<_PointsPill> createState() => _PointsPillState();
+}
+
+class _PointsPillState extends State<_PointsPill>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shimmerController;
+  late final Animation<double> _shimmerAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    )..repeat();
+
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(
+        parent: _shimmerController,
+        curve: const Interval(0.0, 0.65, curve: Curves.easeInOut),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const _NetIcon(
-            icon: 'mdi:star',
-            size: 15,
-            color: AppColors.secondary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '$points',
-            style: GoogleFonts.luckiestGuy(
-              fontSize: 13,
-              color: AppColors.secondary,
-              letterSpacing: 0.5,
+    );
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disableMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.secondary.withValues(alpha: 0.35),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.secondary.withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.star_rounded,
+                    size: 15,
+                    color: AppColors.secondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${widget.points}',
+                    style: GoogleFonts.luckiestGuy(
+                      fontSize: 13,
+                      color: AppColors.secondary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              if (!disableMotion)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: AnimatedBuilder(
+                      animation: _shimmerAnimation,
+                      builder: (context, _) {
+                        return FractionallySizedBox(
+                          alignment: Alignment(_shimmerAnimation.value, 0.0),
+                          widthFactor: 0.45,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.0),
+                                  Colors.white.withValues(alpha: 0.35),
+                                  Colors.white.withValues(alpha: 0.0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _NotificationBell extends StatelessWidget {
-  const _NotificationBell({required this.unread, required this.onTap});
-  final int unread;
+class _StreakPill extends StatelessWidget {
+  const _StreakPill({
+    required this.streak,
+    required this.canClaim,
+    required this.onTap,
+  });
+
+  final int streak;
+  final bool canClaim;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-        child: Stack(
-          clipBehavior: Clip.none,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+        decoration: BoxDecoration(
+          color: canClaim
+              ? const Color(0xFFFF6D00).withValues(alpha: 0.18)
+              : AppColors.arenaGold.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: canClaim
+                ? const Color(0xFFFF6D00)
+                : AppColors.arenaGold.withValues(alpha: 0.35),
+            width: 1.5,
+          ),
+          boxShadow: canClaim
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFFF6D00).withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _NetIcon(
-              icon: 'mdi:bell',
-              size: 26,
-              color: AppColors.onSurface.withOpacity(0.75),
+            Text(
+              canClaim ? '🔥' : '⚡',
+              style: const TextStyle(fontSize: 14),
             ),
-            if (unread > 0)
-              Positioned(
-                right: -4,
-                top: -4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.danger,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.bg, width: 1.5),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 17,
-                    minHeight: 17,
-                  ),
-                  child: Text(
-                    unread > 99 ? '99+' : '$unread',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+            const SizedBox(width: 4),
+            Text(
+              '$streak',
+              style: GoogleFonts.luckiestGuy(
+                fontSize: 13,
+                color: canClaim ? const Color(0xFFFFAB00) : Colors.white70,
+                letterSpacing: 0.5,
+              ),
+            ),
+            if (canClaim) ...[
+              const SizedBox(width: 4),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFF3D00),
+                  shape: BoxShape.circle,
                 ),
               ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderActionButton extends StatefulWidget {
+  const _HeaderActionButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.badgeCount = 0,
+    required this.badgeColors,
+    required this.accentColor,
+  });
+
+  final Widget icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final int badgeCount;
+  final List<Color> badgeColors;
+  final Color accentColor;
+
+  @override
+  State<_HeaderActionButton> createState() => _HeaderActionButtonState();
+}
+
+class _HeaderActionButtonState extends State<_HeaderActionButton>
+    with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  bool _isPressed = false;
+  late final AnimationController _badgePulse;
+  late final Animation<double> _pulseScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _badgePulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _pulseScale = Tween<double>(begin: 1.0, end: 1.12).animate(
+      CurvedAnimation(parent: _badgePulse, curve: Curves.easeInOut),
+    );
+    if (widget.badgeCount > 0) {
+      _badgePulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _HeaderActionButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.badgeCount > 0 && !_badgePulse.isAnimating) {
+      _badgePulse.repeat(reverse: true);
+    } else if (widget.badgeCount == 0 && _badgePulse.isAnimating) {
+      _badgePulse.stop();
+      _badgePulse.value = 0.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _badgePulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBadge = widget.badgeCount > 0;
+    final disableMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+    return Semantics(
+      button: true,
+      label: widget.tooltip,
+      child: Tooltip(
+        message: widget.tooltip,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: GestureDetector(
+            onTapDown: (_) => setState(() => _isPressed = true),
+            onTapUp: (_) => setState(() => _isPressed = false),
+            onTapCancel: () => setState(() => _isPressed = false),
+            onTap: widget.onTap,
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedScale(
+              scale: _isPressed ? 0.88 : (_isHovered ? 1.05 : 1.0),
+              duration: const Duration(milliseconds: 110),
+              curve: Curves.easeOutCubic,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.surfaceContainerLowest,
+                      _isHovered ? AppColors.surfaceContainerHigh : AppColors.surfaceContainerLow,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                    color: hasBadge
+                        ? widget.accentColor.withValues(alpha: 0.38)
+                        : AppColors.primary.withValues(alpha: _isHovered ? 0.25 : 0.12),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: hasBadge
+                          ? widget.accentColor.withValues(alpha: 0.18)
+                          : Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    widget.icon,
+                    if (hasBadge)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: AnimatedBuilder(
+                          animation: _badgePulse,
+                          builder: (context, child) {
+                            final scale = (!disableMotion) ? _pulseScale.value : 1.0;
+                            return Transform.scale(
+                              scale: scale,
+                              child: child,
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4.5,
+                              vertical: 1.5,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: widget.badgeColors,
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.bg,
+                                width: 1.6,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: widget.badgeColors.first.withValues(alpha: 0.55),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              widget.badgeCount > 99
+                                  ? '99+'
+                                  : '${widget.badgeCount}',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w900,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationBell extends StatefulWidget {
+  const _NotificationBell({required this.unread, required this.onTap});
+  final int unread;
+  final VoidCallback onTap;
+
+  @override
+  State<_NotificationBell> createState() => _NotificationBellState();
+}
+
+class _NotificationBellState extends State<_NotificationBell>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _chimeController;
+  late final Animation<double> _swingAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _chimeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    _swingAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: -0.16)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 15,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -0.16, end: 0.14)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 25,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.14, end: -0.08)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: -0.08, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 15,
+      ),
+      TweenSequenceItem(tween: ConstantTween(0.0), weight: 25),
+    ]).animate(_chimeController);
+
+    if (widget.unread > 0) {
+      _chimeController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _NotificationBell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.unread > 0 && !_chimeController.isAnimating) {
+      _chimeController.repeat();
+    } else if (widget.unread == 0 && _chimeController.isAnimating) {
+      _chimeController.stop();
+      _chimeController.value = 0.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _chimeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disableMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+    return _HeaderActionButton(
+      tooltip: 'Notifications',
+      onTap: widget.onTap,
+      badgeCount: widget.unread,
+      badgeColors: const [Color(0xFFFF3B30), Color(0xFFDC2626)],
+      accentColor: const Color(0xFFFFB300),
+      icon: AnimatedBuilder(
+        animation: _chimeController,
+        builder: (context, child) {
+          final angle =
+              (!disableMotion && widget.unread > 0) ? _swingAnimation.value : 0.0;
+          return Transform.rotate(
+            angle: angle,
+            alignment: const Alignment(0.0, -0.6),
+            child: child,
+          );
+        },
+        child: SvgPicture.asset(
+          'assets/icons/bell_flaticon.svg',
+          width: 22,
+          height: 22,
+        ),
+      ),
+    );
+  }
+}
+
+class _MessagesButton extends StatefulWidget {
+  const _MessagesButton({required this.unread, required this.onTap});
+  final int unread;
+  final VoidCallback onTap;
+
+  @override
+  State<_MessagesButton> createState() => _MessagesButtonState();
+}
+
+class _MessagesButtonState extends State<_MessagesButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 1.12)
+            .chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.12, end: 0.96)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.96, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 15,
+      ),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 45),
+    ]).animate(_pulseController);
+
+    if (widget.unread > 0) {
+      _pulseController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _MessagesButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.unread > 0 && !_pulseController.isAnimating) {
+      _pulseController.repeat();
+    } else if (widget.unread == 0 && _pulseController.isAnimating) {
+      _pulseController.stop();
+      _pulseController.value = 0.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disableMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+    return _HeaderActionButton(
+      tooltip: 'Messages',
+      onTap: widget.onTap,
+      badgeCount: widget.unread,
+      badgeColors: const [Color(0xFF0091EA), Color(0xFF2979FF)],
+      accentColor: const Color(0xFF0284C7),
+      icon: AnimatedBuilder(
+        animation: _pulseController,
+        builder: (context, child) {
+          final scale = (!disableMotion && widget.unread > 0)
+              ? _scaleAnimation.value
+              : 1.0;
+          return Transform.scale(
+            scale: scale,
+            child: child,
+          );
+        },
+        child: SvgPicture.asset(
+          'assets/icons/chat_flaticon.svg',
+          width: 22,
+          height: 22,
         ),
       ),
     );
@@ -413,13 +980,13 @@ class _GameNavBar extends StatelessWidget {
         color: AppColors.surface,
         border: Border(
           top: BorderSide(
-            color: AppColors.primary.withOpacity(0.12),
+            color: AppColors.primary.withValues(alpha: 0.12),
             width: 1.5,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -449,7 +1016,7 @@ class _GameNavBar extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _NavItem extends StatefulWidget {
   const _NavItem({
     required this.tab,
     required this.isSelected,
@@ -461,56 +1028,90 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> {
+  bool _isHovered = false;
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : AppColors.onSurfaceMuted;
+    final color = widget.isSelected
+        ? AppColors.primary
+        : (_isHovered ? AppColors.onSurface : AppColors.onSurfaceMuted);
     return Semantics(
       button: true,
-      selected: isSelected,
-      label: tab.label,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: SizedBox(
-          height: 58,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: isSelected ? 24 : 0,
-                height: isSelected ? 3 : 0,
-                margin: const EdgeInsets.only(bottom: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(10),
+      selected: widget.isSelected,
+      label: widget.tab.label,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: SizedBox(
+            height: 58,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutBack,
+                  width: widget.isSelected ? 26 : 0,
+                  height: widget.isSelected ? 3.5 : 0,
+                  margin: const EdgeInsets.only(bottom: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: widget.isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.5),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1),
+                            ),
+                          ]
+                        : null,
+                  ),
                 ),
-              ),
-              AnimatedScale(
-                scale: isSelected ? 1.18 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutBack,
-                child: _NetIcon(
-                  icon: isSelected ? tab.activeIcon : tab.icon,
-                  size: 24,
-                  color: color,
+                AnimatedScale(
+                  scale: _isPressed
+                      ? 0.92
+                      : (widget.isSelected ? 1.18 : (_isHovered ? 1.08 : 1.0)),
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutBack,
+                  child: Icon(
+                    widget.isSelected
+                        ? widget.tab.activeIcon
+                        : widget.tab.icon,
+                    size: 24,
+                    color: color,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 180),
-                style: GoogleFonts.outfit(
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: color,
-                  letterSpacing: isSelected ? 0.3 : 0,
+                const SizedBox(height: 4),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 180),
+                  style: GoogleFonts.outfit(
+                    fontSize: 10,
+                    fontWeight:
+                        widget.isSelected ? FontWeight.w800 : FontWeight.w500,
+                    color: color,
+                    letterSpacing: widget.isSelected ? 0.3 : 0,
+                  ),
+                  child: Text(widget.tab.label),
                 ),
-                child: Text(tab.label),
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+

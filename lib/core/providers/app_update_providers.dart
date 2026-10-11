@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -39,6 +40,9 @@ final appUpdateServiceProvider = Provider<AppUpdateService>(
 );
 
 final updateDownloadUrlProvider = Provider<String?>((ref) {
+  if (kIsWeb) {
+    return ApkInstaller.playStoreUrl;
+  }
   final configUrl = ref.watch(appVersionConfigProvider).valueOrNull?.apkUrl;
   if (configUrl != null && configUrl.isNotEmpty) return configUrl;
   return ref.watch(apkDownloadUrlProvider).valueOrNull;

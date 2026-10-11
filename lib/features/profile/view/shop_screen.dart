@@ -568,9 +568,11 @@ class _FrameCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 gradient: active
-                    ? null
-                    : LinearGradient(colors: [color, color.withOpacity(0.75)]),
-                color: active ? AppColors.success.withOpacity(0.12) : null,
+                    ? LinearGradient(colors: [
+                        AppColors.success.withValues(alpha: 0.12),
+                        AppColors.success.withValues(alpha: 0.12),
+                      ])
+                    : LinearGradient(colors: [color, color.withValues(alpha: 0.75)]),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: active
@@ -875,9 +877,11 @@ class _CustomizationCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 gradient: active
-                    ? null
-                    : LinearGradient(colors: [color, color.withOpacity(0.75)]),
-                color: active ? AppColors.success.withOpacity(0.12) : null,
+                    ? LinearGradient(colors: [
+                        AppColors.success.withValues(alpha: 0.12),
+                        AppColors.success.withValues(alpha: 0.12),
+                      ])
+                    : LinearGradient(colors: [color, color.withValues(alpha: 0.75)]),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: active

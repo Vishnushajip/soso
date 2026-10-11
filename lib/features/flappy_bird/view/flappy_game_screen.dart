@@ -3,18 +3,40 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:soso/core/theme/app_colors.dart';
+import '../../../core/providers/service_providers.dart';
+import '../../../core/services/sound_service.dart';
 import '../view_models/flappy_view_model.dart';
 import '../widgets/flappy_bird_section.dart';
 
-class FlappyGameScreen extends ConsumerWidget {
+class FlappyGameScreen extends ConsumerStatefulWidget {
   const FlappyGameScreen({super.key, required this.difficulty});
 
   final FlappyDifficulty difficulty;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(flappyControllerProvider(difficulty));
-    final cfg = FlappyDifficultyConfig.of(difficulty);
+  ConsumerState<FlappyGameScreen> createState() => _FlappyGameScreenState();
+}
+
+class _FlappyGameScreenState extends ConsumerState<FlappyGameScreen> {
+  SoundService? _soundService;
+
+  @override
+  void initState() {
+    super.initState();
+    _soundService = ref.read(soundServiceProvider);
+    _soundService?.onGameStarted();
+  }
+
+  @override
+  void dispose() {
+    _soundService?.onGameEnded();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(flappyControllerProvider(widget.difficulty));
+    final cfg = FlappyDifficultyConfig.of(widget.difficulty);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -89,7 +111,7 @@ class FlappyGameScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: FlappyBirdSection(difficulty: difficulty),
+      body: FlappyBirdSection(difficulty: widget.difficulty),
     );
   }
 }

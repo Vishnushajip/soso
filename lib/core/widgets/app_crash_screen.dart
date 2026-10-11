@@ -31,17 +31,9 @@ class _AppCrashScreenState extends State<AppCrashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SOS ARENA',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0F071F),
-        textTheme: GoogleFonts.plusJakartaSansTextTheme(
-          ThemeData.dark().textTheme,
-        ),
-      ),
-      home: Scaffold(
-        body: Container(
+    final scaffold = Scaffold(
+      backgroundColor: const Color(0xFF0F071F),
+      body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -318,7 +310,27 @@ class _AppCrashScreenState extends State<AppCrashScreen> {
             ),
           ),
         ),
+    );
+
+    final hasMaterial =
+        context.findAncestorWidgetOfExactType<MaterialApp>() != null;
+    if (hasMaterial) {
+      return Material(
+        color: const Color(0xFF0F071F),
+        child: scaffold,
+      );
+    }
+
+    return MaterialApp(
+      title: 'SOS ARENA',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF0F071F),
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(
+          ThemeData.dark().textTheme,
+        ),
       ),
+      home: scaffold,
     );
   }
 }

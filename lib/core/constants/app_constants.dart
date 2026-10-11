@@ -33,6 +33,9 @@ class AppConstants {
   // Local storage keys.
   static const prefsLastFcmToken = 'last_fcm_token';
   static const prefsSoundEnabled = 'sound_enabled';
+  static const prefsSoundVolume = 'sound_volume';
+  static const prefsMusicEnabled = 'music_enabled';
+  static const prefsMusicVolume = 'music_volume';
   static const prefsHapticsEnabled = 'haptics_enabled';
   static const prefsNotificationsEnabled = 'notifications_enabled';
 

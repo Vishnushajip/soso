@@ -211,12 +211,18 @@ class SosArenaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(bootstrapProvider);
-    return NetworkConnectivityWrapper(
-      child: MaterialApp.router(
-        title: Env.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark(),
-        routerConfig: ref.watch(appRouterProvider),
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) {
+        ref.read(soundServiceProvider).onFirstUserInteraction();
+      },
+      child: NetworkConnectivityWrapper(
+        child: MaterialApp.router(
+          title: Env.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.dark(),
+          routerConfig: ref.watch(appRouterProvider),
+        ),
       ),
     );
   }

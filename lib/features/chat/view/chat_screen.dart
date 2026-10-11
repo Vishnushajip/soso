@@ -8,8 +8,10 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../core/models/chat_room.dart';
+import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/chat_providers.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/user_providers.dart';
@@ -37,6 +39,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _activeRoomCtrl?.state = widget.roomId;
       _loadRoom();
+      final uid = ref.read(currentUidProvider);
+      if (uid != null) {
+        ref.read(chatRepositoryProvider).markRead(roomId: widget.roomId, uid: uid);
+        ref.read(chatRepositoryProvider).markMessagesAsRead(roomId: widget.roomId, myUid: uid);
+      }
     });
   }
 
@@ -59,10 +66,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           .get();
       if (!doc.exists) return;
       setState(() => _room = ChatRoom.fromDoc(doc));
-      final me = ref.read(currentUserProvider).valueOrNull;
-      if (me != null) {
-        await ref.read(chatRepositoryProvider).markRead(roomId: widget.roomId, uid: me.uid);
-        await ref.read(chatRepositoryProvider).markMessagesAsRead(roomId: widget.roomId, myUid: me.uid);
+      final uid = ref.read(currentUidProvider) ?? ref.read(currentUserProvider).valueOrNull?.uid;
+      if (uid != null) {
+        await ref.read(chatRepositoryProvider).markRead(roomId: widget.roomId, uid: uid);
+        await ref.read(chatRepositoryProvider).markMessagesAsRead(roomId: widget.roomId, myUid: uid);
       }
       
       if (widget.autoSend != null && widget.autoSend!.isNotEmpty) {
@@ -75,6 +82,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _send() async {
     final text = _ctrl.text.trim();
     if (text.isEmpty || _room == null) return;
+    if (!GuestGooglePromptDialog.allowAction(
+      context,
+      ref,
+      feature: 'Chat',
+      description:
+          'Guest accounts cannot send chat messages. Sign in with Google to message friends and chat!',
+    )) {
+      return;
+    }
     final me = ref.read(currentUserProvider).valueOrNull;
     if (me == null) return;
     _ctrl.clear();
@@ -210,8 +226,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 data: (messages) {
                   if (me != null) {
                     final hasUnread = messages.any((m) => m.senderId != me.uid && m.status != 'read');
-                    if (hasUnread) {
+                    final roomHasUnread = _room != null && (_room!.unreadCount[me.uid] ?? 0) > 0;
+                    if (hasUnread || roomHasUnread) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ref.read(chatRepositoryProvider).markRead(
+                              roomId: widget.roomId,
+                              uid: me.uid,
+                            );
                         ref.read(chatRepositoryProvider).markMessagesAsRead(
                               roomId: widget.roomId,
                               myUid: me.uid,

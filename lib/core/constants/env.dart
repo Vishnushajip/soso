@@ -23,7 +23,7 @@ class Env {
   static String get supportEmail => _s('SUPPORT_EMAIL', 'info.playsoso@gmail.com');
   static String get googleClientIdWeb => _s('GOOGLE_CLIENT_ID_WEB');
   static String get googleServerClientId => _s('GOOGLE_SERVER_CLIENT_ID');
-  static int get presenceHeartbeatSeconds => _i('PRESENCE_HEARTBEAT_SECONDS', 45);
+  static int get presenceHeartbeatSeconds => _i('PRESENCE_HEARTBEAT_SECONDS', 15);
   static int get boardSize => _i('BOARD_SIZE', 8);
   static bool get enableCrashlytics => _b('ENABLE_CRASHLYTICS', true);
   static bool get enableAnalytics => _b('ENABLE_ANALYTICS', true);

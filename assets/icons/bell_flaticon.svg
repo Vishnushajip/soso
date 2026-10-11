@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Bell body gradient -->
+    <linearGradient id="bellGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="45%" stop-color="#FFB300"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+    <!-- Bell rim gradient -->
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFD54F"/>
+      <stop offset="50%" stop-color="#FFE082"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+    <!-- Top ring gradient -->
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE57F"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+    <!-- Clapper gradient -->
+    <radialGradient id="clapperGrad" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFECB3"/>
+      <stop offset="60%" stop-color="#FFA000"/>
+      <stop offset="100%" stop-color="#E65100"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Top Ring -->
+  <ellipse cx="32" cy="11" rx="6" ry="6.5" fill="none" stroke="url(#ringGrad)" stroke-width="3.5"/>
+
+  <!-- Clapper (visible at bottom) -->
+  <circle cx="32" cy="51" r="5.5" fill="url(#clapperGrad)"/>
+
+  <!-- Main Bell Body -->
+  <path d="M 32 14 C 23 14 18 22 18 34 C 18 41 15 44 12 47 C 12 49 13.5 50 16 50 L 48 50 C 50.5 50 52 49 52 47 C 49 44 46 41 46 34 C 46 22 41 14 32 14 Z"
+        fill="url(#bellGrad)"/>
+
+  <!-- Bell Bottom Lip -->
+  <path d="M 12 47 C 12 51.5 52 51.5 52 47 C 52 45.5 49 44 48 44 L 16 44 C 15 44 12 45.5 12 47 Z"
+        fill="url(#rimGrad)"/>
+
+  <!-- 3D Gloss Highlight Arc on Left Shoulder -->
+  <path d="M 23 20 C 20.5 24 20 30 20.5 37 C 20.5 40 19 43 17 44.5 C 18.5 41 19.5 37 19.5 32 C 19.5 24 22 19 25 17 Z"
+        fill="#FFFFFF" opacity="0.55"/>
+
+  <!-- Specular Light Reflection Dot -->
+  <ellipse cx="27" cy="19" rx="2.5" ry="4" transform="rotate(-25 27 19)" fill="#FFFFFF" opacity="0.75"/>
+</svg>

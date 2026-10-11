@@ -374,8 +374,9 @@ class _ArenaCell extends StatelessWidget {
                 colors: [light, base, dark],
                 stops: const [0.0, 0.5, 1.0],
               )
-            : null,
-        color: filled ? null : theme.cellBgColor,
+            : LinearGradient(
+                colors: [theme.cellBgColor, theme.cellBgColor],
+              ),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: edge,

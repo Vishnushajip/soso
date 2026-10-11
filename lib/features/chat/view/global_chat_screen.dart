@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/models/chat_room.dart';
 import '../../../core/providers/chat_providers.dart';
 import '../../../core/providers/repository_providers.dart';
@@ -32,6 +33,15 @@ class _GlobalChatScreenState extends ConsumerState<GlobalChatScreen> {
   Future<void> _send() async {
     final text = _ctrl.text.trim();
     if (text.isEmpty || _room == null) return;
+    if (!GuestGooglePromptDialog.allowAction(
+      context,
+      ref,
+      feature: 'Global Chat',
+      description:
+          'Guest accounts cannot chat. Sign in with Google to participate in global chat!',
+    )) {
+      return;
+    }
     final me = ref.read(currentUserProvider).valueOrNull;
     if (me == null) return;
     _ctrl.clear();

@@ -124,6 +124,7 @@ class _NotificationItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final me = ref.watch(currentUidProvider);
     final fromUid = notification.data['fromUid'] as String?;
     final requestId = notification.data['requestId'] as String?;
 
@@ -364,6 +365,9 @@ class _NotificationItem extends ConsumerWidget {
               leading: GestureDetector(
                 onTap: () {
                   ref.read(notificationRepositoryProvider).markRead(notification.id);
+                  if (me != null) {
+                    ref.read(chatRepositoryProvider).markRead(roomId: roomId, uid: me);
+                  }
                   context.push('${RouteNames.chatRoom}?roomId=$roomId');
                 },
                 child: Container(
@@ -384,6 +388,9 @@ class _NotificationItem extends ConsumerWidget {
               title: GestureDetector(
                 onTap: () {
                   ref.read(notificationRepositoryProvider).markRead(notification.id);
+                  if (me != null) {
+                    ref.read(chatRepositoryProvider).markRead(roomId: roomId, uid: me);
+                  }
                   context.push('${RouteNames.chatRoom}?roomId=$roomId');
                 },
                 child: RichText(
@@ -438,6 +445,9 @@ class _NotificationItem extends ConsumerWidget {
               ),
               onTap: () {
                 ref.read(notificationRepositoryProvider).markRead(notification.id);
+                if (me != null) {
+                  ref.read(chatRepositoryProvider).markRead(roomId: roomId, uid: me);
+                }
                 context.push('${RouteNames.chatRoom}?roomId=$roomId');
               },
             ),
@@ -448,6 +458,9 @@ class _NotificationItem extends ConsumerWidget {
           notification: notification,
           onTap: () {
             ref.read(notificationRepositoryProvider).markRead(notification.id);
+            if (me != null) {
+              ref.read(chatRepositoryProvider).markRead(roomId: roomId, uid: me);
+            }
             context.push('${RouteNames.chatRoom}?roomId=$roomId');
           },
         ),

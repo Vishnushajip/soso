@@ -96,6 +96,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "151581458337-1nm257ma3js7gqldu8s35a5s0ap1hdh5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sosarena.app",
+            "certificate_hash": "9f155de8484339f2b52a7cb3de46bda4c5f2a5ee"
+          }
+        },
+        {
+          "client_id": "151581458337-36rgtv9goe0487jclke0qq9dnutcefkd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sosarena.app",
+            "certificate_hash": "daa5b72d5bf5d6a2841c99a917c61b28a8b4541a"
+          }
+        },
+        {
           "client_id": "151581458337-vecfe0el66e1vlqesbqqr44s3v298145.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,19 +10,33 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/app_update_providers.dart';
 import '../../../core/providers/service_providers.dart';
 
-class SettingsScreen extends ConsumerStatefulWidget {
+final soundEnabledSettingProvider = StateProvider<bool>((ref) {
+  return ref.watch(soundServiceProvider).soundEnabled;
+});
+final soundVolumeSettingProvider = StateProvider<double>((ref) {
+  return ref.watch(soundServiceProvider).soundVolume;
+});
+final musicEnabledSettingProvider = StateProvider<bool>((ref) {
+  return ref.watch(soundServiceProvider).musicEnabled;
+});
+final musicVolumeSettingProvider = StateProvider<double>((ref) {
+  return ref.watch(soundServiceProvider).musicVolume;
+});
+final hapticsEnabledSettingProvider = StateProvider<bool>((ref) {
+  return ref.watch(hapticServiceProvider).enabled;
+});
+
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sound = ref.watch(soundEnabledSettingProvider);
+    final soundVolume = ref.watch(soundVolumeSettingProvider);
+    final music = ref.watch(musicEnabledSettingProvider);
+    final musicVolume = ref.watch(musicVolumeSettingProvider);
+    final haptics = ref.watch(hapticsEnabledSettingProvider);
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  late bool _sound = ref.read(soundServiceProvider).enabled;
-  late bool _haptics = ref.read(hapticServiceProvider).enabled;
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
@@ -38,7 +54,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.primary.withOpacity(0.18),
+                color: AppColors.primary.withValues(alpha: 0.18),
                 width: 1.5,
               ),
             ),
@@ -71,27 +87,70 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               children: [
                 _ToggleRow(
-                  icon: Icons.music_note_rounded,
-                  iconColor: AppColors.sColor,
-                  title: 'Sound Effects',
-                  subtitle: 'SOS, scoring & notifications',
-                  value: _sound,
+                  icon: Icons.library_music_rounded,
+                  iconColor: AppColors.secondary,
+                  title: 'Theme Music',
+                  subtitle: 'Continuous background theme',
+                  value: music,
                   onChanged: (v) async {
                     HapticFeedback.selectionClick();
-                    setState(() => _sound = v);
-                    await ref.read(soundServiceProvider).setEnabled(v);
+                    ref.read(musicEnabledSettingProvider.notifier).state = v;
+                    await ref.read(soundServiceProvider).setMusicEnabled(v);
                   },
                 ),
-                _Divider(),
+                if (music)
+                  _VolumeSliderRow(
+                    icon: musicVolume == 0
+                        ? Icons.volume_off_rounded
+                        : (musicVolume < 0.5
+                            ? Icons.volume_down_rounded
+                            : Icons.volume_up_rounded),
+                    iconColor: AppColors.secondary,
+                    label: 'Music Volume',
+                    value: musicVolume,
+                    onChanged: (v) async {
+                      ref.read(musicVolumeSettingProvider.notifier).state = v;
+                      await ref.read(soundServiceProvider).setMusicVolume(v);
+                    },
+                  ),
+                const _Divider(),
+                _ToggleRow(
+                  icon: Icons.sports_esports_rounded,
+                  iconColor: AppColors.sColor,
+                  title: 'Sound Effects',
+                  subtitle: 'Buttons, moves & notifications',
+                  value: sound,
+                  onChanged: (v) async {
+                    HapticFeedback.selectionClick();
+                    ref.read(soundEnabledSettingProvider.notifier).state = v;
+                    await ref.read(soundServiceProvider).setSoundEnabled(v);
+                  },
+                ),
+                if (sound)
+                  _VolumeSliderRow(
+                    icon: soundVolume == 0
+                        ? Icons.volume_off_rounded
+                        : (soundVolume < 0.5
+                            ? Icons.volume_down_rounded
+                            : Icons.volume_up_rounded),
+                    iconColor: AppColors.sColor,
+                    label: 'SFX Volume',
+                    value: soundVolume,
+                    onChanged: (v) async {
+                      ref.read(soundVolumeSettingProvider.notifier).state = v;
+                      await ref.read(soundServiceProvider).setSoundVolume(v);
+                    },
+                  ),
+                const _Divider(),
                 _ToggleRow(
                   icon: Icons.vibration_rounded,
                   iconColor: AppColors.oColor,
                   title: 'Haptic Feedback',
                   subtitle: 'Vibration on taps, scores & wins',
-                  value: _haptics,
+                  value: haptics,
                   onChanged: (v) async {
                     HapticFeedback.selectionClick();
-                    setState(() => _haptics = v);
+                    ref.read(hapticsEnabledSettingProvider.notifier).state = v;
                     await ref.read(hapticServiceProvider).setEnabled(v);
                   },
                 ),
@@ -270,68 +329,58 @@ class _CartoonSwitch extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutBack,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         width: 54,
         height: 30,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
         decoration: BoxDecoration(
-          gradient: value
-              ? LinearGradient(
-                  colors: [color, color.withOpacity(0.75)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: value ? null : AppColors.onSurfaceMuted.withOpacity(0.15),
+          color: value
+              ? color
+              : AppColors.onSurfaceMuted.withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
             color: value
-                ? color.withOpacity(0.5)
-                : AppColors.onSurfaceMuted.withOpacity(0.25),
+                ? color.withValues(alpha: 0.6)
+                : AppColors.onSurfaceMuted.withValues(alpha: 0.25),
             width: 2,
           ),
-          boxShadow: value
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.35),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            AnimatedAlign(
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutBack,
-              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: value
-                    ? Icon(Icons.check_rounded, size: 13, color: color)
-                    : Icon(
-                        Icons.close_rounded,
-                        size: 13,
-                        color: AppColors.onSurfaceMuted.withOpacity(0.5),
-                      ),
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: value
+                  ? color.withValues(alpha: 0.35)
+                  : Colors.transparent,
+              blurRadius: value ? 8 : 0,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 22,
+            height: 22,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Icon(
+              value ? Icons.check_rounded : Icons.close_rounded,
+              size: 13,
+              color: value
+                  ? color
+                  : AppColors.onSurfaceMuted.withValues(alpha: 0.6),
+            ),
+          ),
         ),
       ),
     );
@@ -339,6 +388,7 @@ class _CartoonSwitch extends StatelessWidget {
 }
 
 class _Divider extends StatelessWidget {
+  const _Divider();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -413,7 +463,7 @@ class _SectionLabel extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primary.withOpacity(0.3),
+                  AppColors.primary.withValues(alpha: 0.3),
                   Colors.transparent,
                 ],
               ),
@@ -425,3 +475,93 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
+
+class _VolumeSliderRow extends StatelessWidget {
+  const _VolumeSliderRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (value * 100).round();
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: iconColor.withValues(alpha: 0.20),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: iconColor),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$pct%',
+                    style: GoogleFonts.luckiestGuy(
+                      fontSize: 12,
+                      color: iconColor,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: iconColor,
+                inactiveTrackColor: iconColor.withValues(alpha: 0.22),
+                thumbColor: Colors.white,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
+                overlayColor: iconColor.withValues(alpha: 0.20),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+                trackHeight: 6,
+              ),
+              child: Slider(
+                value: value.clamp(0.0, 1.0),
+                min: 0.0,
+                max: 1.0,
+                onChanged: (v) {
+                  onChanged(v.clamp(0.0, 1.0));
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

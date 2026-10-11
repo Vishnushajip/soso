@@ -69,6 +69,7 @@ class GameRoom {
   final String? lastPlacedLetter;
   final String? lastPlacedPlayerId;
   final bool magicEnabled;
+  final Map<String, dynamic>? lastEmote;
 
   const GameRoom({
     required this.id,
@@ -90,6 +91,7 @@ class GameRoom {
     this.lastPlacedLetter,
     this.lastPlacedPlayerId,
     this.magicEnabled = true,
+    this.lastEmote,
   });
 
   factory GameRoom.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -122,6 +124,7 @@ class GameRoom {
       lastPlacedLetter: d['lastPlacedLetter'] as String?,
       lastPlacedPlayerId: d['lastPlacedPlayerId'] as String?,
       magicEnabled: (d['magicEnabled'] as bool?) ?? true,
+      lastEmote: d['lastEmote'] is Map ? Map<String, dynamic>.from(d['lastEmote'] as Map) : null,
     );
   }
 }

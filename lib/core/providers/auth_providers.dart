@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../utils/logger.dart';
+import 'firebase_providers.dart';
 import 'repository_providers.dart';
 import 'service_providers.dart';
 
@@ -30,6 +31,21 @@ class AuthController extends AsyncNotifier<void> {
       if (user != null) {
         await ref.read(userRepositoryProvider).ensureUserFromAuth(user);
         await ref.read(analyticsServiceProvider).log('sign_in', {'method': 'google'});
+      }
+    });
+  }
+
+  Future<void> signInAsGuest() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repo = ref.read(authRepositoryProvider);
+      final prefs = ref.read(sharedPreferencesProvider);
+      final cred = await repo.signInAsGuest(prefs: prefs);
+      if (cred == null) return;
+      final user = cred.user;
+      if (user != null) {
+        await ref.read(userRepositoryProvider).ensureUserFromAuth(user, isGuest: true);
+        await ref.read(analyticsServiceProvider).log('sign_in', {'method': 'guest'});
       }
     });
   }

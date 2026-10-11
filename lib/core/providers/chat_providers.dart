@@ -20,3 +20,17 @@ final roomMessagesProvider =
 );
 
 final activeChatRoomIdProvider = StateProvider<String?>((ref) => null);
+
+final unreadMessagesCountProvider = Provider<int>((ref) {
+  final uid = ref.watch(currentUidProvider);
+  if (uid == null) return 0;
+  final rooms = ref.watch(myChatRoomsProvider).valueOrNull ?? const [];
+  int count = 0;
+  for (final r in rooms) {
+    if (r.type == ChatRoomType.direct) {
+      count += (r.unreadCount[uid] ?? 0);
+    }
+  }
+  return count;
+});
+

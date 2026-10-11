@@ -26,5 +26,7 @@ class RouteNames {
   static const shop = '/shop';
   static const profileDetail = '/profile/detail';
   static const flappyGame = '/flappy-game';
-
+  static const aiBoard = '/game/ai/board';
+  static const matchHistory = '/profile/matches';
+  static const matchReplay = '/game/replay';
 }

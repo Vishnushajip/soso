@@ -5,9 +5,11 @@ import '../services/haptic_service.dart';
 import '../services/sound_service.dart';
 import '../utils/sos_engine.dart';
 import '../models/game_room.dart';
+import '../models/match_record.dart';
 import 'auth_providers.dart';
 import 'repository_providers.dart';
 import 'service_providers.dart';
+import 'user_providers.dart';
 
 /// ---------- LOCAL (single-device) GAME STATE ----------
 class LocalPlayer {
@@ -80,6 +82,7 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
   late HapticService _haptic;
   bool _statsApplied = false;
   final List<LocalGameState> _history = [];
+  final List<MatchMoveRecord> _moves = [];
 
   @override
   LocalGameState build(LocalGameConfig cfg) {
@@ -96,6 +99,7 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
   void reset() {
     _statsApplied = false;
     _history.clear();
+    _moves.clear();
     state = LocalGameState(
       boardSize: state.boardSize,
       board: _engine.emptyBoard(),
@@ -174,6 +178,16 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
       _sound.play(AppSound.point);
       _haptic.fire(HapticEvent.point);
     }
+    _moves.add(
+      MatchMoveRecord(
+        position: position,
+        letter: letter == SosLetter.s ? 'S' : 'O',
+        playerIndex: state.currentTurn,
+        sosCount: lines.length,
+        linesCreated: lines,
+      ),
+    );
+
     final full = newBoard.every((c) => c.isNotEmpty);
     final nextTurn = scored ? state.currentTurn : (state.currentTurn + 1) % players.length;
     int? winner;
@@ -199,6 +213,28 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
         won: youWon,
       );
       _persistResult(youWon: youWon, pointsDelta: awarded);
+
+      final p1 = players.isNotEmpty ? players[0] : const LocalPlayer(name: 'Player 1');
+      final p2 = players.length > 1 ? players[1] : const LocalPlayer(name: 'Player 2');
+      final user = ref.read(currentUserProvider).valueOrNull;
+      final record = MatchRecord(
+        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        gameType: 'local',
+        boardSize: state.boardSize,
+        p1Name: user?.name ?? p1.name,
+        p1Score: p1.score,
+        p1PhotoUrl: user?.photoUrl,
+        p2Name: p2.name,
+        p2Score: p2.score,
+        winnerName: winner == 0 ? (user?.name ?? p1.name) : (winner == 1 ? p2.name : null),
+        winnerIndex: winner,
+        playedAt: DateTime.now(),
+        moves: List.from(_moves),
+      );
+      ref.read(matchHistoryRepositoryProvider).saveMatch(
+        uid: user?.uid,
+        match: record,
+      );
     }
     state = state.copyWith(
       board: newBoard,

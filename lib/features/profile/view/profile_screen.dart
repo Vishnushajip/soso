@@ -11,13 +11,16 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/widgets/user_avatar.dart';
+import '../../../core/models/app_user.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/friend_providers.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/user_providers.dart';
 import '../../../core/routes/route_names.dart';
+import 'edit_profile_dialog.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key, this.uid});
@@ -81,7 +84,7 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               if (isMe) ...[
-                _LinksCard(context: context, ref: ref),
+                _LinksCard(context: context, ref: ref, u: u),
                 const SizedBox(height: 16),
                 _LogoutButton(ref: ref),
               ],
@@ -116,7 +119,7 @@ class ProfileScreen extends ConsumerWidget {
 
 class _HeroHeader extends StatelessWidget {
   const _HeroHeader({required this.u, required this.isMe});
-  final dynamic u;
+  final AppUser u;
   final bool isMe;
 
   @override
@@ -127,12 +130,12 @@ class _HeroHeader extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.18),
+          color: AppColors.primary.withValues(alpha: 0.18),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -148,8 +151,8 @@ class _HeroHeader extends StatelessWidget {
               ),
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primary.withOpacity(0.85),
-                  AppColors.sColor.withOpacity(0.7),
+                  AppColors.primary.withValues(alpha: 0.85),
+                  AppColors.sColor.withValues(alpha: 0.7),
                 ],
               ),
             ),
@@ -164,7 +167,7 @@ class _HeroHeader extends StatelessWidget {
                       i % 2 == 0 ? '★' : '◆',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                       ),
                     ),
                   ),
@@ -176,41 +179,141 @@ class _HeroHeader extends StatelessWidget {
             offset: const Offset(0, -36),
             child: Column(
               children: [
-                Container(
-                  // Only draw the plain circular ring when the user has no
-                  // purchased frame — an owned frame provides its own border.
-                  decoration:
-                      (u.avatarFrameColor == null ||
-                          u.avatarFrameColor!.isEmpty)
-                      ? BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.surface, width: 4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 16,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        )
+                GestureDetector(
+                  onTap: isMe
+                      ? () => EditProfileDialog.show(context, user: u)
                       : null,
-                  child: UserAvatar(
-                    photoUrl: u.photoUrl,
-                    name: u.name,
-                    size: 80,
-                    online: u.isOnline,
-                    frameColor: u.avatarFrameColor,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        // Only draw the plain circular ring when the user has no
+                        // purchased frame — an owned frame provides its own border.
+                        decoration:
+                            (u.avatarFrameColor == null ||
+                                u.avatarFrameColor!.isEmpty)
+                            ? BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.surface, width: 4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    blurRadius: 16,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              )
+                            : null,
+                        child: UserAvatar(
+                          photoUrl: u.photoUrl,
+                          name: u.name,
+                          size: 80,
+                          online: u.isOnline,
+                          frameColor: u.avatarFrameColor,
+                        ),
+                      ),
+                      if (isMe)
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.primaryContainer,
+                                ],
+                              ),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.surface, width: 2.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.45),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  u.name,
-                  style: GoogleFonts.luckiestGuy(
-                    fontSize: 22,
-                    color: AppColors.onSurface,
-                    letterSpacing: 1.2,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      u.name,
+                      style: GoogleFonts.luckiestGuy(
+                        fontSize: 22,
+                        color: AppColors.onSurface,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    if (isMe) ...[
+                      const SizedBox(width: 6),
+                      InkWell(
+                        onTap: () => EditProfileDialog.show(context, user: u),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.edit_rounded,
+                            size: 18,
+                            color: AppColors.primary.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
+                if (isMe) ...[
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () => EditProfileDialog.show(context, user: u),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.28),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.edit_note_rounded,
+                            size: 15,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'EDIT PROFILE',
+                            style: GoogleFonts.luckiestGuy(
+                              color: AppColors.primary,
+                              fontSize: 11,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 if (u.customTitle != null && u.customTitle!.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Container(
@@ -489,6 +592,15 @@ class _SocialCard extends StatelessWidget {
               icon: Icons.person_add_rounded,
               label: 'Send Friend Request',
               onPressed: () async {
+                if (!GuestGooglePromptDialog.allowAction(
+                  context,
+                  ref,
+                  feature: 'Friend Requests',
+                  description:
+                      'Guest accounts cannot send friend requests. Sign in with Google to connect with other players!',
+                )) {
+                  return;
+                }
                 try {
                   await ref
                       .read(friendRepositoryProvider)
@@ -635,13 +747,16 @@ class _StatBubble extends StatelessWidget {
 }
 
 class _LinksCard extends StatelessWidget {
-  const _LinksCard({required this.context, required this.ref});
+  const _LinksCard({required this.context, required this.ref, required this.u});
   final BuildContext context;
   final WidgetRef ref;
+  final AppUser u;
 
   @override
   Widget build(BuildContext ctx) {
     final links = [
+      (Icons.manage_accounts_rounded, 'Edit Profile', null),
+      (Icons.history_rounded, 'Match History', RouteNames.matchHistory),
       (Icons.info_outline_rounded, 'About App', RouteNames.about),
       (Icons.privacy_tip_outlined, 'Privacy Policy', RouteNames.privacy),
       (Icons.gavel_rounded, 'Terms & Conditions', RouteNames.terms),
@@ -660,7 +775,13 @@ class _LinksCard extends StatelessWidget {
             return Column(
               children: [
                 InkWell(
-                  onTap: () => context.push(link.$3),
+                  onTap: () {
+                    if (link.$3 == null) {
+                      EditProfileDialog.show(context, user: u);
+                    } else {
+                      context.push(link.$3!);
+                    }
+                  },
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(

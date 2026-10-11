@@ -328,8 +328,36 @@ class ChatRepository {
     }
   }
 
-  Future<void> markRead({required String roomId, required String uid}) =>
-      _rooms.doc(roomId).set({'unreadCount.$uid': 0}, SetOptions(merge: true));
+  Future<void> markRead({required String roomId, required String uid}) async {
+    try {
+      await _rooms.doc(roomId).update({'unreadCount.$uid': 0});
+    } catch (_) {
+      try {
+        await _rooms.doc(roomId).set({
+          'unreadCount': {uid: 0},
+        }, SetOptions(merge: true));
+      } catch (_) {}
+    }
+
+    try {
+      await _rooms.doc(roomId).update({FieldPath(['unreadCount.$uid']): FieldValue.delete()});
+    } catch (_) {}
+
+    try {
+      final notifs = await _notifs
+          .where('toUid', isEqualTo: uid)
+          .where('data.roomId', isEqualTo: roomId)
+          .where('read', isEqualTo: false)
+          .get();
+      if (notifs.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (final doc in notifs.docs) {
+          batch.update(doc.reference, {'read': true});
+        }
+        await batch.commit();
+      }
+    } catch (_) {}
+  }
 
   Future<void> sendChallenge({
     required String me,

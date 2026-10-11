@@ -21,7 +21,7 @@ final onlineCountProvider = FutureProvider<int>((ref) async {
 
   
   ref.keepAlive();
-  final timer = Timer(const Duration(seconds: 30), () {
+  final timer = Timer(const Duration(seconds: 15), () {
     ref.invalidateSelf();
   });
   ref.onDispose(timer.cancel);

@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../core/models/chat_room.dart';
 import '../../../core/models/message.dart';
@@ -54,6 +55,8 @@ class _InGameChatSheetState extends ConsumerState<InGameChatSheet> {
   }
 
   void _onTyping() {
+    final me = ref.read(currentUserProvider).valueOrNull;
+    if (me?.isGuestUser == true) return;
     if (!_isTyping) {
       _isTyping = true;
       _updateFirestoreTyping(true);
@@ -78,6 +81,14 @@ class _InGameChatSheetState extends ConsumerState<InGameChatSheet> {
 
   Future<void> _send(String text) async {
     if (text.trim().isEmpty) return;
+    if (!GuestGooglePromptDialog.allowAction(
+      context,
+      ref,
+      feature: 'In-Game Chat',
+      description: 'Sign in with Google to chat and react during matches!',
+    )) {
+      return;
+    }
     final me = ref.read(currentUserProvider).valueOrNull;
     if (me == null) return;
     _ctrl.clear();
@@ -371,16 +382,16 @@ class _InGameChatSheetState extends ConsumerState<InGameChatSheet> {
                   height: 46,
                   width: 46,
                   decoration: BoxDecoration(
-                    gradient: hasText
-                        ? const LinearGradient(
-                            colors: [AppColors.primary, AppColors.sColor],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: hasText
-                        ? null
-                        : AppColors.onArenaMuted.withOpacity(0.2),
+                    gradient: LinearGradient(
+                      colors: hasText
+                          ? [AppColors.primary, AppColors.sColor]
+                          : [
+                              AppColors.onArenaMuted.withValues(alpha: 0.2),
+                              AppColors.onArenaMuted.withValues(alpha: 0.2),
+                            ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: Colors.white.withOpacity(0.2),

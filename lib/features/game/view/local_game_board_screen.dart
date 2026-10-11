@@ -9,13 +9,24 @@ import '../../../core/utils/sos_engine.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/providers/game_providers.dart';
 import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/user_providers.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/theme/board_theme.dart';
-import '../widgets/board_theme_selection_sheet.dart';
+import '../../../core/models/emote.dart';
 import '../widgets/arena_widgets.dart';
+import '../widgets/board_theme_selection_sheet.dart';
 import '../widgets/confetti_shower.dart';
+import '../widgets/emote_wheel_sheet.dart';
+import '../widgets/floating_cartoon_emote.dart';
 import '../widgets/game_board_widget.dart';
 import '../widgets/vs_animation_overlay.dart';
+
+final localLetterProvider = StateProvider.autoDispose<SosLetter>((ref) => SosLetter.s);
+final localEraserModeProvider = StateProvider.autoDispose<bool>((ref) => false);
+final localShowVsAnimationProvider = StateProvider.autoDispose<bool>((ref) => true);
+final localDidTriggerWinProvider = StateProvider.autoDispose<bool>((ref) => false);
+final localEmoteProvider = StateProvider.autoDispose<Emote?>((ref) => null);
 
 class LocalGameBoardScreen extends ConsumerStatefulWidget {
   const LocalGameBoardScreen({
@@ -36,11 +47,6 @@ class LocalGameBoardScreen extends ConsumerStatefulWidget {
 
 class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
     with SingleTickerProviderStateMixin {
-  SosLetter _letter = SosLetter.s;
-  bool _eraserMode = false;
-  bool _showVsAnimation = true;
-  bool _didTriggerWin = false;
-
   late final LocalGameConfig _config = LocalGameConfig(
     boardSize: widget.boardSize,
     playerNames: widget.playerNames,
@@ -55,8 +61,18 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
     curve: Curves.elasticOut,
   );
 
+  SoundService? _soundService;
+
+  @override
+  void initState() {
+    super.initState();
+    _soundService = ref.read(soundServiceProvider);
+    _soundService?.onGameStarted();
+  }
+
   @override
   void dispose() {
+    _soundService?.onGameEnded();
     _winCtrl.dispose();
     super.dispose();
   }
@@ -65,6 +81,12 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
   Widget build(BuildContext context) {
     final state = ref.watch(localGameProvider(_config));
     final notifier = ref.read(localGameProvider(_config).notifier);
+    final letter = ref.watch(localLetterProvider);
+    final eraserMode = ref.watch(localEraserModeProvider);
+    final showVsAnimation = ref.watch(localShowVsAnimationProvider);
+    final didTriggerWin = ref.watch(localDidTriggerWinProvider);
+    final activeEmote = ref.watch(localEmoteProvider);
+
     final currentColor = AppColors
         .playerPalette[state.currentTurn % AppColors.playerPalette.length];
     final user = ref.watch(currentUserProvider).valueOrNull;
@@ -77,9 +99,9 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
     );
     final boardTheme = ref.watch(boardThemeProvider);
 
-    if (state.finished && !_didTriggerWin) {
-      _didTriggerWin = true;
+    if (state.finished && !didTriggerWin) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(localDidTriggerWinProvider.notifier).state = true;
         HapticFeedback.heavyImpact();
         _winCtrl.forward(from: 0);
       });
@@ -159,31 +181,32 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                 ),
               ),
             ),
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                setState(() {
-                  _eraserMode = false;
-                  _didTriggerWin = false;
-                });
-                _winCtrl.reset();
-                notifier.reset();
-              },
-              child: Container(
-                margin: const EdgeInsets.all(10),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.arenaStone,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.arenaGold.withValues(alpha: 0.35),
-                    width: 1.5,
+            Tooltip(
+              message: 'Restart Match',
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  ref.read(localEraserModeProvider.notifier).state = false;
+                  ref.read(localDidTriggerWinProvider.notifier).state = false;
+                  _winCtrl.reset();
+                  notifier.reset();
+                },
+                child: Container(
+                  margin: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.arenaStone,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.arenaGold.withValues(alpha: 0.35),
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                child: const Icon(
-                  Icons.refresh_rounded,
-                  size: 18,
-                  color: AppColors.arenaGold,
+                  child: const Icon(
+                    Icons.refresh_rounded,
+                    size: 18,
+                    color: AppColors.arenaGold,
+                  ),
                 ),
               ),
             ),
@@ -192,6 +215,12 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
         body: Stack(
           children: [
             const Positioned.fill(child: ArenaBackground()),
+            if (activeEmote != null)
+              Positioned(
+                top: 70,
+                left: 30,
+                child: FloatingCartoonEmote(emote: activeEmote),
+              ),
             SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
@@ -207,12 +236,10 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                       board: state.board,
                       highlightCells: state.customHighlights.toSet(),
                       disabled: state.finished,
-                      sosLines: SosEngine(
-                        state.boardSize,
-                      ).findAllSos(state.board),
+                      sosLines: state.completedSosLines.keys.toList(),
                       lineColors: lineColors,
                       onTap: (i) async {
-                        if (_eraserMode) {
+                        if (eraserMode) {
                           if (state.board[i].isEmpty) return;
                           if (user != null) {
                             try {
@@ -224,7 +251,7 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                                     itemId: 'erase_cell',
                                   );
                               notifier.eraseLocal(position: i);
-                              setState(() => _eraserMode = false);
+                              ref.read(localEraserModeProvider.notifier).state = false;
                             } catch (e) {
                               HapticFeedback.vibrate();
                               AppSnackBar.showError(context, e.toString());
@@ -233,7 +260,7 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                         } else {
                           if (state.board[i].isNotEmpty) return;
                           HapticFeedback.selectionClick();
-                          notifier.place(position: i, letter: _letter);
+                          notifier.place(position: i, letter: letter);
                         }
                       },
                     ),
@@ -242,14 +269,14 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                 const SizedBox(height: 12),
                 if (!state.finished && user != null && widget.magicEnabled) ...[
                   _SpellBar(
-                    eraserMode: _eraserMode,
+                    eraserMode: eraserMode,
                     undoCount: user.inventory['undo_move'] ?? 0,
                     eraseCount: user.inventory['erase_cell'] ?? 0,
                     hintCount: user.inventory['hint_vision'] ?? 0,
                     totalPoints: user.totalPoints,
                     onEraserToggle: () {
                       HapticFeedback.selectionClick();
-                      setState(() => _eraserMode = !_eraserMode);
+                      ref.read(localEraserModeProvider.notifier).update((v) => !v);
                     },
                     onUndo: () async {
                       try {
@@ -328,24 +355,37 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                       HapticFeedback.lightImpact();
                       context.pop();
                     },
-                    onPlayAgain: () {
+                    onRestart: () {
                       HapticFeedback.heavyImpact();
-                      setState(() {
-                        _eraserMode = false;
-                        _didTriggerWin = false;
-                      });
+                      ref.read(localEraserModeProvider.notifier).state = false;
+                      ref.read(localDidTriggerWinProvider.notifier).state = false;
                       _winCtrl.reset();
                       notifier.reset();
                     },
                   )
                 else
                   _LetterPicker(
-                    letter: _letter,
+                    letter: letter,
                     playerName: state.players[state.currentTurn].name,
                     currentColor: currentColor,
                     onChanged: (l) {
                       HapticFeedback.selectionClick();
-                      setState(() => _letter = l);
+                      ref.read(localLetterProvider.notifier).state = l;
+                    },
+                    onEmoteTap: () {
+                      HapticFeedback.lightImpact();
+                      EmoteWheelSheet.show(
+                        context,
+                        onEmoteSelected: (emote) {
+                          ref.read(localEmoteProvider.notifier).state = emote;
+                          _soundService?.play(emote.sound);
+                          Future.delayed(const Duration(milliseconds: 2600), () {
+                            if (mounted) {
+                              ref.read(localEmoteProvider.notifier).state = null;
+                            }
+                          });
+                        },
+                      );
                     },
                   ),
               ],
@@ -368,7 +408,7 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
       );
     }
 
-    if (_showVsAnimation && widget.playerNames.length >= 2) {
+    if (showVsAnimation && widget.playerNames.length >= 2) {
       return Stack(
         children: [
           screen,
@@ -384,7 +424,7 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
               ),
               title: 'LOCAL MATCH STARTING',
               onComplete: () {
-                if (mounted) setState(() => _showVsAnimation = false);
+                ref.read(localShowVsAnimationProvider.notifier).state = false;
               },
             ),
           ),
@@ -531,12 +571,14 @@ class _LetterPicker extends StatelessWidget {
     required this.playerName,
     required this.currentColor,
     required this.onChanged,
+    this.onEmoteTap,
   });
 
   final SosLetter letter;
   final String playerName;
   final Color currentColor;
   final void Function(SosLetter) onChanged;
+  final VoidCallback? onEmoteTap;
 
   @override
   Widget build(BuildContext context) {
@@ -570,6 +612,26 @@ class _LetterPicker extends StatelessWidget {
             color: AppColors.oColor,
             onTap: () => onChanged(SosLetter.o),
           ),
+          if (onEmoteTap != null) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onEmoteTap,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.arenaStone,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.arenaGold.withValues(alpha: 0.6),
+                    width: 1.5,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: const Text('🎭', style: TextStyle(fontSize: 16)),
+              ),
+            ),
+          ],
           const SizedBox(width: 14),
           Container(
             width: 1.5,
@@ -929,13 +991,13 @@ class _WinnerPanel extends StatelessWidget {
     required this.state,
     required this.winScale,
     required this.onExit,
-    required this.onPlayAgain,
+    required this.onRestart,
   });
 
   final dynamic state;
   final Animation<double> winScale;
   final VoidCallback onExit;
-  final VoidCallback onPlayAgain;
+  final VoidCallback onRestart;
 
   @override
   Widget build(BuildContext context) {
@@ -1033,13 +1095,24 @@ class _WinnerPanel extends StatelessWidget {
                         ),
                       ),
                       child: Center(
-                        child: Text(
-                          'Exit',
-                          style: GoogleFonts.luckiestGuy(
-                            fontSize: 15,
-                            color: AppColors.onArena,
-                            letterSpacing: 0.8,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.arrow_back_rounded,
+                              color: AppColors.onArena,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Exit',
+                              style: GoogleFonts.luckiestGuy(
+                                fontSize: 15,
+                                color: AppColors.onArena,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -1048,7 +1121,7 @@ class _WinnerPanel extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: GestureDetector(
-                    onTap: onPlayAgain,
+                    onTap: onRestart,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
@@ -1069,13 +1142,24 @@ class _WinnerPanel extends StatelessWidget {
                         ],
                       ),
                       child: Center(
-                        child: Text(
-                          'Play Again!',
-                          style: GoogleFonts.luckiestGuy(
-                            fontSize: 15,
-                            color: Colors.white,
-                            letterSpacing: 0.8,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.replay_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Restart Match',
+                              style: GoogleFonts.luckiestGuy(
+                                fontSize: 15,
+                                color: Colors.white,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

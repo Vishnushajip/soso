@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/env.dart';
 import '../utils/logger.dart';
@@ -39,6 +41,22 @@ class AuthRepository {
         idToken: tokens.idToken,
         accessToken: tokens.accessToken,
       );
+      if (_auth.currentUser != null) {
+        final currentEmail = _auth.currentUser!.email;
+        final isGuest = _auth.currentUser!.isAnonymous ||
+            (currentEmail != null && currentEmail.startsWith('guest'));
+        if (isGuest) {
+          try {
+            return await _auth.currentUser!.linkWithCredential(credential);
+          } on FirebaseAuthException catch (e) {
+            if (e.code == 'credential-already-in-use' ||
+                e.code == 'email-already-in-use') {
+              return await _auth.signInWithCredential(credential);
+            }
+            rethrow;
+          }
+        }
+      }
       return await _auth.signInWithCredential(credential);
     } on PlatformException catch (e, s) {
       appLogger.w(
@@ -55,6 +73,86 @@ class AuthRepository {
         'Something went wrong. Please try again.',
       );
     }
+  }
+
+  /// Sign in as a Guest player.
+  /// 1. Tries to reuse saved guest credentials on this device.
+  /// 2. Creates a guest email account (`guest<id>@gmail.com`).
+  /// 3. If email/password is disabled in Firebase, falls back to anonymous sign-in.
+  /// 4. If neither is enabled, throws an actionable explanation.
+  Future<UserCredential?> signInAsGuest({SharedPreferences? prefs}) async {
+    final savedEmail = prefs?.getString('guest_auth_email');
+    final savedPassword = prefs?.getString('guest_auth_password');
+
+    if (savedEmail != null && savedPassword != null) {
+      try {
+        return await _auth.signInWithEmailAndPassword(
+          email: savedEmail,
+          password: savedPassword,
+        );
+      } catch (_) {
+        // Saved credentials invalid or deleted; proceed to new creation
+      }
+    }
+
+    final random = math.Random();
+    final suffix = 1000 + random.nextInt(90000);
+    final guestEmail = 'guest$suffix@gmail.com';
+    final guestPassword = 'Guest_${suffix}_SosArena!';
+
+    try {
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: guestEmail,
+        password: guestPassword,
+      );
+      if (prefs != null) {
+        await prefs.setString('guest_auth_email', guestEmail);
+        await prefs.setString('guest_auth_password', guestPassword);
+      }
+      return cred;
+    } on FirebaseAuthException catch (emailErr) {
+      if (emailErr.code == 'operation-not-allowed' ||
+          emailErr.code == 'admin-restricted-operation') {
+        try {
+          return await _auth.signInAnonymously();
+        } on FirebaseAuthException catch (anonErr, s) {
+          appLogger.w('Both guest paths failed: ${anonErr.code} / ${anonErr.message}\n$s');
+          throw AuthException(
+            anonErr.code,
+            _decodeGuestError(anonErr.code),
+          );
+        }
+      }
+      if (emailErr.code == 'email-already-in-use') {
+        final retryEmail = 'guest${suffix + 9999}@gmail.com';
+        final cred = await _auth.createUserWithEmailAndPassword(
+          email: retryEmail,
+          password: guestPassword,
+        );
+        if (prefs != null) {
+          await prefs.setString('guest_auth_email', retryEmail);
+          await prefs.setString('guest_auth_password', guestPassword);
+        }
+        return cred;
+      }
+      throw AuthException(emailErr.code, _decodeGuestError(emailErr.code));
+    } catch (e, s) {
+      appLogger.e('Unexpected guest sign-in error', error: e, stackTrace: s);
+      throw const AuthException(
+        'unknown',
+        'Failed to sign in as guest. Please try again.',
+      );
+    }
+  }
+
+  String _decodeGuestError(String code) {
+    if (code == 'admin-restricted-operation' || code == 'operation-not-allowed') {
+      return 'Guest sign-in is disabled in your Firebase project.\n\n'
+          'To fix this in 10 seconds:\n'
+          '1. Go to Firebase Console -> Authentication -> Sign-in method\n'
+          '2. Enable "Anonymous" (or "Email/Password")';
+    }
+    return 'Guest sign-in failed ($code). Please try again.';
   }
 
   String _decodePlatformError(PlatformException e) {

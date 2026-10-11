@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../core/models/app_user.dart';
@@ -50,6 +51,15 @@ class _AddFriendScreenState extends ConsumerState<AddFriendScreen> {
   }
 
   Future<void> _send(AppUser other) async {
+    if (!GuestGooglePromptDialog.allowAction(
+      context,
+      ref,
+      feature: 'Friend Requests',
+      description:
+          'Guest accounts cannot send friend requests. Sign in with Google to add friends and play together!',
+    )) {
+      return;
+    }
     final me = ref.read(currentUserProvider).valueOrNull;
     if (me == null) return;
     try {

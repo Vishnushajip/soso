@@ -266,4 +266,59 @@ class GameRepository {
       });
     });
   }
+
+  /// Resets an existing match room (used for friend challenge rematches).
+  Future<void> restartRoom({required String roomId}) async {
+    final ref = _rooms.doc(roomId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final room = GameRoom.fromDoc(snap);
+      final size = room.boardSize;
+
+      final resetPlayers =
+          room.players.map((p) => p.copyWith(score: 0)).toList();
+
+      tx.update(ref, {
+        'status': 'active',
+        'board': List<String>.filled(size * size, ''),
+        'players': resetPlayers.map((p) => p.toMap()).toList(),
+        'currentTurn': 0,
+        'winnerId': null,
+        'finishedAt': null,
+        'startedAt': FieldValue.serverTimestamp(),
+        'lastPlacedPosition': null,
+        'lastPlacedLetter': null,
+        'lastPlacedPlayerId': null,
+      });
+    });
+
+    try {
+      final moves = await ref.collection(AppConstants.movesSubcollection).get();
+      if (moves.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (final doc in moves.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    } catch (_) {}
+  }
+
+  /// Sends a cartoon emote reaction into the match room with zero-overhead sync
+  Future<void> sendEmote({
+    required String roomId,
+    required String senderId,
+    required String emoteId,
+  }) async {
+    try {
+      await _rooms.doc(roomId).update({
+        'lastEmote': {
+          'senderId': senderId,
+          'emoteId': emoteId,
+          'sentAt': Timestamp.now(),
+        },
+      });
+    } catch (_) {}
+  }
 }

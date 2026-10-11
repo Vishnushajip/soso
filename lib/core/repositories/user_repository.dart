@@ -23,28 +23,52 @@ class UserRepository {
   /// Create the Firestore user doc on first sign-in. If it already exists,
   /// only update the fields that may have changed in the Auth profile.
   /// Also ensures all users receive a unique 8-digit numeric player ID.
-  Future<AppUser> ensureUserFromAuth(fb_auth.User u) async {
+  Future<AppUser> ensureUserFromAuth(fb_auth.User u, {bool isGuest = false}) async {
     final ref = _col.doc(u.uid);
     final snap = await ref.get();
+    final isGuestAccount = isGuest || u.isAnonymous;
+
     if (!snap.exists) {
       final uniqueId = _generateUniqueNumericId();
+      final guestSuffix = dart_math.Random().nextInt(9000) + 10;
+      final email = isGuestAccount
+          ? (u.email != null && u.email!.isNotEmpty
+              ? u.email!
+              : 'guest$guestSuffix@gmail.com')
+          : (u.email ?? '');
+      final name = isGuestAccount
+          ? (u.displayName ?? 'Guest $guestSuffix')
+          : (u.displayName ?? 'Player');
+
       final user = AppUser(
         uid: u.uid,
-        name: u.displayName ?? 'Player',
-        email: u.email ?? '',
+        name: name,
+        email: email,
         photoUrl: u.photoURL,
         uniqueId: uniqueId,
+        isGuest: isGuestAccount,
       );
       await ref.set(user.toCreateMap());
-      return (await ref.get()).let((d) => AppUser.fromDoc(d));
+      return AppUser.fromDoc(await ref.get());
     } else {
       final data = snap.data() ?? {};
       String? uniqueId = data['uniqueId'] as String?;
+      final previousIsGuest = (data['isGuest'] as bool?) ?? false;
+      final stillGuest = isGuestAccount &&
+          previousIsGuest &&
+          (u.email == null || u.email!.isEmpty || u.email!.startsWith('guest'));
+
       final updates = <String, dynamic>{
-        'name': u.displayName ?? data['name'] ?? 'Player',
-        'email': u.email ?? data['email'] ?? '',
-        'photoUrl': u.photoURL ?? data['photoUrl'],
+        'name': (data['name'] as String?)?.isNotEmpty == true
+            ? data['name']
+            : (stillGuest ? 'Guest' : (u.displayName ?? 'Player')),
+        'email': (!stillGuest && u.email != null && u.email!.isNotEmpty)
+            ? u.email
+            : (data['email'] ??
+                (stillGuest ? 'guest${uniqueId ?? "0"}@gmail.com' : '')),
+        'photoUrl': data.containsKey('photoUrl') ? data['photoUrl'] : u.photoURL,
         'updatedAt': FieldValue.serverTimestamp(),
+        'isGuest': stillGuest,
       };
       
       // Auto-backfill unique ID for existing users who don't have one yet
@@ -64,11 +88,39 @@ class UserRepository {
     return id.toString();
   }
 
-  Future<void> updateProfile({required String uid, required String name}) async {
-    await _col.doc(uid).set({
-      'name': name,
+  Future<void> updateProfile({
+    required String uid,
+    String? name,
+    String? photoUrl,
+    bool removePhoto = false,
+  }) async {
+    final updates = <String, dynamic>{
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+    if (name != null && name.trim().isNotEmpty) {
+      updates['name'] = name.trim();
+    }
+    if (removePhoto) {
+      updates['photoUrl'] = FieldValue.delete();
+    } else if (photoUrl != null) {
+      updates['photoUrl'] = photoUrl;
+    }
+
+    await _col.doc(uid).set(updates, SetOptions(merge: true));
+
+    try {
+      final authUser = fb_auth.FirebaseAuth.instance.currentUser;
+      if (authUser != null && authUser.uid == uid) {
+        if (name != null && name.trim().isNotEmpty) {
+          await authUser.updateDisplayName(name.trim());
+        }
+        if (removePhoto) {
+          await authUser.updatePhotoURL(null);
+        } else if (photoUrl != null && !photoUrl.startsWith('data:')) {
+          await authUser.updatePhotoURL(photoUrl);
+        }
+      }
+    } catch (_) {}
   }
 
   Future<List<AppUser>> searchByName(String query, {int limit = 20}) async {
@@ -92,14 +144,35 @@ class UserRepository {
     return AppUser.fromDoc(q.docs.first);
   }
 
-  /// Get the precise count of online users cost-efficiently using index aggregation.
-  /// Matches "isOnline == true" and bills only 1 document read per 1,000 matches.
+  /// Get the precise count of online users.
+  /// Considers a user online if their lastSeen is within 30 seconds of the current time
+  /// (whether isOnline is true, or even if isOnline is false but lastSeen is within 30s).
   Future<int> getOnlineUsersCount() async {
+    final cutoff = DateTime.now().subtract(const Duration(seconds: 30));
     try {
-      final snap = await _col.where('isOnline', isEqualTo: true).count().get();
+      final snap = await _col
+          .where('lastSeen', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoff))
+          .count()
+          .get();
       return snap.count ?? 0;
     } catch (_) {
-      return 0;
+      try {
+        final snap = await _col.where('isOnline', isEqualTo: true).get();
+        final now = DateTime.now();
+        int active = 0;
+        for (final doc in snap.docs) {
+          final lastSeen = (doc.data()['lastSeen'] as Timestamp?)?.toDate();
+          if (lastSeen != null) {
+            final diff = now.difference(lastSeen).inSeconds;
+            if (diff <= 30 && diff >= -60) {
+              active++;
+            }
+          }
+        }
+        return active;
+      } catch (_) {
+        return 0;
+      }
     }
   }
 
@@ -212,6 +285,106 @@ class UserRepository {
     });
   }
 
+  Future<DailyStreakRewardResult> claimDailyReward({required String uid}) async {
+    final ref = _col.doc(uid);
+    final now = DateTime.now();
+    final todayStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final yesterday = now.subtract(const Duration(days: 1));
+    final yesterdayStr =
+        '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+
+    return await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) {
+        throw Exception('User profile not found.');
+      }
+      final data = snap.data() ?? {};
+      final lastClaimDate = data['lastStreakClaimDate'] as String?;
+      final currentStreak = (data['dailyStreak'] as num?)?.toInt() ?? 0;
+      final longestStreak = (data['longestStreak'] as num?)?.toInt() ?? 0;
+
+      if (lastClaimDate == todayStr) {
+        return DailyStreakRewardResult(
+          newStreak: currentStreak,
+          pointsAwarded: 0,
+          alreadyClaimed: true,
+          message: 'Already claimed today! Check back tomorrow.',
+        );
+      }
+
+      int newStreak;
+      if (lastClaimDate == yesterdayStr) {
+        // Consecutive day
+        newStreak = currentStreak + 1;
+      } else {
+        // First claim or broken streak
+        newStreak = 1;
+      }
+
+      final dayInCycle = ((newStreak - 1) % 7) + 1; // 1 to 7
+
+      int pointsAwarded = 0;
+      final itemsAwarded = <String, int>{};
+
+      switch (dayInCycle) {
+        case 1:
+          pointsAwarded = 50;
+          break;
+        case 2:
+          pointsAwarded = 100;
+          break;
+        case 3:
+          pointsAwarded = 150;
+          itemsAwarded['undo_move'] = 1;
+          break;
+        case 4:
+          pointsAwarded = 200;
+          break;
+        case 5:
+          pointsAwarded = 300;
+          itemsAwarded['erase_cell'] = 1;
+          break;
+        case 6:
+          pointsAwarded = 400;
+          break;
+        case 7:
+        default:
+          pointsAwarded = 600;
+          itemsAwarded['hint_vision'] = 1;
+          itemsAwarded['erase_cell'] = 1;
+          break;
+      }
+
+      final currentPoints = (data['totalPoints'] as num?)?.toInt() ?? 0;
+      final inv = Map<String, dynamic>.from(data['inventory'] ?? {});
+      for (final entry in itemsAwarded.entries) {
+        final curCount = (inv[entry.key] as num?)?.toInt() ?? 0;
+        inv[entry.key] = curCount + entry.value;
+      }
+
+      final updatedLongest =
+          newStreak > longestStreak ? newStreak : longestStreak;
+
+      tx.set(ref, {
+        'totalPoints': currentPoints + pointsAwarded,
+        'dailyStreak': newStreak,
+        'lastStreakClaimDate': todayStr,
+        'longestStreak': updatedLongest,
+        'inventory': inv,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      return DailyStreakRewardResult(
+        newStreak: newStreak,
+        pointsAwarded: pointsAwarded,
+        itemsAwarded: itemsAwarded,
+        alreadyClaimed: false,
+        message: 'Day $dayInCycle Reward Claimed! +$pointsAwarded points 🔥',
+      );
+    });
+  }
+
   Future<void> claimFreePoints(String uid, int amount) async {
     final ref = _col.doc(uid);
     await _firestore.runTransaction((tx) async {
@@ -226,6 +399,18 @@ class UserRepository {
   }
 }
 
-extension _Let<T> on T {
-  R let<R>(R Function(T) f) => f(this);
+class DailyStreakRewardResult {
+  final int newStreak;
+  final int pointsAwarded;
+  final Map<String, int> itemsAwarded;
+  final bool alreadyClaimed;
+  final String message;
+
+  const DailyStreakRewardResult({
+    required this.newStreak,
+    required this.pointsAwarded,
+    this.itemsAwarded = const {},
+    this.alreadyClaimed = false,
+    required this.message,
+  });
 }

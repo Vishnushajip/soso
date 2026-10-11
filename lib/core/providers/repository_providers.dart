@@ -6,6 +6,7 @@ import '../repositories/chat_repository.dart';
 import '../repositories/friend_repository.dart';
 import '../repositories/game_repository.dart';
 import '../repositories/leaderboard_repository.dart';
+import '../repositories/match_history_repository.dart';
 import '../repositories/notification_repository.dart';
 import '../repositories/user_repository.dart';
 import 'firebase_providers.dart';
@@ -40,4 +41,11 @@ final leaderboardRepositoryProvider = Provider<LeaderboardRepository>(
 
 final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
   (ref) => AnalyticsRepository(ref.watch(firestoreProvider)),
+);
+
+final matchHistoryRepositoryProvider = Provider<MatchHistoryRepository>(
+  (ref) => MatchHistoryRepository(
+    ref.watch(firestoreProvider),
+    ref.watch(sharedPreferencesProvider),
+  ),
 );

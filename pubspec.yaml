@@ -1,7 +1,7 @@
 name: soso
 description: "SOS Arena - real-time multiplayer SOS game."
 publish_to: 'none'
-version: 1.0.2+2
+version: 1.0.3+13
 
 environment:
   sdk: ^3.11.5

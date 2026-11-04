@@ -17,14 +17,8 @@ import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../rewards/view/daily_reward_dialog.dart';
 
-
-
 class MainShell extends ConsumerWidget {
-  const MainShell({
-    super.key,
-    this.navigationShell,
-    this.child,
-  });
+  const MainShell({super.key, this.navigationShell, this.child});
 
   final StatefulNavigationShell? navigationShell;
   final Widget? child;
@@ -75,7 +69,8 @@ class MainShell extends ConsumerWidget {
       ref.read(soundServiceProvider).startBgm();
     });
 
-    final selected = navigationShell?.currentIndex ??
+    final selected =
+        navigationShell?.currentIndex ??
         _indexOfLocation(GoRouterState.of(context).matchedLocation);
 
     final unread = ref.watch(
@@ -98,7 +93,9 @@ class MainShell extends ConsumerWidget {
       currentUserProvider.select((u) => u.valueOrNull?.dailyStreak ?? 0),
     );
     final canClaim = ref.watch(
-      currentUserProvider.select((u) => u.valueOrNull?.canClaimDailyReward ?? false),
+      currentUserProvider.select(
+        (u) => u.valueOrNull?.canClaimDailyReward ?? false,
+      ),
     );
     final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'P';
     final haptic = ref.read(hapticServiceProvider);
@@ -129,7 +126,14 @@ class MainShell extends ConsumerWidget {
             },
           ),
           const SizedBox(width: 4),
-          _PointsPill(points: points),
+          _PointsPill(
+            points: points,
+            onTap: () {
+              haptic.fire(HapticEvent.tap);
+              ref.read(soundServiceProvider).play(AppSound.buttonClick);
+              context.go(RouteNames.shop);
+            },
+          ),
           const SizedBox(width: 4),
           _NotificationBell(
             unread: unread,
@@ -392,8 +396,9 @@ class _AvatarBubbleState extends State<_AvatarBubble>
 }
 
 class _PointsPill extends StatefulWidget {
-  const _PointsPill({required this.points});
+  const _PointsPill({required this.points, this.onTap});
   final int points;
+  final VoidCallback? onTap;
 
   @override
   State<_PointsPill> createState() => _PointsPillState();
@@ -432,6 +437,7 @@ class _PointsPillState extends State<_PointsPill>
     final disableMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
     return GestureDetector(
+      onTap: widget.onTap,
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
@@ -555,10 +561,7 @@ class _StreakPill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              canClaim ? '🔥' : '⚡',
-              style: const TextStyle(fontSize: 14),
-            ),
+            Text(canClaim ? '🔥' : '⚡', style: const TextStyle(fontSize: 14)),
             const SizedBox(width: 4),
             Text(
               '$streak',
@@ -621,9 +624,10 @@ class _HeaderActionButtonState extends State<_HeaderActionButton>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     );
-    _pulseScale = Tween<double>(begin: 1.0, end: 1.12).animate(
-      CurvedAnimation(parent: _badgePulse, curve: Curves.easeInOut),
-    );
+    _pulseScale = Tween<double>(
+      begin: 1.0,
+      end: 1.12,
+    ).animate(CurvedAnimation(parent: _badgePulse, curve: Curves.easeInOut));
     if (widget.badgeCount > 0) {
       _badgePulse.repeat(reverse: true);
     }
@@ -679,14 +683,18 @@ class _HeaderActionButtonState extends State<_HeaderActionButton>
                     end: Alignment.bottomRight,
                     colors: [
                       AppColors.surfaceContainerLowest,
-                      _isHovered ? AppColors.surfaceContainerHigh : AppColors.surfaceContainerLow,
+                      _isHovered
+                          ? AppColors.surfaceContainerHigh
+                          : AppColors.surfaceContainerLow,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(13),
                   border: Border.all(
                     color: hasBadge
                         ? widget.accentColor.withValues(alpha: 0.38)
-                        : AppColors.primary.withValues(alpha: _isHovered ? 0.25 : 0.12),
+                        : AppColors.primary.withValues(
+                            alpha: _isHovered ? 0.25 : 0.12,
+                          ),
                     width: 1.5,
                   ),
                   boxShadow: [
@@ -711,11 +719,10 @@ class _HeaderActionButtonState extends State<_HeaderActionButton>
                         child: AnimatedBuilder(
                           animation: _badgePulse,
                           builder: (context, child) {
-                            final scale = (!disableMotion) ? _pulseScale.value : 1.0;
-                            return Transform.scale(
-                              scale: scale,
-                              child: child,
-                            );
+                            final scale = (!disableMotion)
+                                ? _pulseScale.value
+                                : 1.0;
+                            return Transform.scale(scale: scale, child: child);
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -739,7 +746,9 @@ class _HeaderActionButtonState extends State<_HeaderActionButton>
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: widget.badgeColors.first.withValues(alpha: 0.55),
+                                  color: widget.badgeColors.first.withValues(
+                                    alpha: 0.55,
+                                  ),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -794,23 +803,31 @@ class _NotificationBellState extends State<_NotificationBell>
     );
     _swingAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: -0.16)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 0.0,
+          end: -0.16,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 15,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -0.16, end: 0.14)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween(
+          begin: -0.16,
+          end: 0.14,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 25,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 0.14, end: -0.08)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween(
+          begin: 0.14,
+          end: -0.08,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 20,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -0.08, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: -0.08,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 15,
       ),
       TweenSequenceItem(tween: ConstantTween(0.0), weight: 25),
@@ -851,8 +868,9 @@ class _NotificationBellState extends State<_NotificationBell>
       icon: AnimatedBuilder(
         animation: _chimeController,
         builder: (context, child) {
-          final angle =
-              (!disableMotion && widget.unread > 0) ? _swingAnimation.value : 0.0;
+          final angle = (!disableMotion && widget.unread > 0)
+              ? _swingAnimation.value
+              : 0.0;
           return Transform.rotate(
             angle: angle,
             alignment: const Alignment(0.0, -0.6),
@@ -892,18 +910,24 @@ class _MessagesButtonState extends State<_MessagesButton>
     );
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.12)
-            .chain(CurveTween(curve: Curves.easeOutBack)),
+        tween: Tween(
+          begin: 1.0,
+          end: 1.12,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
         weight: 20,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.12, end: 0.96)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween(
+          begin: 1.12,
+          end: 0.96,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 20,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 0.96, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 0.96,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 15,
       ),
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 45),
@@ -947,10 +971,7 @@ class _MessagesButtonState extends State<_MessagesButton>
           final scale = (!disableMotion && widget.unread > 0)
               ? _scaleAnimation.value
               : 1.0;
-          return Transform.scale(
-            scale: scale,
-            child: child,
-          );
+          return Transform.scale(scale: scale, child: child);
         },
         child: SvgPicture.asset(
           'assets/icons/chat_flaticon.svg',
@@ -1086,9 +1107,7 @@ class _NavItemState extends State<_NavItem> {
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOutBack,
                   child: Icon(
-                    widget.isSelected
-                        ? widget.tab.activeIcon
-                        : widget.tab.icon,
+                    widget.isSelected ? widget.tab.activeIcon : widget.tab.icon,
                     size: 24,
                     color: color,
                   ),
@@ -1098,8 +1117,9 @@ class _NavItemState extends State<_NavItem> {
                   duration: const Duration(milliseconds: 180),
                   style: GoogleFonts.outfit(
                     fontSize: 10,
-                    fontWeight:
-                        widget.isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontWeight: widget.isSelected
+                        ? FontWeight.w800
+                        : FontWeight.w500,
                     color: color,
                     letterSpacing: widget.isSelected ? 0.3 : 0,
                   ),
@@ -1114,4 +1134,3 @@ class _NavItemState extends State<_NavItem> {
     );
   }
 }
-

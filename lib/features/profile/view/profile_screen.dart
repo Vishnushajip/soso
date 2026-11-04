@@ -80,7 +80,7 @@ class ProfileScreen extends ConsumerWidget {
                 // Shop banner has been moved to the bottom navigation bar
               ],
 
-              _StatsCard(u: u),
+              _StatsCard(u: u, isMe: isMe),
               const SizedBox(height: 16),
 
               if (isMe) ...[
@@ -194,10 +194,15 @@ class _HeroHeader extends StatelessWidget {
                                 u.avatarFrameColor!.isEmpty)
                             ? BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.surface, width: 4),
+                                border: Border.all(
+                                  color: AppColors.surface,
+                                  width: 4,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     blurRadius: 16,
                                     spreadRadius: 2,
                                   ),
@@ -226,10 +231,15 @@ class _HeroHeader extends StatelessWidget {
                                 ],
                               ),
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.surface, width: 2.5),
+                              border: Border.all(
+                                color: AppColors.surface,
+                                width: 2.5,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.45),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.45,
+                                  ),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -575,7 +585,9 @@ class _SocialCard extends StatelessWidget {
                       await ref
                           .read(friendRepositoryProvider)
                           .acceptRequest(req, currentUser.name);
-                      ref.read(soundServiceProvider).play(AppSound.friendAccept);
+                      ref
+                          .read(soundServiceProvider)
+                          .play(AppSound.friendAccept);
                       if (context.mounted)
                         AppSnackBar.showSuccess(context, 'Request accepted!');
                     } catch (e) {
@@ -627,10 +639,10 @@ class _SocialCard extends StatelessWidget {
   }
 }
 
-
 class _StatsCard extends StatelessWidget {
-  const _StatsCard({required this.u});
+  const _StatsCard({required this.u, this.isMe = false});
   final dynamic u;
+  final bool isMe;
 
   @override
   Widget build(BuildContext context) {
@@ -691,6 +703,77 @@ class _StatsCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _StatBubble(
+                  label: 'Streak',
+                  value: '${u.dailyStreak} d',
+                  color: AppColors.secondary,
+                  icon: Icons.local_fire_department_rounded,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatBubble(
+                  label: 'Best Streak',
+                  value: '${u.longestStreak} d',
+                  color: AppColors.arenaGold,
+                  icon: Icons.workspace_premium_rounded,
+                ),
+              ),
+            ],
+          ),
+          if (isMe) ...[
+            const SizedBox(height: 14),
+            InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.go(RouteNames.shop);
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.secondary.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.storefront_rounded,
+                      size: 16,
+                      color: AppColors.secondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Spend Points in Shop',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.secondary,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 11,
+                      color: AppColors.secondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

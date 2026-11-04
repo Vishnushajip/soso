@@ -32,7 +32,8 @@ class GameBoardWidget extends StatefulWidget {
   State<GameBoardWidget> createState() => _GameBoardWidgetState();
 }
 
-class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProviderStateMixin {
+class _GameBoardWidgetState extends State<GameBoardWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animCtrl;
   late Animation<double> _animProgress;
   List<SosLine> _animatingLines = const [];
@@ -46,21 +47,25 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _animProgress = CurvedAnimation(parent: _animCtrl, curve: Curves.easeInOutCubic);
-    _animCtrl.addListener(() {
-      setState(() {});
-    });
+    _animProgress = CurvedAnimation(
+      parent: _animCtrl,
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   @override
   void didUpdateWidget(covariant GameBoardWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Check if new SOS lines were added
-    final newLines = widget.sosLines.where((l) => !_containsLine(oldWidget.sosLines, l)).toList();
+    final newLines = widget.sosLines
+        .where((l) => !_containsLine(oldWidget.sosLines, l))
+        .toList();
     if (newLines.isNotEmpty) {
       _animatingLines = newLines;
-      _pastLines = oldWidget.sosLines.where((l) => !newLines.contains(l)).toList();
+      _pastLines = oldWidget.sosLines
+          .where((l) => !newLines.contains(l))
+          .toList();
       _animCtrl.forward(from: 0.0).then((_) {
         if (mounted) {
           setState(() {
@@ -75,9 +80,11 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
   }
 
   bool _containsLine(List<SosLine> list, SosLine line) {
-    return list.any((l) =>
-        (l.a == line.a && l.b == line.b && l.c == line.c) ||
-        (l.a == line.c && l.b == line.b && l.c == line.a));
+    return list.any(
+      (l) =>
+          (l.a == line.a && l.b == line.b && l.c == line.c) ||
+          (l.a == line.c && l.b == line.b && l.c == line.a),
+    );
   }
 
   @override
@@ -116,105 +123,128 @@ class _GameBoardWidgetState extends State<GameBoardWidget> with SingleTickerProv
         ),
         child: Stack(
           children: [
-            GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: widget.size,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
-              ),
-              itemCount: widget.size * widget.size,
-              itemBuilder: (_, i) {
-                final v = widget.board[i];
-                final isHighlighted = widget.highlightCells.contains(i);
-                final isLastPlaced = widget.lastPlacedPosition == i;
-                
-                final linesWithCell = widget.sosLines.where((line) => line.cells.contains(i));
-                final isCellInSos = linesWithCell.isNotEmpty;
-                final cellSosColor = isCellInSos ? widget.lineColors[linesWithCell.last] : null;
+            RepaintBoundary(
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: widget.size,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 4,
+                ),
+                itemCount: widget.size * widget.size,
+                itemBuilder: (_, i) {
+                  final v = widget.board[i];
+                  final isHighlighted = widget.highlightCells.contains(i);
+                  final isLastPlaced = widget.lastPlacedPosition == i;
 
-                if (widget.theme.isGlossy) {
-                  return _ArenaCell(
-                    value: v,
-                    size: widget.size,
-                    isHighlighted: isHighlighted,
-                    isLastPlaced: isLastPlaced,
-                    isInSos: isCellInSos,
-                    sosColor: cellSosColor,
-                    theme: widget.theme,
-                    onTap: widget.disabled ? null : () => widget.onTap(i),
+                  final linesWithCell = widget.sosLines.where(
+                    (line) => line.cells.contains(i),
                   );
-                }
+                  final isCellInSos = linesWithCell.isNotEmpty;
+                  final cellSosColor = isCellInSos
+                      ? widget.lineColors[linesWithCell.last]
+                      : null;
 
-                final color = v == 'S'
-                    ? widget.theme.sColor
-                    : v == 'O'
-                        ? widget.theme.oColor
-                        : AppColors.onSurface;
-                
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  decoration: BoxDecoration(
-                    color: isHighlighted
-                        ? widget.theme.highlightColor.withValues(alpha: 0.35)
-                        : isLastPlaced
-                            ? AppColors.secondary.withValues(alpha: 0.25)
-                            : isCellInSos
-                                ? (cellSosColor ?? widget.theme.highlightColor).withValues(alpha: 0.16)
-                                : widget.theme.cellBgColor,
-                    borderRadius: BorderRadius.circular(8),
-                    border: isHighlighted
-                        ? Border.all(color: widget.theme.highlightColor, width: 2)
-                        : isLastPlaced
-                            ? Border.all(color: AppColors.secondary, width: 2)
-                            : isCellInSos
-                                ? Border.all(color: (cellSosColor ?? widget.theme.highlightColor).withValues(alpha: 0.5), width: 1.5)
-                                : null,
-                    boxShadow: isCellInSos
-                        ? [
-                            BoxShadow(
-                              color: (cellSosColor ?? widget.theme.highlightColor).withValues(alpha: 0.15),
-                              blurRadius: 6,
-                              spreadRadius: 0.5,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(8),
+                  if (widget.theme.isGlossy) {
+                    return _ArenaCell(
+                      value: v,
+                      size: widget.size,
+                      isHighlighted: isHighlighted,
+                      isLastPlaced: isLastPlaced,
+                      isInSos: isCellInSos,
+                      sosColor: cellSosColor,
+                      theme: widget.theme,
                       onTap: widget.disabled ? null : () => widget.onTap(i),
-                      child: Center(
-                        child: AnimatedScale(
-                          scale: v.isEmpty ? 0 : 1,
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutBack,
-                          child: Text(
-                            v,
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w800,
-                              fontSize: widget.size <= 6 ? 28 : 20,
+                    );
+                  }
+
+                  final color = v == 'S'
+                      ? widget.theme.sColor
+                      : v == 'O'
+                      ? widget.theme.oColor
+                      : AppColors.onSurface;
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    decoration: BoxDecoration(
+                      color: isHighlighted
+                          ? widget.theme.highlightColor.withValues(alpha: 0.35)
+                          : isLastPlaced
+                          ? AppColors.secondary.withValues(alpha: 0.25)
+                          : isCellInSos
+                          ? (cellSosColor ?? widget.theme.highlightColor)
+                                .withValues(alpha: 0.16)
+                          : widget.theme.cellBgColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: isHighlighted
+                          ? Border.all(
+                              color: widget.theme.highlightColor,
+                              width: 2,
+                            )
+                          : isLastPlaced
+                          ? Border.all(color: AppColors.secondary, width: 2)
+                          : isCellInSos
+                          ? Border.all(
+                              color:
+                                  (cellSosColor ?? widget.theme.highlightColor)
+                                      .withValues(alpha: 0.5),
+                              width: 1.5,
+                            )
+                          : null,
+                      boxShadow: isCellInSos
+                          ? [
+                              BoxShadow(
+                                color:
+                                    (cellSosColor ??
+                                            widget.theme.highlightColor)
+                                        .withValues(alpha: 0.15),
+                                blurRadius: 6,
+                                spreadRadius: 0.5,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: widget.disabled ? null : () => widget.onTap(i),
+                        child: Center(
+                          child: AnimatedScale(
+                            scale: v.isEmpty ? 0 : 1,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutBack,
+                            child: Text(
+                              v,
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.w800,
+                                fontSize: widget.size <= 6 ? 28 : 20,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
             Positioned.fill(
               child: IgnorePointer(
-                child: CustomPaint(
-                  painter: SosStrikePainter(
-                    lines: _pastLines,
-                    animatingLines: _animatingLines,
-                    animationProgress: _animProgress.value,
-                    boardSize: widget.size,
-                    lineColors: widget.lineColors,
+                child: RepaintBoundary(
+                  child: AnimatedBuilder(
+                    animation: _animProgress,
+                    builder: (context, _) => CustomPaint(
+                      painter: SosStrikePainter(
+                        lines: _pastLines,
+                        animatingLines: _animatingLines,
+                        animationProgress: _animProgress.value,
+                        boardSize: widget.size,
+                        lineColors: widget.lineColors,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -230,9 +260,8 @@ class SosStrikePainter extends CustomPainter {
   static final Paint _glowPaint = Paint()
     ..strokeCap = StrokeCap.round
     ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
-    
-  static final Paint _corePaint = Paint()
-    ..strokeCap = StrokeCap.round;
+
+  static final Paint _corePaint = Paint()..strokeCap = StrokeCap.round;
 
   final List<SosLine> lines;
   final List<SosLine> animatingLines;
@@ -264,7 +293,14 @@ class SosStrikePainter extends CustomPainter {
     }
 
     // Cached paint objects to avoid allocating in tight animation loops
-    void drawGlowingLine(Canvas canvas, Offset start, Offset end, Color color, double width, {double glowOpacity = 0.35}) {
+    void drawGlowingLine(
+      Canvas canvas,
+      Offset start,
+      Offset end,
+      Color color,
+      double width, {
+      double glowOpacity = 0.35,
+    }) {
       _glowPaint
         ..color = color.withValues(alpha: glowOpacity)
         ..strokeWidth = width * 2.2;
@@ -308,8 +344,9 @@ class SosStrikePainter extends CustomPainter {
 }
 
 /// Convert a list of SOS lines into the flat set of cell indices it lights up.
-Set<int> sosLineCells(Iterable<SosLine> lines) =>
-    {for (final l in lines) ...l.cells};
+Set<int> sosLineCells(Iterable<SosLine> lines) => {
+  for (final l in lines) ...l.cells,
+};
 
 /// A single glossy 3D "gem" socket used by the dark battle-arena board skin.
 class _ArenaCell extends StatelessWidget {
@@ -339,8 +376,8 @@ class _ArenaCell extends StatelessWidget {
     final base = value == 'S'
         ? theme.sColor
         : value == 'O'
-            ? theme.oColor
-            : theme.cellBgColor;
+        ? theme.oColor
+        : theme.cellBgColor;
 
     // Empty socket vs. raised gem.
     final Color light = Color.lerp(base, Colors.white, 0.42)!;
@@ -350,18 +387,18 @@ class _ArenaCell extends StatelessWidget {
     final Color edge = isHighlighted
         ? theme.highlightColor
         : isLastPlaced
-            ? Colors.white
-            : isInSos
-                ? (sosColor ?? theme.highlightColor)
-                : (filled
-                    ? Colors.white.withValues(alpha: 0.22)
-                    : Colors.white.withValues(alpha: 0.05));
+        ? Colors.white
+        : isInSos
+        ? (sosColor ?? theme.highlightColor)
+        : (filled
+              ? Colors.white.withValues(alpha: 0.22)
+              : Colors.white.withValues(alpha: 0.05));
     final bool glows = isHighlighted || isLastPlaced || isInSos;
     final Color glowColor = isHighlighted
         ? theme.highlightColor
         : isLastPlaced
-            ? Colors.white
-            : (sosColor ?? base);
+        ? Colors.white
+        : (sosColor ?? base);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -374,9 +411,7 @@ class _ArenaCell extends StatelessWidget {
                 colors: [light, base, dark],
                 stops: const [0.0, 0.5, 1.0],
               )
-            : LinearGradient(
-                colors: [theme.cellBgColor, theme.cellBgColor],
-              ),
+            : LinearGradient(colors: [theme.cellBgColor, theme.cellBgColor]),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: edge,

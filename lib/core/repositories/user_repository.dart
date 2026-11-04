@@ -12,8 +12,10 @@ class UserRepository {
   CollectionReference<Map<String, dynamic>> get _col =>
       _firestore.collection(AppConstants.usersCollection);
 
-  Stream<AppUser?> watchUser(String uid) =>
-      _col.doc(uid).snapshots().map((d) => d.exists ? AppUser.fromDoc(d) : null);
+  Stream<AppUser?> watchUser(String uid) => _col
+      .doc(uid)
+      .snapshots()
+      .map((d) => d.exists ? AppUser.fromDoc(d) : null);
 
   Future<AppUser?> getUser(String uid) async {
     final doc = await _col.doc(uid).get();
@@ -23,7 +25,10 @@ class UserRepository {
   /// Create the Firestore user doc on first sign-in. If it already exists,
   /// only update the fields that may have changed in the Auth profile.
   /// Also ensures all users receive a unique 8-digit numeric player ID.
-  Future<AppUser> ensureUserFromAuth(fb_auth.User u, {bool isGuest = false}) async {
+  Future<AppUser> ensureUserFromAuth(
+    fb_auth.User u, {
+    bool isGuest = false,
+  }) async {
     final ref = _col.doc(u.uid);
     final snap = await ref.get();
     final isGuestAccount = isGuest || u.isAnonymous;
@@ -33,8 +38,8 @@ class UserRepository {
       final guestSuffix = dart_math.Random().nextInt(9000) + 10;
       final email = isGuestAccount
           ? (u.email != null && u.email!.isNotEmpty
-              ? u.email!
-              : 'guest$guestSuffix@gmail.com')
+                ? u.email!
+                : 'guest$guestSuffix@gmail.com')
           : (u.email ?? '');
       final name = isGuestAccount
           ? (u.displayName ?? 'Guest $guestSuffix')
@@ -54,7 +59,8 @@ class UserRepository {
       final data = snap.data() ?? {};
       String? uniqueId = data['uniqueId'] as String?;
       final previousIsGuest = (data['isGuest'] as bool?) ?? false;
-      final stillGuest = isGuestAccount &&
+      final stillGuest =
+          isGuestAccount &&
           previousIsGuest &&
           (u.email == null || u.email!.isEmpty || u.email!.startsWith('guest'));
 
@@ -65,18 +71,20 @@ class UserRepository {
         'email': (!stillGuest && u.email != null && u.email!.isNotEmpty)
             ? u.email
             : (data['email'] ??
-                (stillGuest ? 'guest${uniqueId ?? "0"}@gmail.com' : '')),
-        'photoUrl': data.containsKey('photoUrl') ? data['photoUrl'] : u.photoURL,
+                  (stillGuest ? 'guest${uniqueId ?? "0"}@gmail.com' : '')),
+        'photoUrl': data.containsKey('photoUrl')
+            ? data['photoUrl']
+            : u.photoURL,
         'updatedAt': FieldValue.serverTimestamp(),
         'isGuest': stillGuest,
       };
-      
+
       // Auto-backfill unique ID for existing users who don't have one yet
       if (uniqueId == null || uniqueId.isEmpty) {
         uniqueId = _generateUniqueNumericId();
         updates['uniqueId'] = uniqueId;
       }
-      
+
       await ref.set(updates, SetOptions(merge: true));
       return AppUser.fromDoc(await ref.get());
     }
@@ -181,7 +189,8 @@ class UserRepository {
   Future<void> purchaseCustomization({
     required String uid,
     required String type, // 'title' or 'border'
-    required String value, // Custom Title (e.g. 'SOS Legend') or Border Frame Color (e.g. 'gold')
+    required String
+    value, // Custom Title (e.g. 'SOS Legend') or Border Frame Color (e.g. 'gold')
     required int cost,
   }) async {
     final ref = _col.doc(uid);
@@ -189,22 +198,22 @@ class UserRepository {
       final snap = await tx.get(ref);
       final data = snap.data() ?? {};
       final totalPoints = (data['totalPoints'] as num?)?.toInt() ?? 0;
-      
+
       if (totalPoints < cost) {
         throw Exception('Not enough points! You need $cost points.');
       }
-      
+
       final updates = <String, dynamic>{
         'totalPoints': totalPoints - cost,
         'updatedAt': FieldValue.serverTimestamp(),
       };
-      
+
       if (type == 'title') {
         updates['customTitle'] = value;
       } else if (type == 'border') {
         updates['avatarFrameColor'] = value;
       }
-      
+
       tx.set(ref, updates, SetOptions(merge: true));
     });
   }
@@ -221,9 +230,12 @@ class UserRepository {
       final wins = ((data['wins'] as num?)?.toInt() ?? 0) + (won ? 1 : 0);
       final losses = ((data['losses'] as num?)?.toInt() ?? 0) + (won ? 0 : 1);
       final matchesPlayed = ((data['matchesPlayed'] as num?)?.toInt() ?? 0) + 1;
-      final totalPoints = ((data['totalPoints'] as num?)?.toInt() ?? 0) + pointsDelta;
-      final weeklyPoints = ((data['weeklyPoints'] as num?)?.toInt() ?? 0) + pointsDelta;
-      final monthlyPoints = ((data['monthlyPoints'] as num?)?.toInt() ?? 0) + pointsDelta;
+      final totalPoints =
+          ((data['totalPoints'] as num?)?.toInt() ?? 0) + pointsDelta;
+      final weeklyPoints =
+          ((data['weeklyPoints'] as num?)?.toInt() ?? 0) + pointsDelta;
+      final monthlyPoints =
+          ((data['monthlyPoints'] as num?)?.toInt() ?? 0) + pointsDelta;
       final winRate = matchesPlayed == 0 ? 0.0 : wins / matchesPlayed;
 
       tx.set(ref, {
@@ -255,7 +267,7 @@ class UserRepository {
       final inv = Map<String, dynamic>.from(data['inventory'] ?? {});
       final current = (inv[itemId] as num?)?.toInt() ?? 0;
       inv[itemId] = current + 1;
-      
+
       tx.set(ref, {
         'totalPoints': totalPoints - cost,
         'inventory': inv,
@@ -285,14 +297,13 @@ class UserRepository {
     });
   }
 
-  Future<DailyStreakRewardResult> claimDailyReward({required String uid}) async {
+  Future<DailyStreakRewardResult> claimDailyReward({
+    required String uid,
+  }) async {
     final ref = _col.doc(uid);
     final now = DateTime.now();
-    final todayStr =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    final yesterday = now.subtract(const Duration(days: 1));
-    final yesterdayStr =
-        '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+    final todayStr = _localDateStr(now);
+    final yesterdayStr = _localDateStr(now.subtract(const Duration(days: 1)));
 
     return await _firestore.runTransaction((tx) async {
       final snap = await tx.get(ref);
@@ -304,6 +315,7 @@ class UserRepository {
       final currentStreak = (data['dailyStreak'] as num?)?.toInt() ?? 0;
       final longestStreak = (data['longestStreak'] as num?)?.toInt() ?? 0;
 
+      // Idempotency guard: already claimed today — return safe no-op result.
       if (lastClaimDate == todayStr) {
         return DailyStreakRewardResult(
           newStreak: currentStreak,
@@ -315,10 +327,10 @@ class UserRepository {
 
       int newStreak;
       if (lastClaimDate == yesterdayStr) {
-        // Consecutive day
+        // Consecutive day: extend the streak.
         newStreak = currentStreak + 1;
       } else {
-        // First claim or broken streak
+        // First claim ever (lastClaimDate == null) or broken streak.
         newStreak = 1;
       }
 
@@ -363,8 +375,9 @@ class UserRepository {
         inv[entry.key] = curCount + entry.value;
       }
 
-      final updatedLongest =
-          newStreak > longestStreak ? newStreak : longestStreak;
+      final updatedLongest = newStreak > longestStreak
+          ? newStreak
+          : longestStreak;
 
       tx.set(ref, {
         'totalPoints': currentPoints + pointsAwarded,
@@ -384,6 +397,10 @@ class UserRepository {
       );
     });
   }
+
+  /// Consistent local-date string helper: YYYY-MM-DD using the device's local clock.
+  static String _localDateStr(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<void> claimFreePoints(String uid, int amount) async {
     final ref = _col.doc(uid);

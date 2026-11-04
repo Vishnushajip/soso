@@ -20,9 +20,15 @@ import '../../../core/providers/service_providers.dart';
 import '../../../core/routes/route_names.dart';
 import '../widgets/confetti_shower.dart';
 
-final matchAwardedPointsProvider = StateProvider.autoDispose<int?>((ref) => null);
-final matchStatsAppliedProvider = StateProvider.autoDispose<bool>((ref) => false);
-final restartMatchLoadingProvider = StateProvider.autoDispose<bool>((ref) => false);
+final matchAwardedPointsProvider = StateProvider.autoDispose<int?>(
+  (ref) => null,
+);
+final matchStatsAppliedProvider = StateProvider.family<bool, String>(
+  (ref, roomId) => false,
+);
+final restartMatchLoadingProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
 
 class MatchSummaryScreen extends ConsumerStatefulWidget {
   const MatchSummaryScreen({super.key, required this.roomId});
@@ -49,7 +55,10 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
-    _panelScale = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutBack);
+    _panelScale = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: Curves.easeOutBack,
+    );
     _fade = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
     _entryCtrl.forward();
   }
@@ -62,8 +71,8 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
   }
 
   Future<void> _applyStats(GameRoom room) async {
-    if (ref.read(matchStatsAppliedProvider)) return;
-    ref.read(matchStatsAppliedProvider.notifier).state = true;
+    if (ref.read(matchStatsAppliedProvider(widget.roomId))) return;
+    ref.read(matchStatsAppliedProvider(widget.roomId).notifier).state = true;
     final me = ref.read(currentUidProvider);
     if (me == null) return;
     final myPlayer = room.players.firstWhere(
@@ -74,18 +83,26 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
     final delta = myPlayer.score + (won ? AppConstants.pointsPerWin : 0);
 
     ref.read(soundServiceProvider).play(won ? AppSound.win : AppSound.lose);
-    ref.read(hapticServiceProvider).fire(won ? HapticEvent.win : HapticEvent.lose);
+    ref
+        .read(hapticServiceProvider)
+        .fire(won ? HapticEvent.win : HapticEvent.lose);
 
-    await ref.read(userRepositoryProvider).applyMatchResult(
-          uid: me,
-          pointsDelta: delta,
-          won: won,
-        );
+    await ref
+        .read(userRepositoryProvider)
+        .applyMatchResult(uid: me, pointsDelta: delta, won: won);
 
-    final p1 = room.players.isNotEmpty ? room.players[0] : const GamePlayer(uid: '', name: 'Player 1');
-    final p2 = room.players.length > 1 ? room.players[1] : const GamePlayer(uid: '', name: 'Player 2');
-    final winnerIndex = room.winnerId == null ? null : (room.winnerId == p1.uid ? 0 : (room.winnerId == p2.uid ? 1 : null));
-    final winnerName = room.winnerId == null ? null : (room.winnerId == p1.uid ? p1.name : p2.name);
+    final p1 = room.players.isNotEmpty
+        ? room.players[0]
+        : const GamePlayer(uid: '', name: 'Player 1');
+    final p2 = room.players.length > 1
+        ? room.players[1]
+        : const GamePlayer(uid: '', name: 'Player 2');
+    final winnerIndex = room.winnerId == null
+        ? null
+        : (room.winnerId == p1.uid ? 0 : (room.winnerId == p2.uid ? 1 : null));
+    final winnerName = room.winnerId == null
+        ? null
+        : (room.winnerId == p1.uid ? p1.name : p2.name);
 
     final record = MatchRecord(
       id: room.id,
@@ -102,10 +119,7 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
       playedAt: room.finishedAt ?? DateTime.now(),
       moves: const [],
     );
-    ref.read(matchHistoryRepositoryProvider).saveMatch(
-      uid: me,
-      match: record,
-    );
+    ref.read(matchHistoryRepositoryProvider).saveMatch(uid: me, match: record);
 
     if (mounted) {
       ref.read(matchAwardedPointsProvider.notifier).state = delta;
@@ -136,13 +150,16 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
               if (room.status == GameRoomStatus.active) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (context.mounted) {
-                    context.pushReplacement('${RouteNames.gameBoard}?roomId=${room.id}');
+                    context.pushReplacement(
+                      '${RouteNames.gameBoard}?roomId=${room.id}',
+                    );
                   }
                 });
               }
 
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && room.status == GameRoomStatus.finished) _applyStats(room);
+                if (mounted && room.status == GameRoomStatus.finished)
+                  _applyStats(room);
               });
 
               final ranked = [...room.players]
@@ -156,7 +173,8 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
                       orElse: () => ranked.first,
                     );
               final canRestart =
-                  room.type == GameRoomType.friend || room.type == GameRoomType.private;
+                  room.type == GameRoomType.friend ||
+                  room.type == GameRoomType.private;
 
               return Stack(
                 children: [
@@ -216,8 +234,7 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
                                     photoUrl: p.photoUrl,
                                     score: p.score,
                                     isMe: p.uid == me,
-                                    isWinner:
-                                        !isTie && p.uid == room.winnerId,
+                                    isWinner: !isTie && p.uid == room.winnerId,
                                     delay: i,
                                   );
                                 },
@@ -226,20 +243,43 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
                             const SizedBox(height: 14),
                             if (canRestart) ...[
                               _PrimaryButton(
-                                label: isRestarting ? 'Restarting Match…' : 'Restart Match',
+                                label: isRestarting
+                                    ? 'Restarting Match…'
+                                    : 'Restart Match',
                                 icon: Icons.replay_rounded,
                                 isLoading: isRestarting,
                                 onTap: () async {
                                   if (isRestarting) return;
-                                  ref.read(restartMatchLoadingProvider.notifier).state = true;
-                                  ref.read(soundServiceProvider).play(AppSound.buttonClick);
-                                  ref.read(hapticServiceProvider).fire(HapticEvent.tap);
+                                  ref
+                                          .read(
+                                            restartMatchLoadingProvider
+                                                .notifier,
+                                          )
+                                          .state =
+                                      true;
+                                  ref
+                                      .read(soundServiceProvider)
+                                      .play(AppSound.buttonClick);
+                                  ref
+                                      .read(hapticServiceProvider)
+                                      .fire(HapticEvent.tap);
                                   try {
-                                    await ref.read(gameRepositoryProvider).restartRoom(roomId: room.id);
+                                    await ref
+                                        .read(gameRepositoryProvider)
+                                        .restartRoom(roomId: room.id);
                                   } catch (e) {
-                                    ref.read(restartMatchLoadingProvider.notifier).state = false;
+                                    ref
+                                            .read(
+                                              restartMatchLoadingProvider
+                                                  .notifier,
+                                            )
+                                            .state =
+                                        false;
                                     if (context.mounted) {
-                                      AppSnackBar.showError(context, 'Could not restart match: $e');
+                                      AppSnackBar.showError(
+                                        context,
+                                        'Could not restart match: $e',
+                                      );
                                     }
                                   }
                                 },
@@ -324,23 +364,23 @@ class _CrownPanel extends StatelessWidget {
     final accent = isTie
         ? AppColors.arenaGold
         : iWon
-            ? AppColors.success
-            : AppColors.arenaPink;
+        ? AppColors.success
+        : AppColors.arenaPink;
     final emoji = isTie
         ? '🤝'
         : iWon
-            ? '🏆'
-            : '🎯';
+        ? '🏆'
+        : '🎯';
     final title = isTie
         ? "It's a Tie!"
         : iWon
-            ? 'Victory!'
-            : '${winnerName ?? 'Opponent'} Wins';
+        ? 'Victory!'
+        : '${winnerName ?? 'Opponent'} Wins';
     final subtitle = isTie
         ? 'Evenly matched warriors'
         : iWon
-            ? 'You ruled the arena'
-            : 'Better luck next round';
+        ? 'You ruled the arena'
+        : 'Better luck next round';
 
     return AnimatedBuilder(
       animation: glow,
@@ -403,8 +443,7 @@ class _CrownPanel extends StatelessWidget {
           if (awardedPoints != null && awardedPoints! > 0) ...[
             const SizedBox(height: 14),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [AppColors.secondary, AppColors.arenaGold],
@@ -421,8 +460,11 @@ class _CrownPanel extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.stars_rounded,
-                      color: Colors.white, size: 16),
+                  const Icon(
+                    Icons.stars_rounded,
+                    color: Colors.white,
+                    size: 16,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     '+$awardedPoints profile points',
@@ -537,7 +579,9 @@ class _RankRow extends StatelessWidget {
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.arenaGold.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
@@ -554,8 +598,11 @@ class _RankRow extends StatelessWidget {
                   ],
                   if (isWinner) ...[
                     const SizedBox(width: 6),
-                    const Icon(Icons.workspace_premium_rounded,
-                        color: AppColors.arenaGold, size: 16),
+                    const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: AppColors.arenaGold,
+                      size: 16,
+                    ),
                   ],
                 ],
               ),

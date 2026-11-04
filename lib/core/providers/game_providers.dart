@@ -55,28 +55,48 @@ class LocalGameState {
     Map<SosLine, int>? completedSosLines,
     int? awardedProfilePoints,
     List<int>? customHighlights,
-  }) =>
-      LocalGameState(
-        boardSize: boardSize,
-        board: board ?? this.board,
-        players: players ?? this.players,
-        currentTurn: currentTurn ?? this.currentTurn,
-        finished: finished ?? this.finished,
-        winnerIndex: winnerIndex ?? this.winnerIndex,
-        lastSosLines: lastSosLines ?? this.lastSosLines,
-        completedSosLines: completedSosLines ?? this.completedSosLines,
-        awardedProfilePoints: awardedProfilePoints ?? this.awardedProfilePoints,
-        customHighlights: customHighlights ?? this.customHighlights,
-      );
+  }) => LocalGameState(
+    boardSize: boardSize,
+    board: board ?? this.board,
+    players: players ?? this.players,
+    currentTurn: currentTurn ?? this.currentTurn,
+    finished: finished ?? this.finished,
+    winnerIndex: winnerIndex ?? this.winnerIndex,
+    lastSosLines: lastSosLines ?? this.lastSosLines,
+    completedSosLines: completedSosLines ?? this.completedSosLines,
+    awardedProfilePoints: awardedProfilePoints ?? this.awardedProfilePoints,
+    customHighlights: customHighlights ?? this.customHighlights,
+  );
 }
 
 class LocalGameConfig {
   final int boardSize;
   final List<String> playerNames;
   const LocalGameConfig({required this.boardSize, required this.playerNames});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LocalGameConfig &&
+          runtimeType == other.runtimeType &&
+          boardSize == other.boardSize &&
+          _listEquals(playerNames, other.playerNames);
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => Object.hash(boardSize, Object.hashAll(playerNames));
 }
 
-class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig> {
+class LocalGameController
+    extends FamilyNotifier<LocalGameState, LocalGameConfig> {
   late SosEngine _engine;
   late SoundService _sound;
   late HapticService _haptic;
@@ -119,9 +139,9 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
   void eraseLocal({required int position}) {
     if (state.finished) return;
     if (state.board[position].isEmpty) return;
-    
+
     _history.add(state);
-    
+
     final newBoard = [...state.board]..[position] = '';
     final newCompletedSos = Map<SosLine, int>.from(state.completedSosLines)
       ..removeWhere((line, _) => line.cells.contains(position));
@@ -138,8 +158,16 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
     final hints = <int>[];
     for (var i = 0; i < state.board.length; i++) {
       if (state.board[i].isEmpty) {
-        final sLines = _engine.findSosCreated(board: state.board, pos: i, letter: SosLetter.s);
-        final oLines = _engine.findSosCreated(board: state.board, pos: i, letter: SosLetter.o);
+        final sLines = _engine.findSosCreated(
+          board: state.board,
+          pos: i,
+          letter: SosLetter.s,
+        );
+        final oLines = _engine.findSosCreated(
+          board: state.board,
+          pos: i,
+          letter: SosLetter.o,
+        );
         if (sLines.isNotEmpty || oLines.isNotEmpty) {
           hints.add(i);
         }
@@ -160,7 +188,8 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
       letter: letter,
     );
     final scored = lines.isNotEmpty;
-    final newBoard = [...state.board]..[position] = letter == SosLetter.s ? 'S' : 'O';
+    final newBoard = [...state.board]
+      ..[position] = letter == SosLetter.s ? 'S' : 'O';
     final players = [...state.players];
     final newCompletedSos = Map<SosLine, int>.from(state.completedSosLines);
 
@@ -189,7 +218,9 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
     );
 
     final full = newBoard.every((c) => c.isNotEmpty);
-    final nextTurn = scored ? state.currentTurn : (state.currentTurn + 1) % players.length;
+    final nextTurn = scored
+        ? state.currentTurn
+        : (state.currentTurn + 1) % players.length;
     int? winner;
     bool finished = false;
     int? awarded;
@@ -208,14 +239,15 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
       _sound.play(youWon ? AppSound.win : AppSound.lose);
       _haptic.fire(youWon ? HapticEvent.win : HapticEvent.lose);
 
-      awarded = _profilePointsFor(
-        matchScore: players[0].score,
-        won: youWon,
-      );
+      awarded = _profilePointsFor(matchScore: players[0].score, won: youWon);
       _persistResult(youWon: youWon, pointsDelta: awarded);
 
-      final p1 = players.isNotEmpty ? players[0] : const LocalPlayer(name: 'Player 1');
-      final p2 = players.length > 1 ? players[1] : const LocalPlayer(name: 'Player 2');
+      final p1 = players.isNotEmpty
+          ? players[0]
+          : const LocalPlayer(name: 'Player 1');
+      final p2 = players.length > 1
+          ? players[1]
+          : const LocalPlayer(name: 'Player 2');
       final user = ref.read(currentUserProvider).valueOrNull;
       final record = MatchRecord(
         id: 'local_${DateTime.now().millisecondsSinceEpoch}',
@@ -226,15 +258,16 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
         p1PhotoUrl: user?.photoUrl,
         p2Name: p2.name,
         p2Score: p2.score,
-        winnerName: winner == 0 ? (user?.name ?? p1.name) : (winner == 1 ? p2.name : null),
+        winnerName: winner == 0
+            ? (user?.name ?? p1.name)
+            : (winner == 1 ? p2.name : null),
         winnerIndex: winner,
         playedAt: DateTime.now(),
         moves: List.from(_moves),
       );
-      ref.read(matchHistoryRepositoryProvider).saveMatch(
-        uid: user?.uid,
-        match: record,
-      );
+      ref
+          .read(matchHistoryRepositoryProvider)
+          .saveMatch(uid: user?.uid, match: record);
     }
     state = state.copyWith(
       board: newBoard,
@@ -253,17 +286,18 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
     return matchScore + (won ? AppConstants.pointsPerWin : 0);
   }
 
-  Future<void> _persistResult({required bool youWon, required int pointsDelta}) async {
+  Future<void> _persistResult({
+    required bool youWon,
+    required int pointsDelta,
+  }) async {
     if (_statsApplied) return;
     _statsApplied = true;
     final uid = ref.read(currentUidProvider);
     if (uid == null) return;
     try {
-      await ref.read(userRepositoryProvider).applyMatchResult(
-            uid: uid,
-            pointsDelta: pointsDelta,
-            won: youWon,
-          );
+      await ref
+          .read(userRepositoryProvider)
+          .applyMatchResult(uid: uid, pointsDelta: pointsDelta, won: youWon);
     } catch (_) {
       // Never block UI on stats write.
     }
@@ -271,9 +305,11 @@ class LocalGameController extends FamilyNotifier<LocalGameState, LocalGameConfig
 }
 
 final localGameProvider =
-    NotifierProvider.family<LocalGameController, LocalGameState, LocalGameConfig>(
-  LocalGameController.new,
-);
+    NotifierProvider.family<
+      LocalGameController,
+      LocalGameState,
+      LocalGameConfig
+    >(LocalGameController.new);
 
 /// ---------- ONLINE GAME ----------
 // autoDispose so the Firestore room subscription is cancelled the moment the

@@ -22,10 +22,16 @@ import '../widgets/floating_cartoon_emote.dart';
 import '../widgets/game_board_widget.dart';
 import '../widgets/vs_animation_overlay.dart';
 
-final localLetterProvider = StateProvider.autoDispose<SosLetter>((ref) => SosLetter.s);
+final localLetterProvider = StateProvider.autoDispose<SosLetter>(
+  (ref) => SosLetter.s,
+);
 final localEraserModeProvider = StateProvider.autoDispose<bool>((ref) => false);
-final localShowVsAnimationProvider = StateProvider.autoDispose<bool>((ref) => true);
-final localDidTriggerWinProvider = StateProvider.autoDispose<bool>((ref) => false);
+final localShowVsAnimationProvider = StateProvider.autoDispose<bool>(
+  (ref) => true,
+);
+final localDidTriggerWinProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
 final localEmoteProvider = StateProvider.autoDispose<Emote?>((ref) => null);
 
 class LocalGameBoardScreen extends ConsumerStatefulWidget {
@@ -184,8 +190,18 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
             Tooltip(
               message: 'Restart Match',
               child: GestureDetector(
-                onTap: () {
+                onTap: () async {
                   HapticFeedback.mediumImpact();
+                  // If game is in progress (moves made, not yet finished), confirm first.
+                  final boardHasMoves = state.board.any(
+                    (cell) => cell.isNotEmpty,
+                  );
+                  if (boardHasMoves && !state.finished) {
+                    final confirmed = await _showRestartConfirmationDialog(
+                      context,
+                    );
+                    if (!confirmed) return;
+                  }
                   ref.read(localEraserModeProvider.notifier).state = false;
                   ref.read(localDidTriggerWinProvider.notifier).state = false;
                   _winCtrl.reset();
@@ -222,175 +238,199 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                 child: FloatingCartoonEmote(emote: activeEmote),
               ),
             SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
-            child: Column(
-              children: [
-                _ScoreRow(state: state),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Center(
-                    child: GameBoardWidget(
-                      theme: boardTheme,
-                      size: state.boardSize,
-                      board: state.board,
-                      highlightCells: state.customHighlights.toSet(),
-                      disabled: state.finished,
-                      sosLines: state.completedSosLines.keys.toList(),
-                      lineColors: lineColors,
-                      onTap: (i) async {
-                        if (eraserMode) {
-                          if (state.board[i].isEmpty) return;
-                          if (user != null) {
-                            try {
-                              HapticFeedback.mediumImpact();
-                              await ref
-                                  .read(userRepositoryProvider)
-                                  .consumeTool(
-                                    uid: user.uid,
-                                    itemId: 'erase_cell',
-                                  );
-                              notifier.eraseLocal(position: i);
-                              ref.read(localEraserModeProvider.notifier).state = false;
-                            } catch (e) {
-                              HapticFeedback.vibrate();
-                              AppSnackBar.showError(context, e.toString());
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+                child: Column(
+                  children: [
+                    _ScoreRow(state: state),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: Center(
+                        child: GameBoardWidget(
+                          theme: boardTheme,
+                          size: state.boardSize,
+                          board: state.board,
+                          highlightCells: state.customHighlights.toSet(),
+                          disabled: state.finished,
+                          sosLines: state.completedSosLines.keys.toList(),
+                          lineColors: lineColors,
+                          onTap: (i) async {
+                            if (eraserMode) {
+                              if (state.board[i].isEmpty) return;
+                              if (user != null) {
+                                try {
+                                  HapticFeedback.mediumImpact();
+                                  await ref
+                                      .read(userRepositoryProvider)
+                                      .consumeTool(
+                                        uid: user.uid,
+                                        itemId: 'erase_cell',
+                                      );
+                                  notifier.eraseLocal(position: i);
+                                  ref
+                                          .read(
+                                            localEraserModeProvider.notifier,
+                                          )
+                                          .state =
+                                      false;
+                                } catch (e) {
+                                  HapticFeedback.vibrate();
+                                  AppSnackBar.showError(context, e.toString());
+                                }
+                              }
+                            } else {
+                              if (state.board[i].isNotEmpty) return;
+                              HapticFeedback.selectionClick();
+                              notifier.place(position: i, letter: letter);
                             }
-                          }
-                        } else {
-                          if (state.board[i].isNotEmpty) return;
-                          HapticFeedback.selectionClick();
-                          notifier.place(position: i, letter: letter);
-                        }
-                      },
+                          },
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (!state.finished && user != null && widget.magicEnabled) ...[
-                  _SpellBar(
-                    eraserMode: eraserMode,
-                    undoCount: user.inventory['undo_move'] ?? 0,
-                    eraseCount: user.inventory['erase_cell'] ?? 0,
-                    hintCount: user.inventory['hint_vision'] ?? 0,
-                    totalPoints: user.totalPoints,
-                    onEraserToggle: () {
-                      HapticFeedback.selectionClick();
-                      ref.read(localEraserModeProvider.notifier).update((v) => !v);
-                    },
-                    onUndo: () async {
-                      try {
-                        HapticFeedback.mediumImpact();
-                        await ref
-                            .read(userRepositoryProvider)
-                            .consumeTool(uid: user.uid, itemId: 'undo_move');
-                        notifier.undoLocal();
-                      } catch (e) {
-                        HapticFeedback.vibrate();
-                        AppSnackBar.showError(context, e.toString());
-                      }
-                    },
-                    onHint: () async {
-                      try {
-                        HapticFeedback.mediumImpact();
-                        await ref
-                            .read(userRepositoryProvider)
-                            .consumeTool(uid: user.uid, itemId: 'hint_vision');
-                        notifier.showHintsLocal();
-                      } catch (e) {
-                        HapticFeedback.vibrate();
-                        AppSnackBar.showError(context, e.toString());
-                      }
-                    },
-                    onBuyUndo: () async {
-                      try {
-                        await ref
-                            .read(userRepositoryProvider)
-                            .purchaseTool(
-                              uid: user.uid,
-                              itemId: 'undo_move',
-                              cost: 50,
-                            );
-                      } catch (e) {
-                        HapticFeedback.vibrate();
-                        AppSnackBar.showError(context, e.toString());
-                      }
-                    },
-                    onBuyErase: () async {
-                      try {
-                        await ref
-                            .read(userRepositoryProvider)
-                            .purchaseTool(
-                              uid: user.uid,
-                              itemId: 'erase_cell',
-                              cost: 100,
-                            );
-                      } catch (e) {
-                        HapticFeedback.vibrate();
-                        AppSnackBar.showError(context, e.toString());
-                      }
-                    },
-                    onBuyHint: () async {
-                      try {
-                        await ref
-                            .read(userRepositoryProvider)
-                            .purchaseTool(
-                              uid: user.uid,
-                              itemId: 'hint_vision',
-                              cost: 30,
-                            );
-                      } catch (e) {
-                        HapticFeedback.vibrate();
-                        AppSnackBar.showError(context, e.toString());
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (state.finished)
-                  _WinnerPanel(
-                    state: state,
-                    winScale: _winScale,
-                    onExit: () {
-                      HapticFeedback.lightImpact();
-                      context.pop();
-                    },
-                    onRestart: () {
-                      HapticFeedback.heavyImpact();
-                      ref.read(localEraserModeProvider.notifier).state = false;
-                      ref.read(localDidTriggerWinProvider.notifier).state = false;
-                      _winCtrl.reset();
-                      notifier.reset();
-                    },
-                  )
-                else
-                  _LetterPicker(
-                    letter: letter,
-                    playerName: state.players[state.currentTurn].name,
-                    currentColor: currentColor,
-                    onChanged: (l) {
-                      HapticFeedback.selectionClick();
-                      ref.read(localLetterProvider.notifier).state = l;
-                    },
-                    onEmoteTap: () {
-                      HapticFeedback.lightImpact();
-                      EmoteWheelSheet.show(
-                        context,
-                        onEmoteSelected: (emote) {
-                          ref.read(localEmoteProvider.notifier).state = emote;
-                          _soundService?.play(emote.sound);
-                          Future.delayed(const Duration(milliseconds: 2600), () {
-                            if (mounted) {
-                              ref.read(localEmoteProvider.notifier).state = null;
-                            }
-                          });
+                    const SizedBox(height: 12),
+                    if (!state.finished &&
+                        user != null &&
+                        widget.magicEnabled) ...[
+                      _SpellBar(
+                        eraserMode: eraserMode,
+                        undoCount: user.inventory['undo_move'] ?? 0,
+                        eraseCount: user.inventory['erase_cell'] ?? 0,
+                        hintCount: user.inventory['hint_vision'] ?? 0,
+                        totalPoints: user.totalPoints,
+                        onEraserToggle: () {
+                          HapticFeedback.selectionClick();
+                          ref
+                              .read(localEraserModeProvider.notifier)
+                              .update((v) => !v);
                         },
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
+                        onUndo: () async {
+                          try {
+                            HapticFeedback.mediumImpact();
+                            await ref
+                                .read(userRepositoryProvider)
+                                .consumeTool(
+                                  uid: user.uid,
+                                  itemId: 'undo_move',
+                                );
+                            notifier.undoLocal();
+                          } catch (e) {
+                            HapticFeedback.vibrate();
+                            AppSnackBar.showError(context, e.toString());
+                          }
+                        },
+                        onHint: () async {
+                          try {
+                            HapticFeedback.mediumImpact();
+                            await ref
+                                .read(userRepositoryProvider)
+                                .consumeTool(
+                                  uid: user.uid,
+                                  itemId: 'hint_vision',
+                                );
+                            notifier.showHintsLocal();
+                          } catch (e) {
+                            HapticFeedback.vibrate();
+                            AppSnackBar.showError(context, e.toString());
+                          }
+                        },
+                        onBuyUndo: () async {
+                          try {
+                            await ref
+                                .read(userRepositoryProvider)
+                                .purchaseTool(
+                                  uid: user.uid,
+                                  itemId: 'undo_move',
+                                  cost: 50,
+                                );
+                          } catch (e) {
+                            HapticFeedback.vibrate();
+                            AppSnackBar.showError(context, e.toString());
+                          }
+                        },
+                        onBuyErase: () async {
+                          try {
+                            await ref
+                                .read(userRepositoryProvider)
+                                .purchaseTool(
+                                  uid: user.uid,
+                                  itemId: 'erase_cell',
+                                  cost: 100,
+                                );
+                          } catch (e) {
+                            HapticFeedback.vibrate();
+                            AppSnackBar.showError(context, e.toString());
+                          }
+                        },
+                        onBuyHint: () async {
+                          try {
+                            await ref
+                                .read(userRepositoryProvider)
+                                .purchaseTool(
+                                  uid: user.uid,
+                                  itemId: 'hint_vision',
+                                  cost: 30,
+                                );
+                          } catch (e) {
+                            HapticFeedback.vibrate();
+                            AppSnackBar.showError(context, e.toString());
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (state.finished)
+                      _WinnerPanel(
+                        state: state,
+                        winScale: _winScale,
+                        onExit: () {
+                          HapticFeedback.lightImpact();
+                          context.pop();
+                        },
+                        onRestart: () {
+                          HapticFeedback.heavyImpact();
+                          ref.read(localEraserModeProvider.notifier).state =
+                              false;
+                          ref.read(localDidTriggerWinProvider.notifier).state =
+                              false;
+                          _winCtrl.reset();
+                          notifier.reset();
+                        },
+                      )
+                    else
+                      _LetterPicker(
+                        letter: letter,
+                        playerName: state.players[state.currentTurn].name,
+                        currentColor: currentColor,
+                        onChanged: (l) {
+                          HapticFeedback.selectionClick();
+                          ref.read(localLetterProvider.notifier).state = l;
+                        },
+                        onEmoteTap: () {
+                          HapticFeedback.lightImpact();
+                          EmoteWheelSheet.show(
+                            context,
+                            onEmoteSelected: (emote) {
+                              ref.read(localEmoteProvider.notifier).state =
+                                  emote;
+                              _soundService?.play(emote.sound);
+                              Future.delayed(
+                                const Duration(milliseconds: 2600),
+                                () {
+                                  if (mounted) {
+                                    ref
+                                            .read(localEmoteProvider.notifier)
+                                            .state =
+                                        null;
+                                  }
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -544,6 +584,118 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
     );
     return result ?? false;
   }
+
+  Future<bool> _showRestartConfirmationDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: AppColors.arenaStone,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppColors.arenaGold.withValues(alpha: 0.4),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.arenaGold.withValues(alpha: 0.1),
+                ),
+                child: const Icon(
+                  Icons.refresh_rounded,
+                  color: AppColors.arenaGold,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'RESTART MATCH?',
+                style: GoogleFonts.luckiestGuy(
+                  fontSize: 18,
+                  color: AppColors.arenaGold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'All current scores and moves will be reset.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onArenaMuted,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(
+                          color: AppColors.onArenaMuted.withValues(alpha: 0.4),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(
+                        'Continue',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.onArena,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.arenaGold,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text(
+                        'Restart',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.arenaStone,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    return result ?? false;
+  }
 }
 
 class _ScoreRow extends StatelessWidget {
@@ -587,7 +739,10 @@ class _LetterPicker extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.arenaStone,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: currentColor.withValues(alpha: 0.5), width: 2),
+        border: Border.all(
+          color: currentColor.withValues(alpha: 0.5),
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
             color: currentColor.withValues(alpha: 0.25),
@@ -711,7 +866,9 @@ class _LetterBtn extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: selected ? color.withValues(alpha: 0.45) : Colors.transparent,
+              color: selected
+                  ? color.withValues(alpha: 0.45)
+                  : Colors.transparent,
               blurRadius: selected ? 12.0 : 0.0,
               offset: selected ? const Offset(0, 3) : Offset.zero,
             ),

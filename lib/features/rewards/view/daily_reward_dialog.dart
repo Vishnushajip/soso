@@ -11,8 +11,12 @@ import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 
-final dailyRewardClaimLoadingProvider =
-    StateProvider.autoDispose<bool>((ref) => false);
+final dailyRewardClaimLoadingProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
+
+String _dateStr(DateTime date) =>
+    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
 class DailyRewardDialog extends ConsumerWidget {
   const DailyRewardDialog({super.key});
@@ -26,13 +30,48 @@ class DailyRewardDialog extends ConsumerWidget {
   }
 
   static const List<_DayRewardSpec> _rewards = [
-    _DayRewardSpec(day: 1, points: 50, spellName: null, spellIcon: Icons.stars_rounded),
-    _DayRewardSpec(day: 2, points: 100, spellName: null, spellIcon: Icons.stars_rounded),
-    _DayRewardSpec(day: 3, points: 150, spellName: 'Undo Move', spellIcon: Icons.undo_rounded),
-    _DayRewardSpec(day: 4, points: 200, spellName: null, spellIcon: Icons.stars_rounded),
-    _DayRewardSpec(day: 5, points: 300, spellName: 'Erase Cell', spellIcon: Icons.delete_sweep_rounded),
-    _DayRewardSpec(day: 6, points: 400, spellName: null, spellIcon: Icons.stars_rounded),
-    _DayRewardSpec(day: 7, points: 600, spellName: 'Vision + Erase', spellIcon: Icons.auto_awesome_rounded),
+    _DayRewardSpec(
+      day: 1,
+      points: 50,
+      spellName: null,
+      spellIcon: Icons.stars_rounded,
+    ),
+    _DayRewardSpec(
+      day: 2,
+      points: 100,
+      spellName: null,
+      spellIcon: Icons.stars_rounded,
+    ),
+    _DayRewardSpec(
+      day: 3,
+      points: 150,
+      spellName: 'Undo Move',
+      spellIcon: Icons.undo_rounded,
+    ),
+    _DayRewardSpec(
+      day: 4,
+      points: 200,
+      spellName: null,
+      spellIcon: Icons.stars_rounded,
+    ),
+    _DayRewardSpec(
+      day: 5,
+      points: 300,
+      spellName: 'Erase Cell',
+      spellIcon: Icons.delete_sweep_rounded,
+    ),
+    _DayRewardSpec(
+      day: 6,
+      points: 400,
+      spellName: null,
+      spellIcon: Icons.stars_rounded,
+    ),
+    _DayRewardSpec(
+      day: 7,
+      points: 600,
+      spellName: 'Vision + Erase',
+      spellIcon: Icons.auto_awesome_rounded,
+    ),
   ];
 
   @override
@@ -42,16 +81,40 @@ class DailyRewardDialog extends ConsumerWidget {
 
     final currentStreak = user?.dailyStreak ?? 0;
     final canClaim = user?.canClaimDailyReward ?? false;
-    // Current day in 7-day cycle:
-    // If can claim: next day to claim is (currentStreak % 7) + 1 if claimed yesterday, or 1 if broken streak
+
+    // Determine which days in the 7-day cycle are already claimed.
+    // completedDaysInCycle = how many days of the current 7-day window are done.
+    // When canClaim=false (claimed today), all days up to the current day-in-cycle
+    // are completed. When canClaim=true, the streak hasn't advanced yet for today.
     final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(days: 1));
-    final yesterdayStr =
-        '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+    final yesterdayStr = _dateStr(now.subtract(const Duration(days: 1)));
     final isConsecutive = user?.lastStreakClaimDate == yesterdayStr;
-    final nextDayToClaim = canClaim
-        ? (isConsecutive ? ((currentStreak % 7) + 1) : 1)
-        : (((currentStreak - 1) % 7) + 1);
+
+    // The day index (1-7) that will be claimed when the user taps Claim.
+    // If canClaim: next day to claim depends on streak continuity.
+    // If !canClaim: already claimed today; show which day was just claimed.
+    final int nextDayToClaim;
+    final int
+    completedDaysInCycle; // days 1..completedDaysInCycle are shown as claimed
+
+    if (canClaim) {
+      // User hasn't claimed today yet.
+      if (currentStreak == 0 || !isConsecutive) {
+        // First claim ever, or streak was broken — starts from Day 1.
+        nextDayToClaim = 1;
+        completedDaysInCycle = 0;
+      } else {
+        // Consecutive: next day is currentStreak % 7 + 1 (1-indexed).
+        nextDayToClaim = (currentStreak % 7) + 1;
+        // Days 1..(nextDayToClaim-1) were claimed in previous days.
+        completedDaysInCycle = nextDayToClaim - 1;
+      }
+    } else {
+      // Already claimed today. currentStreak reflects today's claim.
+      final claimedDayInCycle = ((currentStreak - 1) % 7) + 1; // 1-7
+      nextDayToClaim = claimedDayInCycle; // shown as current (just claimed)
+      completedDaysInCycle = claimedDayInCycle; // all up to today are claimed
+    }
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -80,7 +143,6 @@ class DailyRewardDialog extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Top Close and Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -88,7 +150,9 @@ class DailyRewardDialog extends ConsumerWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.secondary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
@@ -197,15 +261,18 @@ class DailyRewardDialog extends ConsumerWidget {
                 ),
                 itemBuilder: (context, i) {
                   final spec = _rewards[i];
-                  final isTargetDay = spec.day == nextDayToClaim;
-                  final isClaimed = !canClaim && spec.day <= nextDayToClaim;
-                  final isAvailableToClaim = canClaim && isTargetDay;
+                  // A day is claimed if it falls within the completed portion.
+                  final isClaimed = spec.day <= completedDaysInCycle;
+                  // The active/available day (ready to claim now).
+                  final isAvailableToClaim =
+                      canClaim && spec.day == nextDayToClaim;
+                  final isTarget = spec.day == nextDayToClaim;
 
                   return _DayRewardCard(
                     spec: spec,
                     isClaimed: isClaimed,
                     isAvailable: isAvailableToClaim,
-                    isTarget: isTargetDay,
+                    isTarget: isTarget,
                   );
                 },
               ),
@@ -220,29 +287,26 @@ class DailyRewardDialog extends ConsumerWidget {
                         final uid = ref.read(currentUidProvider);
                         if (uid == null) return;
                         ref
-                            .read(dailyRewardClaimLoadingProvider.notifier)
-                            .state = true;
+                                .read(dailyRewardClaimLoadingProvider.notifier)
+                                .state =
+                            true;
                         try {
                           final result = await ref
                               .read(userRepositoryProvider)
                               .claimDailyReward(uid: uid);
-                          ref
-                              .read(soundServiceProvider)
-                              .play(AppSound.rankUp);
-                          ref
-                              .read(hapticServiceProvider)
-                              .fire(HapticEvent.win);
+                          ref.read(soundServiceProvider).play(AppSound.rankUp);
+                          ref.read(hapticServiceProvider).fire(HapticEvent.win);
                           if (context.mounted) {
-                            AppSnackBar.showSuccess(
-                              context,
-                              result.message,
-                            );
+                            AppSnackBar.showSuccess(context, result.message);
                             Navigator.of(context).pop();
                           }
                         } catch (e) {
                           ref
-                              .read(dailyRewardClaimLoadingProvider.notifier)
-                              .state = false;
+                                  .read(
+                                    dailyRewardClaimLoadingProvider.notifier,
+                                  )
+                                  .state =
+                              false;
                           if (context.mounted) {
                             AppSnackBar.showError(
                               context,
@@ -259,7 +323,7 @@ class DailyRewardDialog extends ConsumerWidget {
                           ? [AppColors.secondary, AppColors.arenaGold]
                           : [
                               AppColors.onArenaMuted.withValues(alpha: 0.2),
-                              AppColors.onArenaMuted.withValues(alpha: 0.15)
+                              AppColors.onArenaMuted.withValues(alpha: 0.15),
                             ],
                     ),
                     borderRadius: BorderRadius.circular(18),
@@ -286,8 +350,9 @@ class DailyRewardDialog extends ConsumerWidget {
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : Row(
@@ -360,8 +425,8 @@ class _DayRewardCard extends StatelessWidget {
     final borderColor = isAvailable
         ? AppColors.arenaGold
         : isClaimed
-            ? AppColors.success.withValues(alpha: 0.6)
-            : AppColors.onArenaMuted.withValues(alpha: 0.25);
+        ? AppColors.success.withValues(alpha: 0.6)
+        : AppColors.onArenaMuted.withValues(alpha: 0.25);
 
     return Container(
       decoration: BoxDecoration(
@@ -369,10 +434,7 @@ class _DayRewardCard extends StatelessWidget {
             ? AppColors.secondary.withValues(alpha: 0.18)
             : AppColors.arenaBgBottom,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-          width: isAvailable ? 2.0 : 1.2,
-        ),
+        border: Border.all(color: borderColor, width: isAvailable ? 2.0 : 1.2),
         boxShadow: isAvailable
             ? [
                 BoxShadow(
@@ -394,20 +456,18 @@ class _DayRewardCard extends StatelessWidget {
               color: isAvailable
                   ? AppColors.arenaGold
                   : isClaimed
-                      ? AppColors.success
-                      : AppColors.onArenaMuted,
+                  ? AppColors.success
+                  : AppColors.onArenaMuted,
               letterSpacing: 0.5,
             ),
           ),
           Icon(
-            isClaimed
-                ? Icons.check_circle_rounded
-                : spec.spellIcon,
+            isClaimed ? Icons.check_circle_rounded : spec.spellIcon,
             color: isClaimed
                 ? AppColors.success
                 : isAvailable
-                    ? AppColors.arenaGold
-                    : AppColors.onArenaMuted,
+                ? AppColors.arenaGold
+                : AppColors.onArenaMuted,
             size: 24,
           ),
           Text(

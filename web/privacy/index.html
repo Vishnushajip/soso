@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — SOS Arena</title>
+  <meta name="description" content="Privacy Policy for SOS Arena. Learn how we collect, use, and safeguard your data for our mobile and web game.">
+  <link rel="icon" type="image/png" href="../favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Luckiest+Guy&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070410;
+      --bg-gradient-top: #1A1230;
+      --card-bg: #150F28;
+      --card-border: #3A2F5C;
+      --primary: #6A38D4;
+      --accent: #3B82F6;
+      --gold: #FFC857;
+      --danger: #BA1A1A;
+      --text: #F1ECFF;
+      --text-muted: #9C92C7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 15%, var(--bg-gradient-top) 0%, var(--bg-dark) 70%);
+      color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 24px 16px 60px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-top: 16px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(106, 56, 212, 0.2);
+      border: 1px solid rgba(255, 200, 87, 0.4);
+      padding: 8px 18px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+
+    .logo-badge img {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+    }
+
+    .logo-badge span {
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 14px;
+      letter-spacing: 1.5px;
+      color: var(--gold);
+    }
+
+    h1 {
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 32px;
+      color: var(--gold);
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+      text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    .last-updated {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    h2 {
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 18px;
+      color: var(--gold);
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 14.5px;
+      margin-bottom: 12px;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 10px;
+    }
+
+    li {
+      position: relative;
+      padding-left: 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    li::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 8px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    li strong {
+      color: var(--text);
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background: #8455EE;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      margin-left: 8px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: #d32f2f;
+    }
+
+    .email-box {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--card-border);
+      padding: 14px;
+      border-radius: 12px;
+      font-family: monospace;
+      font-size: 15px;
+      color: var(--gold);
+      margin: 10px 0 16px;
+      word-break: break-all;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    footer a {
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-badge">
+        <img src="../icons/Icon-192.png" alt="SOS Arena">
+        <span>SOS ARENA</span>
+      </div>
+      <h1>PRIVACY POLICY</h1>
+      <div class="last-updated">Effective & Last Updated: November 2026</div>
+    </header>
+
+    <div class="card">
+      <h2>Introduction</h2>
+      <p>
+        Welcome to <strong>SOS Arena</strong> ("we", "our", or "us"). We respect your privacy and are committed to protecting the personal information you share with us. This Privacy Policy outlines how we collect, store, process, and protect your information when you access or play the SOS Arena mobile application (Android) or the web version (<a href="https://playsos.web.app" style="color: var(--gold);">https://playsos.web.app</a>).
+      </p>
+      <p>
+        By using SOS Arena, you acknowledge that you have read and agree to this Privacy Policy.
+      </p>
+      <div style="margin-top: 14px;">
+        <a class="btn" href="../">🎮 Play SOS Arena</a>
+        <a class="btn btn-secondary" href="../terms/">📄 Terms of Service</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>1. Information We Collect</h2>
+      <p>We collect only the information necessary to provide, synchronize, and improve your gameplay experience:</p>
+      <ul>
+        <li>
+          <strong>Google Account Profile:</strong> When you sign in with Google, we receive your public display name, email address, profile picture URL, and Google user identifier (UID) via Firebase Authentication.
+        </li>
+        <li>
+          <strong>Guest Mode Identifiers:</strong> If you play as a Guest, we generate a temporary random anonymous identifier and player nickname. We do not collect or store your real name or email address in Guest Mode.
+        </li>
+        <li>
+          <strong>Gameplay & Match Statistics:</strong> We record real-time board moves, turn history, match outcomes (wins, losses, draws), scores, ratings, and leaderboard rankings to provide online multiplayer matchmaking.
+        </li>
+        <li>
+          <strong>Multiplayer Chat & Social:</strong> In-game messages sent within match chat rooms, friend requests, and animated cartoon emotes are processed to enable in-game social interactions.
+        </li>
+        <li>
+          <strong>Device & Push Notification Data:</strong> Device model, OS version, app version, and Firebase Cloud Messaging (FCM) registration tokens used solely to deliver notifications (such as match invitations and turn alerts).
+        </li>
+        <li>
+          <strong>Diagnostics & Performance:</strong> Non-personally identifiable crash logs and performance metrics through Firebase Crashlytics to resolve bugs and optimize game stability.
+        </li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>2. How We Use Your Information</h2>
+      <p>We use collected data strictly for legitimate operational purposes:</p>
+      <ul>
+        <li>To provide real-time online multiplayer gameplay, local pass-and-play, and AI bot battles.</li>
+        <li>To synchronize match states, leaderboard standings, and player profiles across devices.</li>
+        <li>To send game-related push notifications (which you can disable at any time in Settings).</li>
+        <li>To ensure fair play, prevent exploits or cheating, and protect our players.</li>
+        <li>To diagnose technical crashes and deliver app updates.</li>
+        <li>To respond to user support inquiries and process account requests.</li>
+      </ul>
+      <p style="margin-top: 10px; font-weight: 600; color: var(--text);">
+        We never sell, rent, monetize, or trade your personal information to third parties, data brokers, or advertisers.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>3. Third-Party Services & SDKs</h2>
+      <p>SOS Arena integrates trusted third-party developer services provided by Google LLC:</p>
+      <ul>
+        <li><strong>Google Play Services:</strong> Core game services and Google account authentication on Android.</li>
+        <li><strong>Firebase Authentication:</strong> Secure user sign-in and identity verification.</li>
+        <li><strong>Cloud Firestore:</strong> Real-time cloud database for storing gameplay state, leaderboards, and user profiles.</li>
+        <li><strong>Firebase Cloud Messaging (FCM):</strong> Push notification delivery.</li>
+        <li><strong>Firebase Crashlytics & Google Analytics:</strong> App diagnostic reports and stability metrics.</li>
+      </ul>
+      <p>
+        These services process data according to Google's Privacy Policy:
+        <br>
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" style="color: var(--gold);">https://policies.google.com/privacy</a>
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>4. User Data & Account Deletion Policy</h2>
+      <p>
+        In strict compliance with Google Play Store User Data policies, every player has the right to request the permanent deletion of their account and all associated personal data.
+      </p>
+      <ul>
+        <li>
+          <strong>How to Request Deletion:</strong> Send an email from the Google email address associated with your SOS Arena account to <strong style="color: var(--gold);">info.playsoso@gmail.com</strong> with the subject line <em>"Account Deletion Request"</em>.
+        </li>
+        <li>
+          <strong>What Is Deleted:</strong> All personal identifiers (name, email address, profile picture URL, Google UID), device push notification tokens, friends lists, match histories, and chat logs will be permanently purged from our database within 30 days.
+        </li>
+      </ul>
+      <a class="btn btn-danger" href="mailto:info.playsoso@gmail.com?subject=SOS%20Arena%20-%20Account%20Deletion%20Request">
+        🗑️ Email Account Deletion Request
+      </a>
+    </div>
+
+    <div class="card">
+      <h2>5. Data Security & Retention</h2>
+      <p>
+        We implement industry-standard security safeguards to protect your personal information:
+      </p>
+      <ul>
+        <li><strong>Encryption in Transit:</strong> All communications between the app and our backend servers are encrypted using modern HTTPS and TLS protocols.</li>
+        <li><strong>Google Cloud Infrastructure:</strong> Data is stored within secure Google Cloud / Firebase data centers subject to rigorous access controls and monitoring.</li>
+        <li><strong>Retention:</strong> Personal data is retained only for as long as your account remains active or as needed to provide our services.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>6. Children's Privacy</h2>
+      <p>
+        SOS Arena is a general-audience game and is not directed to children under 13 years of age (or under 16 in the European Economic Area). We do not knowingly collect personal identifiable information from children under 13.
+      </p>
+      <p>
+        If you are a parent or guardian and believe that your child has provided us with personal information, please contact us at <a href="mailto:info.playsoso@gmail.com" style="color: var(--gold);">info.playsoso@gmail.com</a>, and we will take immediate steps to remove that information from our servers.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>7. Your Rights & Privacy Controls</h2>
+      <ul>
+        <li><strong>Push Notifications:</strong> You can toggle push notifications on or off at any time in the app's Settings menu or through your device settings.</li>
+        <li><strong>Guest Mode:</strong> You can choose to play in Guest Mode without ever linking a Google account or providing personal details.</li>
+        <li><strong>Data Access & Rectification:</strong> You may contact us at any time to review, correct, or request an export of your stored game records.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>8. Contact Information</h2>
+      <p>If you have any questions, concerns, or requests regarding this Privacy Policy or how your data is handled, please contact our support team:</p>
+      <div class="email-box">info.playsoso@gmail.com</div>
+      <a class="btn" href="mailto:info.playsoso@gmail.com?subject=SOS%20Arena%20Privacy%20Inquiry">✉️ Email Support Team</a>
+    </div>
+
+    <footer>
+      <p>© 2026 SOS Arena. All rights reserved.</p>
+      <p style="margin-top: 6px;">
+        <a href="../">Game Home</a> &nbsp;|&nbsp;
+        <a href="../terms/">Terms of Service</a> &nbsp;|&nbsp;
+        <a href="mailto:info.playsoso@gmail.com">Contact Support</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
+

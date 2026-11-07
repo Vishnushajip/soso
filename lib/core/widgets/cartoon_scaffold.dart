@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../providers/auth_providers.dart';
+import '../routes/route_names.dart';
 import '../theme/app_colors.dart';
 
 /// Shared page scaffold matching the cartoon game UI used by Settings/Profile:
@@ -9,14 +13,20 @@ import '../theme/app_colors.dart';
 ///
 /// Used by the simple content pages (About, Privacy, Terms, Contact) so they
 /// share a consistent look with the rest of the app.
-class CartoonScaffold extends StatelessWidget {
-  const CartoonScaffold({super.key, required this.title, required this.body});
+class CartoonScaffold extends ConsumerWidget {
+  const CartoonScaffold({
+    super.key,
+    required this.title,
+    required this.body,
+    this.onBack,
+  });
 
   final String title;
   final Widget body;
+  final VoidCallback? onBack;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
@@ -29,7 +39,17 @@ class CartoonScaffold extends StatelessWidget {
           child: GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
-              Navigator.of(context).maybePop();
+              if (onBack != null) {
+                onBack!();
+                return;
+              }
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                final auth = ref.read(authStateProvider);
+                final loggedIn = auth.valueOrNull != null;
+                context.go(loggedIn ? RouteNames.home : RouteNames.signIn);
+              }
             },
             behavior: HitTestBehavior.opaque,
             child: Tooltip(

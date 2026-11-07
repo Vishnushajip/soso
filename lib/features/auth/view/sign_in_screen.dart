@@ -4,8 +4,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/routes/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/repositories/auth_repository.dart';
@@ -91,15 +93,51 @@ class SignInScreen extends ConsumerWidget {
                           const SizedBox(height: 28),
                           _FadeSlide(
                             delay: 400,
-                            child: Text(
-                              'By continuing you agree to our\nTerms & Privacy Policy.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
-                                color: Colors.white.withValues(alpha: 0.5),
-                                fontSize: 12,
-                                height: 1.5,
-                                letterSpacing: 0.5,
-                              ),
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  'By continuing you agree to our ',
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => context.push(RouteNames.terms),
+                                  child: Text(
+                                    'Terms',
+                                    style: GoogleFonts.outfit(
+                                      color: AppColors.arenaGold,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: AppColors.arenaGold,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  ' & ',
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => context.push(RouteNames.privacy),
+                                  child: Text(
+                                    'Privacy Policy',
+                                    style: GoogleFonts.outfit(
+                                      color: AppColors.arenaGold,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: AppColors.arenaGold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

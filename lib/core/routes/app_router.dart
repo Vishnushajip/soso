@@ -62,8 +62,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: RouteNames.splash,
     refreshListenable: refresh,
     redirect: (context, state) {
-      final auth = ref.read(authStateProvider);
       final loc = state.matchedLocation;
+      final normalizedLoc = loc.endsWith('/') && loc.length > 1
+          ? loc.substring(0, loc.length - 1)
+          : loc;
+
+      // Allow public routes without authentication or splash redirect.
+      // Essential for Google Play Store compliance (e.g. Privacy Policy & Terms).
+      const publicRoutes = {
+        RouteNames.privacy,
+        RouteNames.terms,
+        RouteNames.about,
+        RouteNames.contact,
+      };
+
+      if (publicRoutes.contains(normalizedLoc)) {
+        return null;
+      }
+
+      final auth = ref.read(authStateProvider);
 
       if (auth.isLoading) {
         return loc == RouteNames.splash ? null : RouteNames.splash;

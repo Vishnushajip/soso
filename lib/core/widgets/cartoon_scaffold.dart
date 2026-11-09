@@ -60,7 +60,7 @@ class CartoonScaffold extends ConsumerWidget {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.18),
+                    color: AppColors.primary.withValues(alpha: 0.18),
                     width: 1.5,
                   ),
                 ),
@@ -108,10 +108,10 @@ class GameCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.primary.withOpacity(0.14), width: 1.5),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.14), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.06),
+            color: AppColors.primary.withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -148,7 +148,7 @@ class SectionLabel extends StatelessWidget {
             height: 1.5,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary.withOpacity(0.3), Colors.transparent],
+                colors: [AppColors.primary.withValues(alpha: 0.3), Colors.transparent],
               ),
               borderRadius: BorderRadius.circular(1),
             ),

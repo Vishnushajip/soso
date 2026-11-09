@@ -25,9 +25,11 @@ class PrivacyScreen extends ConsumerWidget {
     } catch (_) {
       launched = false;
     }
-    if (!launched && context.mounted) {
+    if (!launched) {
       await Clipboard.setData(ClipboardData(text: Env.supportEmail));
-      AppSnackBar.showInfo(context, 'Support email copied: ${Env.supportEmail}');
+      if (context.mounted) {
+        AppSnackBar.showInfo(context, 'Support email copied: ${Env.supportEmail}');
+      }
     }
   }
 

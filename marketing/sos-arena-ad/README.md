@@ -28,6 +28,27 @@ sound effects come from `assets/sounds` and the logo from `assets/branding`.
 | 21.5–24.5 s | VICTORY! trophy, confetti, final standings | reward |
 | 24.5–29 s | App icon, SOS ARENA wordmark, **PLAY FREE NOW**, Google Play · playsos.web.app | CTA |
 
+## Voiceover
+
+Upbeat female narration (Kokoro neural TTS, voice `af_heart`). The music ducks
+under every line.
+
+| Scene | Line |
+|---|---|
+| Hook | "Three letters. Endless rivalry!" |
+| Gameplay | "Place an S, or an O. Make S.O.S… and steal the lead!" |
+| VS | "Challenge your partner. Loser picks the movie!" |
+| Audiences | "Date night. Gamers. Your squad. Or solo, against the A.I." |
+| Features | "Trash talk with emotes, unlock themes and magic spells, and rise to S.O.S. Legend!" |
+| Victory | "Victory never felt this good!" |
+| CTA | "S.O.S. Arena. Play free, now!" |
+
+To change the wording or the voice, edit `LINES` in `voiceover/generate_vo.py`
+and run it (see the file header). Other Kokoro voices: `af_bella`, `af_nicole`,
+`am_michael`, `am_fenrir`, `bf_emma`… To use a human voice actor instead,
+replace the WAVs in `public/vo/` (same file names) and update
+`public/vo/durations.json`.
+
 ## Suggested ad copy
 
 - **Primary text:** Remember SOS from the back of your notebook? 📝 Now it's a live battle. Challenge your partner, your bestie or the whole world, and talk trash with emotes. 😎👑 Free to play!

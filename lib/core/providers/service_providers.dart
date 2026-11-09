@@ -5,13 +5,27 @@ import '../services/crashlytics_service.dart';
 import '../services/fcm_service.dart';
 import '../services/haptic_service.dart';
 import '../services/local_notifications_service.dart';
+import '../services/meta_pixel/meta_pixel_service.dart';
 import '../services/presence_service.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
+import '../services/tracking_service.dart';
 import 'firebase_providers.dart';
 
 final analyticsServiceProvider = Provider<AnalyticsService>(
   (ref) => AnalyticsService(ref.watch(analyticsClientProvider)),
+);
+
+final metaPixelServiceProvider = Provider<MetaPixelService>(
+  (_) => MetaPixelService(),
+);
+
+final trackingServiceProvider = Provider<TrackingService>(
+  (ref) => TrackingService(
+    analytics: ref.watch(analyticsServiceProvider),
+    pixel: ref.watch(metaPixelServiceProvider),
+    prefs: ref.watch(sharedPreferencesProvider),
+  ),
 );
 
 final crashlyticsServiceProvider = Provider<CrashlyticsService>(

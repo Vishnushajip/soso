@@ -31,6 +31,8 @@ class AuthController extends AsyncNotifier<void> {
       if (user != null) {
         await ref.read(userRepositoryProvider).ensureUserFromAuth(user);
         await ref.read(analyticsServiceProvider).log('sign_in', {'method': 'google'});
+        final isNewUser = cred.additionalUserInfo?.isNewUser == true;
+        await ref.read(trackingServiceProvider).googleSignIn(isNewUser: isNewUser);
       }
     });
   }
@@ -46,6 +48,7 @@ class AuthController extends AsyncNotifier<void> {
       if (user != null) {
         await ref.read(userRepositoryProvider).ensureUserFromAuth(user, isGuest: true);
         await ref.read(analyticsServiceProvider).log('sign_in', {'method': 'guest'});
+        await ref.read(trackingServiceProvider).guestStart();
       }
     });
   }

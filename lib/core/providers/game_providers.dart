@@ -125,6 +125,10 @@ class LocalGameController
       board: _engine.emptyBoard(),
       players: state.players.map((p) => p.copyWith(score: 0)).toList(),
     );
+    ref.read(trackingServiceProvider).matchStarted(
+          mode: 'local',
+          boardSize: state.boardSize,
+        );
   }
 
   void undoLocal() {
@@ -268,6 +272,14 @@ class LocalGameController
       ref
           .read(matchHistoryRepositoryProvider)
           .saveMatch(uid: user?.uid, match: record);
+
+      final matchResult =
+          winner == null ? 'draw' : (winner == 0 ? 'win' : 'loss');
+      ref.read(trackingServiceProvider).matchCompleted(
+            mode: 'local',
+            result: matchResult,
+            matchKey: record.id,
+          );
     }
     state = state.copyWith(
       board: newBoard,

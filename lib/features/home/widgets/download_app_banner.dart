@@ -10,6 +10,7 @@ import 'web_download_stub.dart' if (dart.library.html) 'web_download.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/app_download_providers.dart';
+import '../../../core/providers/service_providers.dart';
 
 class DownloadAppBanner extends ConsumerStatefulWidget {
   const DownloadAppBanner({super.key});
@@ -48,6 +49,8 @@ class _DownloadAppBannerState extends ConsumerState<DownloadAppBanner>
     if (_launching) return;
     setState(() => _launching = true);
     HapticFeedback.lightImpact();
+
+    ref.read(trackingServiceProvider).downloadAppClicked(source: 'web_banner');
 
     final uri = Uri.tryParse(url);
     var ok = false;

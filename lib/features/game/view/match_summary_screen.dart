@@ -74,6 +74,16 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
     if (ref.read(matchStatsAppliedProvider(widget.roomId))) return;
     ref.read(matchStatsAppliedProvider(widget.roomId).notifier).state = true;
     final me = ref.read(currentUidProvider);
+
+    final isWinner = me != null && room.winnerId == me;
+    final isDraw = room.winnerId == null;
+    final result = isDraw ? 'draw' : (isWinner ? 'win' : 'loss');
+    ref.read(trackingServiceProvider).matchCompleted(
+          mode: room.type.name,
+          result: result,
+          matchKey: 'online_${room.id}',
+        );
+
     if (me == null) return;
     final myPlayer = room.players.firstWhere(
       (p) => p.uid == me,

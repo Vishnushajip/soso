@@ -125,13 +125,23 @@ class AIGameNotifier extends StateNotifier<AIGameState> {
             completedSosLines: const {},
             finished: false,
           ),
-        );
+        ) {
+    _trackStart();
+  }
 
   final AIGameConfig config;
   final Ref ref;
   final SosEngine _sosEngine;
   final BotEngine _botEngine;
   bool _disposed = false;
+
+  void _trackStart() {
+    ref.read(trackingServiceProvider).matchStarted(
+      mode: 'ai',
+      boardSize: config.boardSize,
+      difficulty: config.difficulty.name,
+    );
+  }
 
   @override
   void dispose() {
@@ -364,6 +374,13 @@ class AIGameNotifier extends StateNotifier<AIGameState> {
             won: won,
           );
     }
+
+    final result = winner == 0 ? 'win' : (winner == 1 ? 'loss' : 'draw');
+    ref.read(trackingServiceProvider).matchCompleted(
+          mode: 'ai',
+          result: result,
+          matchKey: matchId,
+        );
   }
 
   void eraseCell(int position) {
@@ -411,6 +428,7 @@ class AIGameNotifier extends StateNotifier<AIGameState> {
       completedSosLines: const {},
       finished: false,
     );
+    _trackStart();
   }
 
   void resetGame() => reset();

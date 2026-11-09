@@ -236,6 +236,16 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
   }
 
   void _checkRoomEvents(GameRoom current) {
+    if (current.status == GameRoomStatus.active) {
+      final startKey =
+          'online_${current.id}_${current.startedAt?.millisecondsSinceEpoch ?? 0}';
+      ref.read(trackingServiceProvider).matchStarted(
+            mode: current.type.name,
+            boardSize: current.boardSize,
+            matchKey: startKey,
+          );
+    }
+
     if (_prevRoom == null) {
       _eventLogs.add(
         '[Lobby] Match started! Grid: ${current.boardSize}x${current.boardSize}',

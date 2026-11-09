@@ -149,6 +149,10 @@ class _LocalGameSetupScreenState extends ConsumerState<LocalGameSetupScreen>
                 ref.read(soundServiceProvider).play(AppSound.buttonClick);
                 HapticFeedback.heavyImpact();
                 _triggerBounce();
+                ref.read(trackingServiceProvider).matchStarted(
+                      mode: 'local',
+                      boardSize: _boardSize,
+                    );
                 final names = _names
                     .take(_playerCount)
                     .map(

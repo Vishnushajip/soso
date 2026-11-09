@@ -27,5 +27,6 @@ class Env {
   static int get boardSize => _i('BOARD_SIZE', 8);
   static bool get enableCrashlytics => _b('ENABLE_CRASHLYTICS', true);
   static bool get enableAnalytics => _b('ENABLE_ANALYTICS', true);
+  static bool get enableMetaPixel => _b('ENABLE_META_PIXEL', true);
   static String get fcmServiceAccountJson => _s('FCM_SERVICE_ACCOUNT_JSON');
 }

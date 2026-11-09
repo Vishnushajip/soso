@@ -1,5 +1,9 @@
+const kPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.sosarena.app';
+
 class AppConstants {
   AppConstants._();
+
+  static const playStoreUrl = kPlayStoreUrl;
 
   // Firestore collection names — referenced from repositories only.
   static const usersCollection = 'users';

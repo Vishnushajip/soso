@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../features/home/widgets/download_app_banner.dart';
+import '../../../features/home/widgets/play_store_section.dart';
 import '../../../core/providers/app_update_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/user_providers.dart';
@@ -17,18 +17,9 @@ import '../../../core/services/haptic_service.dart';
 import '../../../core/services/sound_service.dart';
 import '../../rewards/view/daily_reward_dialog.dart';
 import '../widgets/ai_difficulty_sheet.dart';
-import 'package:universal_html/html.dart' as html;
 
 class GameModeSelectScreen extends ConsumerWidget {
   const GameModeSelectScreen({super.key});
-
-  static bool get isAndroidWeb {
-    if (!kIsWeb) return false;
-
-    final ua = html.window.navigator.userAgent.toLowerCase();
-
-    return ua.contains('android');
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,20 +32,12 @@ class GameModeSelectScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _StaggeredEntrance(
-            delayMs: 0,
-            offsetY: 0,
-            child: _Header(),
-          ),
+          const _StaggeredEntrance(delayMs: 0, offsetY: 0, child: _Header()),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (isAndroidWeb) ...[
-                  const DownloadAppBanner(),
-                  const SizedBox(height: 24),
-                ],
                 const _DailyStreakBanner(),
                 const SizedBox(height: 20),
                 _StaggeredEntrance(
@@ -88,11 +71,15 @@ class GameModeSelectScreen extends ConsumerWidget {
                       const SizedBox(height: 14),
                       _OfflineGrid(
                         onPassAndPlay: () {
-                          ref.read(soundServiceProvider).play(AppSound.buttonClick);
+                          ref
+                              .read(soundServiceProvider)
+                              .play(AppSound.buttonClick);
                           context.push(RouteNames.localSetup);
                         },
                         onAiBot: () {
-                          ref.read(soundServiceProvider).play(AppSound.buttonClick);
+                          ref
+                              .read(soundServiceProvider)
+                              .play(AppSound.buttonClick);
                           AIDifficultySheet.show(context);
                         },
                       ),
@@ -105,11 +92,16 @@ class GameModeSelectScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const _SectionLabel(label: 'Online', trailing: _OnlineBadge()),
+                      const _SectionLabel(
+                        label: 'Online',
+                        trailing: _OnlineBadge(),
+                      ),
                       const SizedBox(height: 14),
                       _OnlineGrid(
                         onRanked: () {
-                          ref.read(soundServiceProvider).play(AppSound.buttonClick);
+                          ref
+                              .read(soundServiceProvider)
+                              .play(AppSound.buttonClick);
                           context.push('${RouteNames.onlineLobby}?mode=ranked');
                         },
                         onFriendChallenge: () {
@@ -122,26 +114,37 @@ class GameModeSelectScreen extends ConsumerWidget {
                           )) {
                             return;
                           }
-                          ref.read(soundServiceProvider).play(AppSound.buttonClick);
+                          ref
+                              .read(soundServiceProvider)
+                              .play(AppSound.buttonClick);
                           context.push('${RouteNames.onlineLobby}?mode=friend');
                         },
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 24),
+                if (kIsWeb) ...[const PlayStoreSection(source: 'home')],
                 const SizedBox(height: 26),
                 _StaggeredEntrance(
                   delayMs: 240,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const _SectionLabel(label: 'Solo & History', trailing: _SoloBadge()),
+                      const _SectionLabel(
+                        label: 'Solo & History',
+                        trailing: _SoloBadge(),
+                      ),
                       const SizedBox(height: 12),
-                      _SoloPlayCard(onTap: () => context.push(RouteNames.flappyGame)),
+                      _SoloPlayCard(
+                        onTap: () => context.push(RouteNames.flappyGame),
+                      ),
                       const SizedBox(height: 12),
                       _MatchHistoryCard(
                         onTap: () {
-                          ref.read(soundServiceProvider).play(AppSound.buttonClick);
+                          ref
+                              .read(soundServiceProvider)
+                              .play(AppSound.buttonClick);
                           context.push(RouteNames.matchHistory);
                         },
                       ),
@@ -149,10 +152,7 @@ class GameModeSelectScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 36),
-                const _StaggeredEntrance(
-                  delayMs: 320,
-                  child: _Footer(),
-                ),
+                const _StaggeredEntrance(delayMs: 320, child: _Footer()),
               ],
             ),
           ),
@@ -283,11 +283,7 @@ class _HeroEmbersPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final colors = [
-      AppColors.arenaGold,
-      AppColors.accent,
-      Colors.white,
-    ];
+    final colors = [AppColors.arenaGold, AppColors.accent, Colors.white];
 
     final paint = Paint()..style = PaintingStyle.fill;
 
@@ -300,7 +296,8 @@ class _HeroEmbersPainter extends CustomPainter {
 
       final t = (progress * speed + yFactor) % 1.0;
       final y = size.height * (1.0 - t);
-      final x = size.width * xFactor +
+      final x =
+          size.width * xFactor +
           (math.sin((progress * 2 + xFactor) * 2 * math.pi) * 8.0);
       final alpha = (math.sin(t * math.pi) * 0.75).clamp(0.0, 1.0);
 
@@ -353,57 +350,57 @@ class _FloatingBattleToken3D extends StatelessWidget {
         child: Transform.scale(
           scaleX: scaleX,
           child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              center: const Alignment(-0.35, -0.35),
-              radius: 0.85,
-              colors: [
-                Colors.white.withValues(alpha: 0.95),
-                baseColor,
-                secondaryColor,
-              ],
-              stops: const [0.0, 0.45, 1.0],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: secondaryColor.withValues(alpha: 0.55),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.7),
-              width: 1.5,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              letter,
-              style: GoogleFonts.luckiestGuy(
-                fontSize: size * 0.52,
-                color: Colors.white,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1.5),
-                  ),
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                center: const Alignment(-0.35, -0.35),
+                radius: 0.85,
+                colors: [
+                  Colors.white.withValues(alpha: 0.95),
+                  baseColor,
+                  secondaryColor,
                 ],
+                stops: const [0.0, 0.45, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: secondaryColor.withValues(alpha: 0.55),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.7),
+                width: 1.5,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                letter,
+                style: GoogleFonts.luckiestGuy(
+                  fontSize: size * 0.52,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -492,12 +489,11 @@ class _HeroPlayCtaState extends State<_HeroPlayCta> {
           builder: (context, child) {
             final pulseScale = widget.disableMotion
                 ? 1.0
-                : 1.0 + (math.sin(widget.pulseController.value * 2 * math.pi) * 0.025);
+                : 1.0 +
+                      (math.sin(widget.pulseController.value * 2 * math.pi) *
+                          0.025);
             final userScale = _isPressed ? 0.93 : (_isHovered ? 1.05 : 1.0);
-            return Transform.scale(
-              scale: pulseScale * userScale,
-              child: child,
-            );
+            return Transform.scale(scale: pulseScale * userScale, child: child);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -505,10 +501,7 @@ class _HeroPlayCtaState extends State<_HeroPlayCta> {
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFFB300),
-                  Color(0xFFFF6F00),
-                ],
+                colors: [Color(0xFFFFB300), Color(0xFFFF6F00)],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -517,9 +510,9 @@ class _HeroPlayCtaState extends State<_HeroPlayCta> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFF6F00).withValues(
-                    alpha: _isHovered ? 0.6 : 0.4,
-                  ),
+                  color: const Color(
+                    0xFFFF6F00,
+                  ).withValues(alpha: _isHovered ? 0.6 : 0.4),
                   blurRadius: _isHovered ? 14 : 10,
                   offset: const Offset(0, 3),
                 ),
@@ -684,7 +677,10 @@ class _HeaderState extends ConsumerState<_Header>
                                 ),
                               ),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 42, sigmaY: 42),
+                                filter: ImageFilter.blur(
+                                  sigmaX: 42,
+                                  sigmaY: 42,
+                                ),
                                 child: Container(color: Colors.transparent),
                               ),
                             ),
@@ -702,7 +698,10 @@ class _HeaderState extends ConsumerState<_Header>
                                 ),
                               ),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                                filter: ImageFilter.blur(
+                                  sigmaX: 45,
+                                  sigmaY: 45,
+                                ),
                                 child: Container(color: Colors.transparent),
                               ),
                             ),
@@ -768,17 +767,25 @@ class _HeaderState extends ConsumerState<_Header>
                     child: AnimatedBuilder(
                       animation: _floatController,
                       builder: (context, _) {
-                        final y = math.sin((_floatController.value + 0.3) * 2 * math.pi) * 3.5;
+                        final y =
+                            math.sin(
+                              (_floatController.value + 0.3) * 2 * math.pi,
+                            ) *
+                            3.5;
                         return Transform.translate(
                           offset: Offset(0, y),
                           child: Container(
                             width: 24,
                             height: 24,
                             decoration: BoxDecoration(
-                              color: AppColors.arenaGold.withValues(alpha: 0.20),
+                              color: AppColors.arenaGold.withValues(
+                                alpha: 0.20,
+                              ),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.arenaGold.withValues(alpha: 0.45),
+                                color: AppColors.arenaGold.withValues(
+                                  alpha: 0.45,
+                                ),
                                 width: 1.0,
                               ),
                             ),
@@ -798,7 +805,10 @@ class _HeaderState extends ConsumerState<_Header>
                   // Layer 6: Central COMPETE & WIN Content
                   Positioned.fill(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -808,7 +818,10 @@ class _HeaderState extends ConsumerState<_Header>
                             builder: (context, child) {
                               final y = disableMotion
                                   ? 0.0
-                                  : math.sin(_floatController.value * 2 * math.pi) * 3.0;
+                                  : math.sin(
+                                          _floatController.value * 2 * math.pi,
+                                        ) *
+                                        3.0;
                               return Transform.translate(
                                 offset: Offset(0, y),
                                 child: child,
@@ -844,12 +857,15 @@ class _HeaderState extends ConsumerState<_Header>
                                       ],
                                     ),
                                     border: Border.all(
-                                      color: AppColors.arenaGold.withValues(alpha: 0.65),
+                                      color: AppColors.arenaGold.withValues(
+                                        alpha: 0.65,
+                                      ),
                                       width: 2.0,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.primaryContainer.withValues(alpha: 0.5),
+                                        color: AppColors.primaryContainer
+                                            .withValues(alpha: 0.5),
                                         blurRadius: 16,
                                         spreadRadius: 2,
                                       ),
@@ -873,7 +889,9 @@ class _HeaderState extends ConsumerState<_Header>
                                 // Top Radar / Status Pill Row
                                 Row(
                                   children: [
-                                    _RadarBeacon(pulseController: _pulseController),
+                                    _RadarBeacon(
+                                      pulseController: _pulseController,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       'LIVE MULTIPLAYER',
@@ -887,18 +905,28 @@ class _HeaderState extends ConsumerState<_Header>
                                     Consumer(
                                       builder: (context, ref, _) {
                                         final count =
-                                            ref.watch(onlineCountProvider).valueOrNull ?? 0;
-                                        if (count <= 0) return const SizedBox.shrink();
+                                            ref
+                                                .watch(onlineCountProvider)
+                                                .valueOrNull ??
+                                            0;
+                                        if (count <= 0)
+                                          return const SizedBox.shrink();
                                         return Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 7,
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.14),
-                                            borderRadius: BorderRadius.circular(10),
+                                            color: Colors.white.withValues(
+                                              alpha: 0.14,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                             border: Border.all(
-                                              color: Colors.white.withValues(alpha: 0.20),
+                                              color: Colors.white.withValues(
+                                                alpha: 0.20,
+                                              ),
                                               width: 0.8,
                                             ),
                                           ),
@@ -939,12 +967,21 @@ class _HeaderState extends ConsumerState<_Header>
                                       shaderCallback: (bounds) {
                                         if (bounds.isEmpty) {
                                           return const LinearGradient(
-                                            colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
+                                            colors: [
+                                              Color(0xFFFFD54F),
+                                              Color(0xFFFFB300),
+                                            ],
                                           ).createShader(bounds);
                                         }
                                         return LinearGradient(
-                                          begin: Alignment(-1.8 + (val * 3.6), -0.6),
-                                          end: Alignment(-0.8 + (val * 3.6), 0.6),
+                                          begin: Alignment(
+                                            -1.8 + (val * 3.6),
+                                            -0.6,
+                                          ),
+                                          end: Alignment(
+                                            -0.8 + (val * 3.6),
+                                            0.6,
+                                          ),
                                           colors: const [
                                             Color(0xFFFFD54F),
                                             Colors.white,
@@ -966,12 +1003,16 @@ class _HeaderState extends ConsumerState<_Header>
                                       letterSpacing: 0.8,
                                       shadows: [
                                         Shadow(
-                                          color: Colors.black.withValues(alpha: 0.7),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.7,
+                                          ),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
                                         Shadow(
-                                          color: AppColors.secondary.withValues(alpha: 0.5),
+                                          color: AppColors.secondary.withValues(
+                                            alpha: 0.5,
+                                          ),
                                           blurRadius: 10,
                                           offset: const Offset(0, 1),
                                         ),
@@ -997,9 +1038,15 @@ class _HeaderState extends ConsumerState<_Header>
                                   pulseController: _pulseController,
                                   disableMotion: disableMotion,
                                   onTap: () {
-                                    ref.read(soundServiceProvider).play(AppSound.buttonClick);
-                                    ref.read(hapticServiceProvider).fire(HapticEvent.tap);
-                                    context.push('${RouteNames.onlineLobby}?mode=ranked');
+                                    ref
+                                        .read(soundServiceProvider)
+                                        .play(AppSound.buttonClick);
+                                    ref
+                                        .read(hapticServiceProvider)
+                                        .fire(HapticEvent.tap);
+                                    context.push(
+                                      '${RouteNames.onlineLobby}?mode=ranked',
+                                    );
                                   },
                                 ),
                               ],
@@ -1130,7 +1177,6 @@ class _OnlineBadgeState extends ConsumerState<_OnlineBadge>
     );
   }
 }
-
 
 class _SoloBadge extends StatelessWidget {
   const _SoloBadge();
@@ -1291,8 +1337,12 @@ class _SoloPlayCardState extends State<_SoloPlayCard>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.secondary.withValues(alpha: _isHovered ? 0.18 : 0.14),
-                  AppColors.tertiary.withValues(alpha: _isHovered ? 0.14 : 0.10),
+                  AppColors.secondary.withValues(
+                    alpha: _isHovered ? 0.18 : 0.14,
+                  ),
+                  AppColors.tertiary.withValues(
+                    alpha: _isHovered ? 0.14 : 0.10,
+                  ),
                 ],
               ),
               borderRadius: BorderRadius.circular(20),
@@ -1336,13 +1386,12 @@ class _SoloPlayCardState extends State<_SoloPlayCard>
                       animation: _flightController,
                       builder: (context, child) {
                         final y = disableMotion ? 0.0 : _bobAnimation.value;
-                        final angle = disableMotion ? 0.0 : _tiltAnimation.value;
+                        final angle = disableMotion
+                            ? 0.0
+                            : _tiltAnimation.value;
                         return Transform.translate(
                           offset: Offset(0, y),
-                          child: Transform.rotate(
-                            angle: angle,
-                            child: child,
-                          ),
+                          child: Transform.rotate(angle: angle, child: child),
                         );
                       },
                       child: Container(
@@ -1358,7 +1407,9 @@ class _SoloPlayCardState extends State<_SoloPlayCard>
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.secondary.withValues(alpha: 0.15),
+                              color: AppColors.secondary.withValues(
+                                alpha: 0.15,
+                              ),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -1392,10 +1443,14 @@ class _SoloPlayCardState extends State<_SoloPlayCard>
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.secondary.withValues(alpha: 0.14),
+                                  color: AppColors.secondary.withValues(
+                                    alpha: 0.14,
+                                  ),
                                   borderRadius: BorderRadius.circular(99),
                                   border: Border.all(
-                                    color: AppColors.secondary.withValues(alpha: 0.30),
+                                    color: AppColors.secondary.withValues(
+                                      alpha: 0.30,
+                                    ),
                                     width: 1.0,
                                   ),
                                 ),
@@ -1431,7 +1486,8 @@ class _SoloPlayCardState extends State<_SoloPlayCard>
                       builder: (context, child) {
                         final scale = disableMotion
                             ? (_isHovered ? 1.08 : 1.0)
-                            : (_playPulseAnimation.value * (_isHovered ? 1.06 : 1.0));
+                            : (_playPulseAnimation.value *
+                                  (_isHovered ? 1.06 : 1.0));
                         return Transform.scale(scale: scale, child: child);
                       },
                       child: Container(
@@ -1466,10 +1522,7 @@ class _SoloPlayCardState extends State<_SoloPlayCard>
 }
 
 class _OfflineGrid extends StatelessWidget {
-  const _OfflineGrid({
-    required this.onPassAndPlay,
-    required this.onAiBot,
-  });
+  const _OfflineGrid({required this.onPassAndPlay, required this.onAiBot});
 
   final VoidCallback onPassAndPlay;
   final VoidCallback onAiBot;
@@ -1743,8 +1796,8 @@ class _AnimatedGridCardState extends ConsumerState<_AnimatedGridCard>
               builder: (context, _) {
                 final hoverVal = _hoverController.value;
                 final pressVal = _pressController.value;
-                final scale =
-                    (1.0 + (hoverVal * 0.02) - (pressVal * 0.04)).clamp(0.92, 1.03);
+                final scale = (1.0 + (hoverVal * 0.02) - (pressVal * 0.04))
+                    .clamp(0.92, 1.03);
 
                 return Transform.scale(
                   scale: scale,
@@ -1795,11 +1848,14 @@ class _AnimatedGridCardState extends ConsumerState<_AnimatedGridCard>
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: widget.accent.withValues(alpha: 0.12),
+                                    color: widget.accent.withValues(
+                                      alpha: 0.12,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color:
-                                          widget.accent.withValues(alpha: 0.3),
+                                      color: widget.accent.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       width: 1,
                                     ),
                                   ),
@@ -1815,7 +1871,12 @@ class _AnimatedGridCardState extends ConsumerState<_AnimatedGridCard>
                                 ),
                               ),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(10, 52, 10, 12),
+                              padding: const EdgeInsets.fromLTRB(
+                                10,
+                                52,
+                                10,
+                                12,
+                              ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -1923,12 +1984,17 @@ class _AnimatedGridCardState extends ConsumerState<_AnimatedGridCard>
                         child: AnimatedBuilder(
                           animation: _floatAnimation,
                           builder: (context, _) {
-                            final val =
-                                disableMotion ? 0.0 : _floatAnimation.value;
-                            final shadowWidth =
-                                (48.0 - (val * 1.5)).clamp(36.0, 56.0);
-                            final shadowOpacity =
-                                (0.09 - (val * 0.007)).clamp(0.04, 0.14);
+                            final val = disableMotion
+                                ? 0.0
+                                : _floatAnimation.value;
+                            final shadowWidth = (48.0 - (val * 1.5)).clamp(
+                              36.0,
+                              56.0,
+                            );
+                            final shadowOpacity = (0.09 - (val * 0.007)).clamp(
+                              0.04,
+                              0.14,
+                            );
                             return Container(
                               width: shadowWidth,
                               height: 7,
@@ -2079,8 +2145,6 @@ class _AnimatedGridCardState extends ConsumerState<_AnimatedGridCard>
   }
 }
 
-
-
 class _Footer extends StatelessWidget {
   const _Footer();
 
@@ -2212,11 +2276,15 @@ class _DailyStreakBanner extends ConsumerWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          canClaim ? 'DAILY REWARD READY!' : 'DAY $streak STREAK',
+                          canClaim
+                              ? 'DAILY REWARD READY!'
+                              : 'DAY $streak STREAK',
                           maxLines: 2,
                           style: GoogleFonts.luckiestGuy(
                             fontSize: 14,
-                            color: canClaim ? AppColors.arenaGold : AppColors.onArena,
+                            color: canClaim
+                                ? AppColors.arenaGold
+                                : AppColors.onArena,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -2271,7 +2339,9 @@ class _DailyStreakBanner extends ConsumerWidget {
                 canClaim ? 'CLAIM' : 'STREAK',
                 style: GoogleFonts.luckiestGuy(
                   fontSize: 12,
-                  color: canClaim ? AppColors.arenaBgBottom : AppColors.onArenaMuted,
+                  color: canClaim
+                      ? AppColors.arenaBgBottom
+                      : AppColors.onArenaMuted,
                   letterSpacing: 0.6,
                 ),
               ),
@@ -2282,7 +2352,6 @@ class _DailyStreakBanner extends ConsumerWidget {
     );
   }
 }
-
 
 class _MatchHistoryCard extends StatelessWidget {
   const _MatchHistoryCard({required this.onTap});
@@ -2346,7 +2415,10 @@ class _MatchHistoryCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(6),
@@ -2408,4 +2480,3 @@ class _MatchHistoryCard extends StatelessWidget {
     );
   }
 }
-

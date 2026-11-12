@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/env.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
@@ -107,7 +108,7 @@ class PrivacyScreen extends ConsumerWidget {
                   'Welcome to SOS Arena ("we", "our", or "us"). We are committed to '
                   'protecting your privacy. This policy explains how we collect, '
                   'use, and safeguard your data when using the SOS Arena Android '
-                  'application and web platform (https://playsos.web.app).',
+                  'application and web platform (${AppConstants.websiteUrl}).',
                 ),
               ],
             ),

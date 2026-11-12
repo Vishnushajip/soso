@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -11,6 +12,7 @@ import '../../../core/routes/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/repositories/auth_repository.dart';
+import '../../home/widgets/play_store_section.dart';
 
 class SignInScreen extends ConsumerWidget {
   const SignInScreen({super.key});
@@ -140,6 +142,14 @@ class SignInScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
+                          // Web-only: nudge visitors to the Play Store app.
+                          if (kIsWeb) ...[
+                            const SizedBox(height: 32),
+                            const _FadeSlide(
+                              delay: 550,
+                              child: PlayStoreSection(source: 'landing'),
+                            ),
+                          ],
                         ],
                       ),
                     ),

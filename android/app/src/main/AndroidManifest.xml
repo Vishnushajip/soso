@@ -43,6 +43,11 @@
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
 
+        <!-- AdMob app id -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1023025727425756~4133795399"/>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

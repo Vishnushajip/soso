@@ -13,6 +13,7 @@ import '../../../core/providers/notification_providers.dart';
 import '../../../core/providers/service_providers.dart';
 import '../../../core/providers/user_providers.dart';
 import '../../../core/routes/route_names.dart';
+import '../../../core/widgets/app_banner_ad.dart';
 import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../rewards/view/daily_reward_dialog.dart';
@@ -172,7 +173,11 @@ class MainShell extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: RepaintBoundary(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AppBannerAd(placement: 'shell'),
+          RepaintBoundary(
         child: _GameNavBar(
           selected: selected,
           tabs: _tabs,
@@ -189,6 +194,8 @@ class MainShell extends ConsumerWidget {
             }
           },
         ),
+          ),
+        ],
       ),
     );
   }

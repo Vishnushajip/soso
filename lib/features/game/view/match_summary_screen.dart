@@ -7,6 +7,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/haptic_service.dart';
 import '../../../core/services/sound_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_banner_ad.dart';
 import '../../../core/widgets/app_loader.dart';
 import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/error_view.dart';
@@ -307,6 +308,10 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
                                 onTap: () => context.go(RouteNames.home),
                               ),
                             ],
+                            // Banner below the action buttons: the match is
+                            // already over, so it never interrupts play.
+                            const SizedBox(height: 12),
+                            const AppBannerAd(placement: 'match_summary'),
                           ],
                         ),
                       ),

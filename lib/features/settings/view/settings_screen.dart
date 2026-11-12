@@ -10,19 +10,19 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/app_update_providers.dart';
 import '../../../core/providers/service_providers.dart';
 
-final soundEnabledSettingProvider = StateProvider<bool>((ref) {
+final soundEnabledSettingProvider = StateProvider.autoDispose<bool>((ref) {
   return ref.watch(soundServiceProvider).soundEnabled;
 });
-final soundVolumeSettingProvider = StateProvider<double>((ref) {
+final soundVolumeSettingProvider = StateProvider.autoDispose<double>((ref) {
   return ref.watch(soundServiceProvider).soundVolume;
 });
-final musicEnabledSettingProvider = StateProvider<bool>((ref) {
+final musicEnabledSettingProvider = StateProvider.autoDispose<bool>((ref) {
   return ref.watch(soundServiceProvider).musicEnabled;
 });
-final musicVolumeSettingProvider = StateProvider<double>((ref) {
+final musicVolumeSettingProvider = StateProvider.autoDispose<double>((ref) {
   return ref.watch(soundServiceProvider).musicVolume;
 });
-final hapticsEnabledSettingProvider = StateProvider<bool>((ref) {
+final hapticsEnabledSettingProvider = StateProvider.autoDispose<bool>((ref) {
   return ref.watch(hapticServiceProvider).enabled;
 });
 

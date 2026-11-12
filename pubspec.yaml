@@ -49,13 +49,12 @@ dependencies:
   url_launcher: ^6.3.0
   connectivity_plus: ^7.1.1
   package_info_plus: ^8.0.2
-  dio: ^5.7.0
   path_provider: ^2.1.5
-  open_filex: ^4.5.0
   universal_html: ^2.3.0
   in_app_update: ^5.0.0
   new_version_plus: ^0.1.1
   image_picker: ^1.2.4
+  google_mobile_ads: ^9.2.0
 
 dev_dependencies:
   flutter_test:

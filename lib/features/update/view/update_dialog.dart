@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/services/app_update_service.dart';
+import '../../../core/services/update_service.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/providers/app_update_providers.dart';
@@ -83,12 +85,8 @@ class UpdateDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final forced = decision.isForced;
     final config = decision.config;
-    final busy = ref.watch(
-      apkDownloadControllerProvider.select((s) => s.isBusy),
-    );
-
     return PopScope(
-      canPop: !forced && !busy,
+      canPop: !forced,
       child: Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 28),
@@ -172,6 +170,9 @@ class UpdateDialog extends ConsumerWidget {
   }
 }
 
+/// True while the Play update flow / store link is being opened.
+final _updateStartingProvider = StateProvider.autoDispose<bool>((_) => false);
+
 class _Actions extends ConsumerWidget {
   const _Actions({required this.decision});
   final UpdateDecision decision;
@@ -179,57 +180,24 @@ class _Actions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final forced = decision.isForced;
-    final canInstallInApp = ref.watch(apkInstallerProvider).isSupported;
-    final download = ref.watch(apkDownloadControllerProvider);
-
-    if (canInstallInApp && download.status == ApkDownloadStatus.downloading) {
-      return _ProgressView(
-        label: 'Downloading update',
-
-        progress: download.progress > 0 ? download.progress : null,
-      );
-    }
-    if (canInstallInApp && download.status == ApkDownloadStatus.installing) {
-      return const _ProgressView(label: 'Opening installer…', progress: null);
-    }
-
-    final isError = download.status == ApkDownloadStatus.error;
-    final isDone = download.status == ApkDownloadStatus.done;
+    final busy = ref.watch(_updateStartingProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (canInstallInApp && isError)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Text(
-              download.error ?? 'Something went wrong.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.danger,
-              ),
-            ),
-          ),
         AppButton(
-          icon: isDone ? Icons.install_mobile_rounded : Icons.download_rounded,
-          label: isDone
-              ? 'Install again'
-              : isError
-              ? 'Retry'
-              : forced
-              ? 'Update Now'
-              : 'Update',
+          icon: Icons.shop_rounded,
+          label: forced ? 'Update Now' : 'Update',
           expanded: true,
-          onPressed: () => _start(context, ref, canInstallInApp),
+          busy: busy,
+          onPressed: () => _start(context, ref),
         ),
         if (!forced) ...[
           const SizedBox(height: 8),
           TextButton(
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: busy ? null : () => Navigator.of(context).maybePop(),
             child: Text(
-              isDone ? 'Close' : 'Maybe later',
+              'Maybe later',
               style: GoogleFonts.outfit(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -242,61 +210,27 @@ class _Actions extends ConsumerWidget {
     );
   }
 
-  Future<void> _start(BuildContext context, WidgetRef ref, bool inApp) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final url = ref.read(updateDownloadUrlProvider);
-    if (url == null || url.trim().isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('No download link available')),
-      );
-      return;
-    }
-    if (inApp) {
-      await ref
-          .read(apkDownloadControllerProvider.notifier)
-          .downloadAndInstall(url);
-    } else {
-      final ok = await ref.read(appUpdateServiceProvider).launchUpdate(url);
-      if (!ok) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Could not open the update link')),
-        );
+  /// Android: Google Play in-app update (immediate flow); if Play can't offer
+  /// it, open the Play Store listing. Web: open the Play Store listing.
+  Future<void> _start(BuildContext context, WidgetRef ref) async {
+    final starting = ref.read(_updateStartingProvider.notifier);
+    if (starting.state) return;
+    starting.state = true;
+    try {
+      final isAndroidApp =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      if (isAndroidApp && await InAppUpdateService().startImmediateUpdate()) {
+        return;
       }
+      final ok = await ref
+          .read(appUpdateServiceProvider)
+          .launchUpdate(ref.read(updateDownloadUrlProvider));
+      if (!ok && context.mounted) {
+        AppSnackBar.showError(context, 'Could not open Google Play');
+      }
+    } finally {
+      if (context.mounted) starting.state = false;
     }
-  }
-}
-
-class _ProgressView extends StatelessWidget {
-  const _ProgressView({required this.label, required this.progress});
-  final String label;
-
-  final double? progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(99),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 10,
-            backgroundColor: AppColors.primary.withOpacity(0.12),
-            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          progress == null ? label : '$label  ${(progress! * 100).round()}%',
-          style: GoogleFonts.outfit(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.onSurfaceMuted,
-          ),
-        ),
-      ],
-    );
   }
 }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_core/firebase_core.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soso/core/services/local_notifications_service.dart';
 import 'package:soso/core/services/sound_service.dart';
@@ -74,6 +76,8 @@ class AppBootstrap {
       try {
         await FlutterDisplayMode.setHighRefreshRate();
       } catch (e) {}
+      // Fire-and-forget: ads must never delay app start-up.
+      unawaited(MobileAds.instance.initialize());
     }
     if (kIsWeb) {
       usePathUrlStrategy();

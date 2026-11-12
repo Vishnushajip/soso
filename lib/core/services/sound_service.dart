@@ -25,12 +25,19 @@ enum AppSound {
 }
 
 class SoundService with WidgetsBindingObserver {
-  SoundService(this._prefs);
+  SoundService(this._prefs) {
+    _soundEnabled = _prefs.getBool(AppConstants.prefsSoundEnabled) ?? true;
+    _soundVolume = _prefs.getDouble(AppConstants.prefsSoundVolume) ?? 1.0;
+    _musicEnabled = _prefs.getBool(AppConstants.prefsMusicEnabled) ?? true;
+    _musicVolume = _prefs.getDouble(AppConstants.prefsMusicVolume) ?? 0.5;
+  }
+
   final SharedPreferences _prefs;
   final Map<AppSound, AudioPlayer> _players = {};
 
   AudioPlayer? _bgmPlayer;
   bool _bgmPlaying = false;
+  bool _bgmStarting = false;
 
   bool _soundEnabled = true;
   double _soundVolume = 1.0;
@@ -93,7 +100,7 @@ class SoundService with WidgetsBindingObserver {
       final bgm = AudioPlayer();
       await _configureBgmPlayer(bgm);
       await bgm.setReleaseMode(ReleaseMode.loop);
-      await bgm.setVolume(_musicVolume);
+      await bgm.setVolume(_musicEnabled ? _musicVolume : 0.0);
       await bgm.setSource(AssetSource('sounds/theme.mp3'));
       _bgmPlayer = bgm;
     } catch (e) {
@@ -183,56 +190,122 @@ class SoundService with WidgetsBindingObserver {
   }
 
   Future<void> startBgm() async {
-    if (!_musicEnabled || _activeGameScreens > 0) return;
+    if (!_musicEnabled || _activeGameScreens > 0) {
+      await _stopBgmInternal();
+      return;
+    }
+    if (_bgmStarting) return;
     if (_bgmPlayer != null && _bgmPlayer!.state == PlayerState.playing) {
       _bgmPlaying = true;
       return;
     }
 
+    _bgmStarting = true;
     try {
       final player = _bgmPlayer ?? AudioPlayer();
       _bgmPlayer = player;
       await _configureBgmPlayer(player);
+
+      if (!_musicEnabled || _activeGameScreens > 0) {
+        await _stopBgmInternal();
+        return;
+      }
+
       await player.setReleaseMode(ReleaseMode.loop);
       await player.setVolume(_musicVolume);
+
+      if (!_musicEnabled || _activeGameScreens > 0) {
+        await _stopBgmInternal();
+        return;
+      }
 
       if (player.source != null) {
         try {
           await player.resume();
         } catch (_) {
+          if (!_musicEnabled || _activeGameScreens > 0) {
+            await _stopBgmInternal();
+            return;
+          }
           await player.play(AssetSource('sounds/theme.mp3'));
         }
       } else {
         await player.play(AssetSource('sounds/theme.mp3'));
       }
+
+      if (!_musicEnabled || _activeGameScreens > 0) {
+        await _stopBgmInternal();
+        return;
+      }
+
       _bgmPlaying = true;
     } catch (e) {
       _bgmPlaying = false;
       appLogger.d('Theme BGM start skipped (e.g. autoplay gesture needed): $e');
+    } finally {
+      _bgmStarting = false;
+    }
+  }
+
+  Future<void> _stopBgmInternal() async {
+    _bgmPlaying = false;
+    _bgmStarting = false;
+    if (_bgmPlayer != null) {
+      try {
+        await _bgmPlayer!.setVolume(0);
+        await _bgmPlayer!.stop();
+        await _bgmPlayer!.pause();
+      } catch (e) {
+        appLogger.d('Theme BGM stop skipped: $e');
+      }
+    }
+
+    if (kIsWeb) {
+      try {
+        final audios = html.document.querySelectorAll('audio');
+        for (final el in audios) {
+          if (el is html.AudioElement) {
+            final src = (el.src.isNotEmpty ? el.src : el.currentSrc).toLowerCase();
+            if (src.contains('theme') || el.loop) {
+              el.pause();
+              el.currentTime = 0;
+              el.volume = 0;
+            }
+          }
+        }
+      } catch (_) {}
     }
   }
 
   Future<void> _pauseBgmInternal() async {
+    _bgmPlaying = false;
     if (_bgmPlayer == null) return;
     try {
+      await _bgmPlayer!.setVolume(0);
       await _bgmPlayer!.pause();
-      _bgmPlaying = false;
     } catch (e) {
       appLogger.d('Theme BGM pause skipped: $e');
+    }
+
+    if (kIsWeb) {
+      try {
+        final audios = html.document.querySelectorAll('audio');
+        for (final el in audios) {
+          if (el is html.AudioElement) {
+            final src = (el.src.isNotEmpty ? el.src : el.currentSrc).toLowerCase();
+            if (src.contains('theme') || el.loop) {
+              el.pause();
+              el.volume = 0;
+            }
+          }
+        }
+      } catch (_) {}
     }
   }
 
   Future<void> pauseBgm() async => _pauseBgmInternal();
 
-  Future<void> stopBgm() async {
-    if (_bgmPlayer == null) return;
-    try {
-      await _bgmPlayer!.stop();
-      _bgmPlaying = false;
-    } catch (e) {
-      appLogger.d('Theme BGM stop skipped: $e');
-    }
-  }
+  Future<void> stopBgm() async => _stopBgmInternal();
 
   void onGameStarted() {
     _activeGameScreens++;
@@ -262,7 +335,7 @@ class SoundService with WidgetsBindingObserver {
         await startBgm();
       }
     } else {
-      await _pauseBgmInternal();
+      await _stopBgmInternal();
     }
   }
 
@@ -270,7 +343,11 @@ class SoundService with WidgetsBindingObserver {
     _musicVolume = volume.clamp(0.0, 1.0);
     await _prefs.setDouble(AppConstants.prefsMusicVolume, _musicVolume);
     try {
-      await _bgmPlayer?.setVolume(_musicVolume);
+      if (_musicEnabled && _bgmPlaying) {
+        await _bgmPlayer?.setVolume(_musicVolume);
+      } else {
+        await _bgmPlayer?.setVolume(0);
+      }
     } catch (e) {
       appLogger.d('Theme BGM volume update skipped: $e');
     }

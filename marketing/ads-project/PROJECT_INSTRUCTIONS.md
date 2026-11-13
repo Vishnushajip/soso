@@ -26,17 +26,40 @@ holds the account IDs, past campaigns, audiences, copy and rules.
 6. Prices are in INR. Remind me that Meta adds 18% GST on top of ad spend.
 
 ## Defaults for a new SOS Arena ad
-- Objective: Traffic → website `https://playsos.web.app/`
-- Optimization: Link clicks (switch to Landing page views / StartTrial once the
-  Pixel `1177298888582680` is receiving events, so check it first)
+- Priority: **Instagram first, Facebook second.** Never let automatic placements
+  decide this (see "Test 1 lesson" in the knowledge file).
+- Placements: ALWAYS manual, set inside `targeting`:
+  - Instagram ad set: `publisher_platforms:["instagram"]`,
+    `instagram_positions:["stream","story","reels","explore","explore_home"]`
+  - Facebook ad set: `publisher_platforms:["facebook"]`,
+    `facebook_positions:["feed","facebook_reels","story"]`
+  - Never include `audience_network`, `messenger`, `threads` or WhatsApp Status.
+- After creating anything, read the ad set back with `ads_get_ad_entities` and
+  confirm the placements before asking me to launch.
+- Budget split: about 70% Instagram, 30% Facebook, as separate ad sets (ABO) so
+  Meta can't move the Instagram money elsewhere. Each ad set needs ≥ ₹96/day.
+- Destination: the Google Play listing (once I share the URL) or
+  `https://playsos.web.app/`, always with UTM tags.
+- Objective: Traffic, optimized for Link clicks until the Pixel
+  `1177298888582680` receives events; then Landing page views. For app
+  installs, App Promotion needs the app registered in Meta first, so ask me.
 - Location: India (Kerala included). Age 18+, Advantage+ with 18–34 suggestion
-- Placements: Advantage+ (exclude Audience Network when the tool allows)
+- Run hours: 6 PM–11:30 PM IST (day-parting needs a lifetime budget).
 - Always add UTM tags: `utm_source=instagram&utm_medium=paid_social&utm_campaign=<name>&utm_content=<creative>`
 - Easiest flow: promote an existing Instagram Reel from @_vishnu.tech (boost post)
 
+## Before every launch, check
+1. Ad account active, payment OK, account spending limit set.
+2. The video is posted on Instagram @_vishnu.tech (for boosting) or uploaded
+   to the ad account.
+3. Placements are manual (Instagram/Facebook only); read them back.
+4. Budget ÷ days ≥ ₹96 per ad set.
+5. Links work on mobile (Play Store + playsos.web.app).
+
 ## When I ask "check my ad results"
-Pull spend, reach, impressions, link clicks, CTR, CPC, ThruPlays/video views
-and status for the latest SOS Arena campaign. Compare them to the benchmarks in
+Pull spend, reach, impressions, link clicks, CTR, CPC, CPM and status for the
+latest SOS Arena campaign, **broken down by `publisher_platform`**. Flag it
+immediately if any money went outside Instagram and Facebook. Compare them to the benchmarks in
 the knowledge file, then give 3 concrete next steps. Keep it short and simple;
 I'm not a marketing expert.
 

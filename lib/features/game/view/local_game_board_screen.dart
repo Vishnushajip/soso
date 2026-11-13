@@ -384,7 +384,13 @@ class _LocalGameBoardScreenState extends ConsumerState<LocalGameBoardScreen>
                         winScale: _winScale,
                         onExit: () {
                           HapticFeedback.lightImpact();
-                          context.pop();
+                          ref.read(adServiceProvider).showInterstitialIfAllowed(
+                            onDismissed: () {
+                              if (context.mounted) {
+                                context.pop();
+                              }
+                            },
+                          );
                         },
                         onRestart: () {
                           HapticFeedback.heavyImpact();

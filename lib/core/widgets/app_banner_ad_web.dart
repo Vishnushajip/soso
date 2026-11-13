@@ -6,15 +6,15 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/widgets.dart';
 
-import '../constants/app_constants.dart';
+import '../ads/ad_config.dart';
 
 const double _bannerHeight = 90;
 final Set<String> _registered = {};
 
 /// Renders an AdSense display unit inside a Flutter platform view.
-/// Returns an empty box until [AppConstants.adSenseBannerSlot] is configured.
+/// Returns an empty box until [AdConfig.adSenseBannerSlot] is configured.
 Widget buildWebBanner(String placement) {
-  const slot = AppConstants.adSenseBannerSlot;
+  const slot = AdConfig.adSenseBannerSlot;
   if (slot.isEmpty) return const SizedBox.shrink();
 
   final viewType = 'adsense-banner-$placement';
@@ -25,7 +25,7 @@ Widget buildWebBanner(String placement) {
         ..style.display = 'block'
         ..style.width = '100%'
         ..style.height = '${_bannerHeight.toInt()}px'
-        ..setAttribute('data-ad-client', AppConstants.adSenseClientId)
+        ..setAttribute('data-ad-client', AdConfig.adSenseClientId)
         ..setAttribute('data-ad-slot', slot)
         ..setAttribute('data-ad-format', 'horizontal')
         ..setAttribute('data-full-width-responsive', 'false');

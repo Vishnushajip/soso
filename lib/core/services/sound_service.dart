@@ -264,13 +264,17 @@ class SoundService with WidgetsBindingObserver {
       try {
         final audios = html.document.querySelectorAll('audio');
         for (final el in audios) {
-          if (el is html.AudioElement) {
-            final src = (el.src.isNotEmpty ? el.src : el.currentSrc).toLowerCase();
-            if (src.contains('theme') || el.loop) {
-              el.pause();
-              el.currentTime = 0;
-              el.volume = 0;
-            }
+          final dyn = el as dynamic;
+          final String src = (dyn.src ?? '').toString().toLowerCase();
+          final bool loop = dyn.loop == true;
+          if (src.contains('theme') || loop) {
+            dyn.pause?.call();
+            try {
+              dyn.currentTime = 0;
+            } catch (_) {}
+            try {
+              dyn.volume = 0;
+            } catch (_) {}
           }
         }
       } catch (_) {}
@@ -291,12 +295,14 @@ class SoundService with WidgetsBindingObserver {
       try {
         final audios = html.document.querySelectorAll('audio');
         for (final el in audios) {
-          if (el is html.AudioElement) {
-            final src = (el.src.isNotEmpty ? el.src : el.currentSrc).toLowerCase();
-            if (src.contains('theme') || el.loop) {
-              el.pause();
-              el.volume = 0;
-            }
+          final dyn = el as dynamic;
+          final String src = (dyn.src ?? '').toString().toLowerCase();
+          final bool loop = dyn.loop == true;
+          if (src.contains('theme') || loop) {
+            dyn.pause?.call();
+            try {
+              dyn.volume = 0;
+            } catch (_) {}
           }
         }
       } catch (_) {}

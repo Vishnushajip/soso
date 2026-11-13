@@ -132,6 +132,7 @@ final bootstrapProvider = Provider<void>((ref) {
         ref.read(fcmServiceProvider).init(),
         ref.read(soundServiceProvider).init(),
         ref.read(hapticServiceProvider).init(),
+        ref.read(adServiceProvider).initialize(),
       ]);
 
       ref.read(localNotificationsServiceProvider).onClickResponse.listen((
@@ -215,6 +216,7 @@ class SosArenaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(bootstrapProvider);
+    ref.watch(adLifecycleObserverProvider);
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) {

@@ -38,7 +38,7 @@ android {
         // firebase_auth requires minSdk 23.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 16
+        versionCode = 17
         versionName = "1.0.3"
         multiDexEnabled = true
     }

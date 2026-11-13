@@ -299,13 +299,29 @@ class _MatchSummaryScreenState extends ConsumerState<MatchSummaryScreen>
                               _SecondaryButton(
                                 label: 'Back to Lobby',
                                 icon: Icons.home_rounded,
-                                onTap: () => context.go(RouteNames.home),
+                                onTap: () {
+                                  ref.read(adServiceProvider).showInterstitialIfAllowed(
+                                    onDismissed: () {
+                                      if (context.mounted) {
+                                        context.go(RouteNames.home);
+                                      }
+                                    },
+                                  );
+                                },
                               ),
                             ] else ...[
                               _PrimaryButton(
                                 label: 'Back to Lobby',
                                 icon: Icons.home_rounded,
-                                onTap: () => context.go(RouteNames.home),
+                                onTap: () {
+                                  ref.read(adServiceProvider).showInterstitialIfAllowed(
+                                    onDismissed: () {
+                                      if (context.mounted) {
+                                        context.go(RouteNames.home);
+                                      }
+                                    },
+                                  );
+                                },
                               ),
                             ],
                             // Banner below the action buttons: the match is

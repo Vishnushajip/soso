@@ -390,7 +390,15 @@ class _AIGameBoardScreenState extends ConsumerState<AIGameBoardScreen>
                   _winCtrl.reset();
                   notifier.resetGame();
                 },
-                onExit: () => context.pop(),
+                onExit: () {
+                  ref.read(adServiceProvider).showInterstitialIfAllowed(
+                    onDismissed: () {
+                      if (context.mounted) {
+                        context.pop();
+                      }
+                    },
+                  );
+                },
               ),
           ],
         ),

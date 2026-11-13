@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-import '../constants/app_constants.dart';
+import '../ads/ad_config.dart';
 import '../theme/app_colors.dart';
 import 'app_banner_ad_web_stub.dart'
     if (dart.library.html) 'app_banner_ad_web.dart'
@@ -26,9 +26,7 @@ final _admobBannerProvider = FutureProvider.autoDispose
 
       final completer = Completer<BannerAd?>();
       final ad = BannerAd(
-        adUnitId: kDebugMode
-            ? AppConstants.admobTestBannerUnitId
-            : AppConstants.admobBannerUnitId,
+        adUnitId: AdConfig.bannerUnitId,
         size: size,
         request: const AdRequest(),
         listener: BannerAdListener(

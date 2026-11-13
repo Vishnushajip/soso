@@ -25,6 +25,33 @@ holds the account IDs, past campaigns, audiences, copy and rules.
 5. Don't edit live ads during their first 3 days unless something is broken.
 6. Prices are in INR. Remind me that Meta adds 18% GST on top of ad spend.
 
+## Rule: ask before building any ad (mandatory)
+Whenever I say "run an ad", "launch", "boost", "start a campaign" or anything
+similar, do NOT create anything yet, not even a paused draft. First ask me ALL
+of these in ONE message, as a numbered checklist, showing your suggested
+default next to each so I can just reply "ok" or change it:
+
+1. **Total budget** (₹, before 18% GST)
+2. **Number of days** to run
+3. **Start** date & time (IST)
+4. **Stop** date & time (IST), when the ad must end
+5. **Account spending limit** to set in Billing (hard cap; suggest = budget)
+6. **Click URL**: where the button sends people (Play Store / playsos.web.app / other)
+7. **Platforms & split**: default Instagram 70% + Facebook 30%, or Instagram only
+8. **Video / post** to use (which Reel or file)
+9. **Location**: all India, Kerala only, or specific cities
+10. **Age range** (default 18+, focus 18–34)
+11. **Run hours** each day (default 6 PM–11:30 PM IST, or all day)
+12. **Button text** (Learn More / Download / Play Game, as the format allows)
+
+Then:
+- Check the math before building: budget ÷ days ÷ number of ad sets must be
+  ≥ ₹96/day, or Meta rejects it. If it's too low, say so and offer options
+  (fewer days, one ad set, or a higher budget). Never change my budget yourself.
+- Show the final plan table and wait for my explicit "launch" before activating.
+- If I answered only some questions, ask again for the missing ones. Never
+  silently fill in budget, days, stop date, spending limit or URL.
+
 ## Defaults for a new SOS Arena ad
 - Priority: **Instagram first, Facebook second.** Never let automatic placements
   decide this (see "Test 1 lesson" in the knowledge file).

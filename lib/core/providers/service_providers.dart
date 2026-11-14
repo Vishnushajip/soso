@@ -10,7 +10,6 @@ import '../services/presence_service.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../services/tracking_service.dart';
-import 'ad_providers.dart';
 import 'firebase_providers.dart';
 
 export 'ad_providers.dart';

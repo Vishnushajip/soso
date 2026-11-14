@@ -26,11 +26,9 @@ class AppConstants {
   static const adSenseClientId = 'ca-pub-1023025727425756';
   static const adSensePublisherId = 'pub-1023025727425756';
 
-  /// AdSense "Display ad" unit slot id (the `data-ad-slot` value). Create a
-  /// horizontal display ad unit in AdSense → Ads → By ad unit and paste its
-  /// slot id here. While empty, no manual in-app banner is rendered on web
-  /// (Auto Ads handle web monetization automatically).
-  static const adSenseBannerSlot = '';
+  /// AdSense "Display ad" unit slot id (the `data-ad-slot` value).
+  /// Production leaderboard/display ad unit for playsos.web.app.
+  static const adSenseBannerSlot = '7675469054';
 
   // Local storage keys for ad frequency capping.
   static const prefsLastInterstitialTime = 'ad_last_interstitial_time';

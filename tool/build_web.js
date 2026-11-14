@@ -18,6 +18,23 @@ for (const dir of [out, path.join(root, '.dart_tool', 'flutter_build')]) {
 
 execSync('flutter build web --release', { cwd: root, stdio: 'inherit', shell: true });
 
+// Flutter build web skips copying custom root files like ads.txt and app-ads.txt.
+// Ensure they are always copied from web/ into build/web.
+const webDir = path.join(root, 'web');
+for (const file of ['ads.txt', 'app-ads.txt']) {
+  const src = path.join(webDir, file);
+  const dest = path.join(out, file);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, dest);
+  }
+}
+
+// Generate AssetManifest fallback if not produced by modern Flutter compiler
+const assetManifestPath = path.join(out, 'assets', 'AssetManifest.bin.json');
+if (!fs.existsSync(assetManifestPath) && fs.existsSync(path.join(out, 'assets'))) {
+  fs.writeFileSync(assetManifestPath, '{}', 'utf8');
+}
+
 const required = [
   'index.html',
   'main.dart.js',

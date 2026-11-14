@@ -22,15 +22,17 @@ Widget buildWebBanner(String placement) {
     ui_web.platformViewRegistry.registerViewFactory(viewType, (int _) {
       final ins = html.Element.tag('ins')
         ..className = 'adsbygoogle'
-        ..style.display = 'block'
-        ..style.width = '100%'
+        ..style.display = 'inline-block'
+        ..style.width = '728px'
+        ..style.maxWidth = '100%'
         ..style.height = '${_bannerHeight.toInt()}px'
         ..setAttribute('data-ad-client', AdConfig.adSenseClientId)
-        ..setAttribute('data-ad-slot', slot)
-        ..setAttribute('data-ad-format', 'horizontal')
-        ..setAttribute('data-full-width-responsive', 'false');
+        ..setAttribute('data-ad-slot', slot);
 
       final container = html.DivElement()
+        ..style.display = 'flex'
+        ..style.justifyContent = 'center'
+        ..style.alignItems = 'center'
         ..style.width = '100%'
         ..style.height = '100%'
         ..style.overflow = 'hidden'
@@ -54,8 +56,11 @@ Widget buildWebBanner(String placement) {
     });
   }
 
-  return SizedBox(
-    height: _bannerHeight,
-    child: HtmlElementView(viewType: viewType),
+  return Center(
+    child: Container(
+      constraints: const BoxConstraints(maxWidth: 728),
+      height: _bannerHeight,
+      child: HtmlElementView(viewType: viewType),
+    ),
   );
 }

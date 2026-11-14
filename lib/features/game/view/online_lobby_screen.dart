@@ -14,6 +14,7 @@ import '../../../core/providers/user_providers.dart';
 import '../../../core/routes/route_names.dart';
 import '../../../core/services/sound_service.dart';
 import '../../../core/theme/board_theme.dart';
+import '../../../core/widgets/app_banner_ad.dart';
 import '../../../core/widgets/guest_google_prompt_dialog.dart';
 import '../widgets/board_theme_selection_sheet.dart';
 class OnlineLobbyScreen extends ConsumerStatefulWidget {
@@ -247,6 +248,9 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
                 ],
               ),
             ),
+      bottomNavigationBar: const SafeArea(
+        child: AppBannerAd(placement: 'online_lobby'),
+      ),
     );
   }
 

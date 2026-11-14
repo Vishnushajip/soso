@@ -29,6 +29,15 @@ for (const file of ['ads.txt', 'app-ads.txt']) {
   }
 }
 
+// Ensure static HTML subdirectories are synced
+for (const sub of ['privacy', 'terms']) {
+  const srcDir = path.join(webDir, sub);
+  const destDir = path.join(out, sub);
+  if (fs.existsSync(srcDir)) {
+    fs.cpSync(srcDir, destDir, { recursive: true });
+  }
+}
+
 // Generate AssetManifest fallback if not produced by modern Flutter compiler
 const assetManifestPath = path.join(out, 'assets', 'AssetManifest.bin.json');
 if (!fs.existsSync(assetManifestPath) && fs.existsSync(path.join(out, 'assets'))) {

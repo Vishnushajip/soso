@@ -124,7 +124,22 @@ placements per platform, in separate ad sets.
   Tirunelveli, Vellore. All are 30 km unless noted.
 - One ad set (not 70/30) because ₹300 / 2 days split into two ad sets drops below the ₹96/day minimum.
 - UTM: `utm_source=meta&utm_medium=paid_social&utm_campaign=sos_test2&utm_content=playstore_reel`
-- Status at launch: all ACTIVE, ad IN_PROCESS (review). Results: _to fill after 16 Nov_.
+- **REJECTED:** "App Url is only supported by App Installs objective". A Play Store
+  link can't be the destination of a Traffic campaign. ₹0 spent; campaign archived.
+
+### Test 2b: replacement, launched 14 Nov 2026 (the live one)
+| Level | Name | ID |
+|---|---|---|
+| Campaign | SOS Arena \| Launch \| Test 2b \| Web \| Rs300 | `120248027842300658` |
+| Ad set | Kerala+TN \| IG+FB only \| 18+ (18-34) \| A+ \| Web | `120248027842400658` |
+| Ad | Reel \| New Project Live \| to playsos.web.app | `120248027842780658` |
+- Same settings as Test 2, but the button goes to **https://playsos.web.app/**
+  (the site has the Play Store download banner).
+- UTM `utm_content=playstore_reel_web`. Status at launch: ACTIVE, ad IN_PROCESS, no errors.
+- Results: _to fill after 16 Nov_.
+
+**Lesson:** for Play Store installs, use an App Promotion (App Installs) campaign. That needs the
+app registered in Meta for Developers first. Traffic campaigns must link to a website.
 
 ## 6. Next launch plan (Test 2, prepared 13 Nov 2026; superseded by the launched Test 2 above)
 - Creative: SOS-Arena-GooglePlay-Launch-Reel-9x16.mp4. Post it on Instagram

@@ -104,7 +104,29 @@ clicks goal sent 84% of the budget to Audience Network, where clicks are cheap
 and mostly accidental. Instagram, the main target, got ₹1. Fix: manual
 placements per platform, in separate ad sets.
 
-## 6. Next launch plan (Test 2, prepared 13 Nov 2026, not yet created)
+### Test 2: launched 14 Nov 2026
+| Level | Name | ID |
+|---|---|---|
+| Campaign | SOS Arena \| Play Store Launch \| Test 2 \| Rs300 | `120248027785600658` |
+| Ad set | Kerala+TN \| IG+FB only \| 18+ (18-34) \| A+ | `120248027785790658` |
+| Ad | Reel \| New Project Live On Playstore | `120248027786250658` |
+
+- Boosted IG post `18414778111092496` ("New Project Live On Playstore" Reel, 40s).
+- Traffic → Link clicks. Button Learn More → Play Store listing.
+- **Lifetime budget ₹300** (30% of the ₹1,000 available), 14 Nov 18:00 → 16 Nov 18:00 IST.
+- Campaign spend cap not possible (Meta minimum ₹5,000), so the lifetime budget is the hard stop.
+- Placements verified by read-back: Facebook (Feed, Stories, Reels) + Instagram (Feed,
+  Stories, Reels, Explore) only.
+- Location: 17 map-pin radius points (custom_locations), because the connector can't look
+  up region codes. Kerala (region 1733): Kozhikode 40 km, Kannur, Malappuram,
+  Palakkad, Thrissur, Kochi 35 km, Kottayam, Kollam, Thiruvananthapuram 35 km.
+  Tamil Nadu (region 1744): Chennai 40 km, Coimbatore, Madurai, Trichy, Salem, Erode,
+  Tirunelveli, Vellore. All are 30 km unless noted.
+- One ad set (not 70/30) because ₹300 / 2 days split into two ad sets drops below the ₹96/day minimum.
+- UTM: `utm_source=meta&utm_medium=paid_social&utm_campaign=sos_test2&utm_content=playstore_reel`
+- Status at launch: all ACTIVE, ad IN_PROCESS (review). Results: _to fill after 16 Nov_.
+
+## 6. Next launch plan (Test 2, prepared 13 Nov 2026; superseded by the launched Test 2 above)
 - Creative: SOS-Arena-GooglePlay-Launch-Reel-9x16.mp4. Post it on Instagram
   first (boost it), or upload it to the ad account (`ads_create_upload_url`).
 - Campaign: "SOS Arena | Play Store Launch | Test 2", Traffic.
